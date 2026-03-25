@@ -11,7 +11,7 @@
 * [x] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
 * [x] Longer descriptive names in the AST (Application instead of App)
 * [ ] Add unittests
-* [ ] Create grammar display from real grammar (?)
+* [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [ ] Make limits (steps, display) settable
 * [x] Maybe a "load & run" button for directly loading and running the stuff
 * [x] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression

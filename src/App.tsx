@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
+import { HelpModal } from "./HelpModal";
 import { step, alphaEq } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
@@ -24,6 +25,7 @@ function findMatch(term: Term, defs: Map<string, Term>): string | undefined {
 }
 
 export default function App() {
+  const [showHelp, setShowHelp]       = useState(false);
   const [source, setSource]           = useState(EXAMPLES[0].src);
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
@@ -121,9 +123,15 @@ export default function App() {
 
   return (
     <div className="app">
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       <header>
-        <h1>λ playground</h1>
-        <p className="subtitle">a small lambda dialect</p>
+        <div className="header-row">
+          <div>
+            <h1>λ playground</h1>
+            <p className="subtitle">a small lambda dialect</p>
+          </div>
+          <button className="help-btn" onClick={() => setShowHelp(true)}>?</button>
+        </div>
       </header>
 
       <main>
@@ -212,6 +220,9 @@ atom        ::= primary ('[' identifier ':=' term ']')*
 primary     ::= identifier | '(' term ')' | function
 function    ::= '\\' identifier+ (':=' | '.') term`}</pre>
         </div>
+        <p className="attribution">
+          inspired by <a href="https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html" target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>
+        </p>
       </footer>
     </div>
   );
