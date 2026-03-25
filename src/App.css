@@ -80,8 +80,42 @@ label {
   letter-spacing: 0.1em;
   color: var(--muted);
   display: block;
+  margin-bottom: 0.4rem; /* overridden inside .editor-label-row */
+}
+
+/* ── Editor label row ── */
+.editor-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   margin-bottom: 0.4rem;
 }
+.editor-label-row label { margin-bottom: 0; }
+
+.editor-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.cursor-pos {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.clear-btn {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clear-btn:hover { color: var(--warn); }
 
 /* ── Textarea ── */
 textarea {
@@ -97,6 +131,7 @@ textarea {
   border-radius: 2px;
   line-height: 1.65;
   transition: border-color 0.15s;
+  margin-top: 0;
 }
 textarea:focus { border-color: var(--accent); }
 

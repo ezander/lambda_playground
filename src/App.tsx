@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
@@ -100,6 +100,7 @@ export default function App() {
   const [defs, setDefs]               = useState<Map<string, Term>>(new Map());
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
+  const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
 
   const programResult = parseProgram(source);
   let roundTripError: string | null = null;
@@ -199,6 +200,23 @@ export default function App() {
     setHistory(entries.slice(-10).reverse());
   }, [programResult, source]);
 
+  const updateCursor = useCallback((ta: HTMLTextAreaElement) => {
+    const text = ta.value.slice(0, ta.selectionStart);
+    const lines = text.split("\n");
+    setCursorPos({ line: lines.length, col: lines[lines.length - 1].length + 1 });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
+      if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
+      if (e.key === "F9")  { e.preventDefault(); handleRun(); }
+      if (e.key === "F10") { e.preventDefault(); handleStep(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun]);
+
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const currentTerm = programResult.expr;
 
@@ -218,13 +236,22 @@ export default function App() {
       <main>
         {/* ── Editor ── */}
         <section className="editor-section">
-          <label htmlFor="source">expression</label>
+          <div className="editor-label-row">
+            <label htmlFor="source">expression</label>
+            <span className="editor-meta">
+              {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
+              <button className="clear-btn" onClick={() => setSource("")}>clear</button>
+            </span>
+          </div>
           <textarea
             ref={textareaRef}
             id="source"
             value={source}
-            onChange={(e) => setSource(e.target.value)}
+            onChange={(e) => { setSource(e.target.value); updateCursor(e.target); }}
             onKeyDown={handleKeyDown}
+            onKeyUp={(e) => updateCursor(e.currentTarget)}
+            onClick={(e) => updateCursor(e.currentTarget)}
+            onSelect={(e) => updateCursor(e.currentTarget)}
             spellCheck={false}
             rows={8}
           />
@@ -288,12 +315,12 @@ export default function App() {
 
         {/* ── Controls ── */}
         <div className="eval-controls">
-          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
+          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr} title="Load expression (F6)">
             load
           </button>
-          <button onClick={handleStep}    disabled={!canStep}>step</button>
-          <button onClick={handleRun}     disabled={!canStep}>run</button>
-          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}>load &amp; run</button>
+          <button onClick={handleStep}    disabled={!canStep} title="One reduction step (F10)">step</button>
+          <button onClick={handleRun}     disabled={!canStep} title="Run up to 1000 steps (F9)">run</button>
+          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr} title="Load and run (F5)">load &amp; run</button>
           {loaded?.done && (
             <span className="eval-status normal-form">normal form</span>
           )}

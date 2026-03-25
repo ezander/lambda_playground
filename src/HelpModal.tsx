@@ -31,6 +31,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>f x y</code></td><td>application (left-associative)</td></tr>
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment</td></tr>
+            <tr><td><code>x</code>, <code>x1</code>, <code>0</code>, <code>42</code></td><td>identifiers: any non-empty sequence of letters, digits, underscores</td></tr>
           </tbody>
         </table>
 
@@ -42,7 +43,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>f x y ::= expr</code></td><td>shorthand for <code>f ::= \x y := expr</code></td></tr>
           </tbody>
         </table>
-        <p>The <em>last expression line</em> is what gets loaded and evaluated.</p>
+        <p>The <em>last expression line</em> is what gets loaded and evaluated. Redefining a name with a different normal form produces a warning.</p>
 
         <h3>controls</h3>
         <table className="help-table">
@@ -51,13 +52,25 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>step</strong></td><td>perform one beta-reduction step</td></tr>
             <tr><td><strong>run</strong></td><td>reduce up to 1000 steps; continue by pressing run again</td></tr>
             <tr><td><strong>load &amp; run</strong></td><td>load and immediately run to normal form</td></tr>
+            <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
+          </tbody>
+        </table>
+
+        <h3>keyboard shortcuts</h3>
+        <table className="help-table">
+          <tbody>
+            <tr><td><code>F5</code></td><td>load &amp; run</td></tr>
+            <tr><td><code>F6</code></td><td>load</td></tr>
+            <tr><td><code>F9</code></td><td>run</td></tr>
+            <tr><td><code>F10</code></td><td>step</td></tr>
+            <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
           </tbody>
         </table>
 
         <h3>history</h3>
         <p>
           Each reduction step is shown numbered and newest-first, up to 10 entries.
-          If a term alpha-matches a definition, the definition name is shown on the right.
+          If a term is alpha-equivalent to a definition's normal form, the definition name is shown on the right.
         </p>
 
         <h3>grammar</h3>
