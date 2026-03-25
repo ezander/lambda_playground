@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { parseProgram } from "./parser/parser";
-import { prettyPrint, dumpAST, assertRoundTrip } from "./parser/pretty";
+import { prettyPrint, assertRoundTrip } from "./parser/pretty";
+import { AstView } from "./AstView";
 import { step, alphaEq } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
@@ -147,7 +148,9 @@ export default function App() {
           </div>
           <div className="output">
             {currentTerm ? (
-              <pre>{view === "pretty" ? prettyPrint(currentTerm) : dumpAST(currentTerm)}</pre>
+              view === "pretty"
+                ? <pre>{prettyPrint(currentTerm)}</pre>
+                : <AstView term={currentTerm} />
             ) : (
               <span className="placeholder">parse result will appear here</span>
             )}

@@ -8,8 +8,8 @@
 * [x] Identification of certain normal forms (definitions) for display (replace vars, and compars asts)
 * [x] Make the numbers in the history box line up with max. 4 digits
 * [x] Add evaluation like `e[x:=a]` meaning something like `(\x . e)a`
-* [ ] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
-* [ ] Longer descriptive names in the AST (Application instead of App)
+* [x] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
+* [x] Longer descriptive names in the AST (Application instead of App)
 * [ ] Add unittests
 * [ ] Create grammar display from real grammar (?)
 * [ ] Make limits (steps, display) settable

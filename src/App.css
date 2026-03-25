@@ -201,6 +201,46 @@ textarea:focus { border-color: var(--accent); }
   font-style: italic;
 }
 
+/* ── AST View ── */
+.ast-view {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.ast-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ast-row:hover { background: rgba(255,255,255,0.04); }
+.ast-leaf { cursor: default; }
+.ast-leaf:hover { background: none; }
+
+.ast-toggle {
+  color: var(--accent);
+  font-size: 0.65rem;
+  width: 0.8rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ast-leaf .ast-toggle { color: var(--muted); }
+
+.ast-label { color: var(--text); }
+.ast-name  { color: var(--accent); }
+
+.ast-children {
+  margin-left: 0.9rem;
+  padding-left: 0.7rem;
+  border-left: 1px solid var(--border);
+}
+
 /* ── History ── */
 .history-section {
   display: flex;
