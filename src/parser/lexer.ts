@@ -19,7 +19,15 @@ export const WhiteSpace = createToken({
   group: Lexer.SKIPPED,
 });
 
+// Line comment: # until end of line, skipped
+export const LineComment = createToken({
+  name: "LineComment",
+  pattern: /#[^\n]*/,
+  group: Lexer.SKIPPED,
+});
+
 export const allTokens = [
+  LineComment, // before WhiteSpace so # is matched first
   WhiteSpace,
   Assign,      // must come before Identifier (`:=` is not an identifier but be safe)
   Backslash,
