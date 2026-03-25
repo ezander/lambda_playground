@@ -6,3 +6,7 @@
 * [ ] With the definitions, make line breaks important. I.e. new line means new formula.
 * [ ] Also allow for definitions `f x y ::= e` to mean `f ::= \x y := e`
 * [ ] Add unittests
+* [ ] Add evaluation like `e[x:=a]`
+* [ ] Create grammar display from real grammar (?)
+* [ ] Make limits (steps, display) settable
+* [ ] Identification of certain normal forms for display (replace vars, and compars asts)

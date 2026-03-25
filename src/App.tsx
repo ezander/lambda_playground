@@ -20,6 +20,7 @@ export default function App() {
   const [source, setSource] = useState(EXAMPLES[0].src);
   const [view, setView]     = useState<View>("pretty");
   const [loaded, setLoaded] = useState<Loaded>(null);
+  const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
 
   const parseResult = parse(source);
@@ -33,6 +34,7 @@ export default function App() {
     if (!parseResult.ok) return;
     const term = parseResult.term;
     setLoaded({ term, done: step(term) === null, stepNum: 1 });
+    setLoadedSource(source);
     setHistory([`1: ${prettyPrint(term)}`]);
   }, [parseResult]);
 
@@ -60,7 +62,7 @@ export default function App() {
   const handleStep = useCallback(() => advance(1),    [advance]);
   const handleRun  = useCallback(() => advance(1000), [advance]);
 
-  const canStep = loaded !== null && !loaded.done;
+  const canStep = loaded !== null && !loaded.done && source === loadedSource;
   const currentTerm = parseResult.ok ? parseResult.term : null;
 
   return (
