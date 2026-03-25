@@ -41,7 +41,7 @@ export function assertRoundTrip(term: Term): void {
   const printed = prettyPrint(term);
   const result = parse(printed);
   if (!result.ok) {
-    throw new Error(`round-trip parse failed on "${printed}": ${result.errors.join(", ")}`);
+    throw new Error(`round-trip parse failed on "${printed}": ${result.errors.map(e => e.message).join(", ")}`);
   }
   if (JSON.stringify(result.term) !== JSON.stringify(term)) {
     throw new Error(`round-trip mismatch:\n  original: ${JSON.stringify(term)}\n  reparsed: ${JSON.stringify(result.term)}`);

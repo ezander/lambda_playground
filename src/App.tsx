@@ -97,7 +97,6 @@ export default function App() {
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
-  const [defs, setDefs]               = useState<Map<string, Term>>(new Map());
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
@@ -120,7 +119,6 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const nd = buildNormDefs(d);
-    setDefs(d);
     setNormDefs(nd);
     setLoaded({ term, done: step(term) === null, stepNum: 1 });
     setLoadedSource(source);
@@ -179,7 +177,6 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const nd = buildNormDefs(d);
-    setDefs(d);
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term

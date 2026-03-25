@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Var, Abs, App } from "./ast";
+import { Var, Abs, App, Term } from "./ast";
 import { parse, parseProgram, expandDefs } from "./parser";
 import { prettyPrint } from "./pretty";
 
@@ -92,7 +92,7 @@ describe("parse", () => {
 // ── pretty-printer round-trip ─────────────────────────────────────────────────
 
 describe("prettyPrint round-trip", () => {
-  function roundTrip(term: typeof Var.prototype | ReturnType<typeof Var> | ReturnType<typeof Abs> | ReturnType<typeof App>) {
+  function roundTrip(term: Term) {
     const s = prettyPrint(term);
     const r = parse(s);
     if (!r.ok) throw new Error(`parse failed on "${s}"`);

@@ -22,13 +22,17 @@
 * [x] Where is currently the insertion point?
 * [x] A clear button would be nice
 * [x] shortcuts would also be nice (e.g. f5 for load and run, f10 for step, ...)
+* [x] Add unittests
 
 ## For later
-* [ ] Make limits (steps, display) settable
-* [x] Add unittests
+* [ ] Make limits (steps, display) settable (or smaller?)
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [ ] make identified forms clickable, and go to line
 * [ ] why still abs, app and only rename later??
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 * [ ] think about using := for definitions (like hbr)
+* [ ] save to browser local storage
+* [ ] test also the UI?
+* [ ] put shortcuts directly on buttons?
+* [ ] use better textfield?
 * 
