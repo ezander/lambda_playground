@@ -13,5 +13,5 @@
 * [ ] Add unittests
 * [ ] Create grammar display from real grammar (?)
 * [ ] Make limits (steps, display) settable
-* [ ] Maybe a "load & run" button for directly loading and running the stuff
+* [x] Maybe a "load & run" button for directly loading and running the stuff
 * [ ] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression

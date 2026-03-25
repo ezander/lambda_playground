@@ -73,8 +73,31 @@ export default function App() {
     setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
   }, [loaded, makeEntry]);
 
-  const handleStep = useCallback(() => advance(1),    [advance]);
-  const handleRun  = useCallback(() => advance(1000), [advance]);
+  const handleStep    = useCallback(() => advance(1),    [advance]);
+  const handleRun     = useCallback(() => advance(1000), [advance]);
+  const handleLoadRun = useCallback(() => {
+    if (!programResult.ok || !programResult.expr) return;
+    const term = programResult.expr;
+    const d = programResult.defs;
+    setDefs(d);
+    setLoadedSource(source);
+    // Run immediately from the fresh term
+    const LIMIT = 1000;
+    let current = term;
+    const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, d) }];
+    let i = 0;
+    for (; i < LIMIT; i++) {
+      const next = step(current);
+      if (next === null) break;
+      current = next;
+      entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, d) });
+    }
+    const batchLimitHit = i === LIMIT;
+    if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
+    const stepNum = entries.length;
+    setLoaded({ term: current, done: step(current) === null, stepNum });
+    setHistory(entries.slice(-10).reverse());
+  }, [programResult, source]);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const currentTerm = programResult.expr;
@@ -136,8 +159,9 @@ export default function App() {
           <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
             load
           </button>
-          <button onClick={handleStep} disabled={!canStep}>step</button>
-          <button onClick={handleRun}  disabled={!canStep}>run</button>
+          <button onClick={handleStep}    disabled={!canStep}>step</button>
+          <button onClick={handleRun}     disabled={!canStep}>run</button>
+          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}>load &amp; run</button>
           {loaded?.done && (
             <span className="eval-status normal-form">normal form</span>
           )}
