@@ -12,6 +12,7 @@ import {
   Identifier,
 } from "./lexer";
 import { Term, Var, Abs, App } from "./ast";
+import { normalize, alphaEq } from "../evaluator/eval";
 
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
 //
@@ -130,7 +131,7 @@ const astBuilder = new AstBuilder();
 
 // ── 3. Public parse function ───────────────────────────────────────────────────
 
-export type LambdaError = { message: string; offset?: number };
+export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning" };
 
 export type ParseResult =
   | { ok: true;  term: Term }
@@ -253,6 +254,12 @@ export function parseProgram(input: string): ProgramResult {
       if (params.length > 0)
         body = params.reduceRight((acc, p) => Abs(p, acc), body);
 
+      if (defs.has(name)) {
+        const oldNorm = normalize(defs.get(name)!).term;
+        const newNorm = normalize(body).term;
+        if (!alphaEq(oldNorm, newNorm))
+          errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset: lineOffset, kind: "warning" });
+      }
       defs.set(name, body);
 
     } else {
@@ -273,5 +280,5 @@ export function parseProgram(input: string): ProgramResult {
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.length === 0, errors, defs, expr, rawExpr };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr };
 }

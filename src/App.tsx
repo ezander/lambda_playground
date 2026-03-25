@@ -253,7 +253,10 @@ export default function App() {
               {programResult.errors.map((e, i) => (
                 <li
                   key={i}
-                  className={e.offset !== undefined ? "parse-error-link" : ""}
+                  className={[
+                    e.kind === "warning" ? "parse-warning" : "",
+                    e.offset !== undefined ? "parse-error-link" : "",
+                  ].join(" ").trim()}
                   onClick={() => e.offset !== undefined && jumpTo(e.offset)}
                 >{e.message}</li>
               ))}

@@ -54,6 +54,30 @@ describe("parse", () => {
     expect(r.ok).toBe(true);
   });
 
+  it("allows digit-only identifiers", () => {
+    const r = parse("0");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("0"));
+  });
+
+  it("allows identifiers starting with digits", () => {
+    const r = parse("1st");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("1st"));
+  });
+
+  it("allows mixed alphanumeric identifiers", () => {
+    const r = parse("succ2");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("succ2"));
+  });
+
+  it("parses application of digit identifiers", () => {
+    const r = parse("f 0");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(App(Var("f"), Var("0")));
+  });
+
   it("returns an error for empty input", () => {
     const r = parse("");
     expect(r.ok).toBe(false);
@@ -170,6 +194,19 @@ describe("parseProgram", () => {
     const r = parseProgram("f ::= (");
     expect(r.ok).toBe(false);
     expect(r.errors.length).toBeGreaterThan(0);
+  });
+
+  it("warns on redefinition with different normal form", () => {
+    const r = parseProgram("I ::= \\x. x\nI ::= \\x. x x");
+    expect(r.ok).toBe(true); // warning doesn't block loading
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
+  });
+
+  it("does not warn on redefinition with the same normal form", () => {
+    // \x y. x  and  \a b. a  are alpha-equivalent
+    const r = parseProgram("T ::= \\x y. x\nT ::= \\a b. a");
+    expect(r.ok).toBe(true);
+    expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
   });
 
   it("reports errors with correct absolute offset", () => {

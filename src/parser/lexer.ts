@@ -9,10 +9,10 @@ export const RParen    = createToken({ name: "RParen",    pattern: /\)/ });
 export const LBracket  = createToken({ name: "LBracket",  pattern: /\[/ });
 export const RBracket  = createToken({ name: "RBracket",  pattern: /\]/ });
 
-// Identifier: starts with a letter, then letters/digits/underscores
+// Identifier: any non-empty sequence of letters, digits, underscores
 export const Identifier = createToken({
   name: "Identifier",
-  pattern: /[a-zA-Z][a-zA-Z0-9_]*/,
+  pattern: /[a-zA-Z0-9_]+/,
 });
 
 // Whitespace: skipped
