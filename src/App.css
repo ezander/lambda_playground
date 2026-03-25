@@ -234,7 +234,10 @@ textarea:focus { border-color: var(--accent); }
 
 .history-label {
   color: var(--muted);
-  margin-right: 0.25rem;
+  display: inline-block;
+  width: 3.2rem;
+  text-align: right;
+  margin-right: 0.5rem;
 }
 
 .history-match {
