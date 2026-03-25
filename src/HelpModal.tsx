@@ -60,9 +60,6 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           If a term alpha-matches a definition, the definition name is shown on the right.
         </p>
 
-        <h3>editor tips</h3>
-        <p>Select text and press <code>(</code>, <code>[</code>, <code>{"{"}</code>, or <code>&lt;</code> to wrap the selection in brackets.</p>
-
         <h3>grammar</h3>
         <pre>{`term        ::= application
 application ::= atom+
