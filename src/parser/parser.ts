@@ -3,6 +3,7 @@ import {
   allTokens,
   LambdaLexer,
   Backslash,
+  DefAssign,
   Assign,
   LParen,
   RParen,
@@ -127,4 +128,98 @@ export function parse(input: string): ParseResult {
 
   const term = astBuilder.visit(cst);
   return { ok: true, term };
+}
+
+// ── Definition expansion ───────────────────────────────────────────────────────
+// Replace free occurrences of defined names with their terms.
+// Lambda params shadow definitions.
+
+export function expandDefs(term: Term, defs: Map<string, Term>): Term {
+  switch (term.kind) {
+    case "Var":
+      return defs.has(term.name) ? defs.get(term.name)! : term;
+    case "App":
+      return App(expandDefs(term.func, defs), expandDefs(term.arg, defs));
+    case "Abs": {
+      if (!defs.has(term.param)) return Abs(term.param, expandDefs(term.body, defs));
+      const inner = new Map(defs);
+      inner.delete(term.param);
+      return Abs(term.param, expandDefs(term.body, inner));
+    }
+  }
+}
+
+// ── Program parser ─────────────────────────────────────────────────────────────
+// A program is a sequence of newline-separated lines, each either:
+//   definition:  name param* ::= term
+//   expression:  term
+// Definitions are expanded eagerly into subsequent lines.
+// The last expression is the term to evaluate.
+
+export type ProgramResult = {
+  ok: boolean;
+  errors: string[];
+  defs: Map<string, Term>;
+  expr: Term | null;    // last expression, with defs expanded
+  rawExpr: Term | null; // last expression, before expansion
+};
+
+export function parseProgram(input: string): ProgramResult {
+  const defs = new Map<string, Term>();
+  let expr: Term | null = null;
+  let rawExpr: Term | null = null;
+  const errors: string[] = [];
+
+  for (const rawLine of input.split("\n")) {
+    const { tokens, errors: lexErrors } = LambdaLexer.tokenize(rawLine);
+    if (lexErrors.length > 0) {
+      errors.push(...lexErrors.map((e) => `Lex error: ${e.message}`));
+      continue;
+    }
+    if (tokens.length === 0) continue; // blank or comment-only
+
+    const defIdx = tokens.findIndex((t) => t.tokenType === DefAssign);
+
+    if (defIdx >= 0) {
+      // ── Definition ────────────────────────────────────────────────────────
+      const lhs = tokens.slice(0, defIdx);
+      if (lhs.length === 0 || lhs.some((t) => t.tokenType !== Identifier)) {
+        errors.push(`Definition left-hand side must be identifiers only`);
+        continue;
+      }
+      const [nameToken, ...paramTokens] = lhs;
+      const name   = nameToken.image;
+      const params = paramTokens.map((t) => t.image);
+
+      const rhs = rawLine.slice(tokens[defIdx].startOffset + 3);
+      const bodyResult = parse(rhs);
+      if (!bodyResult.ok) {
+        errors.push(...bodyResult.errors.map((e) => `In definition of '${name}': ${e}`));
+        continue;
+      }
+
+      // Expand known defs in body, excluding params (they shadow defs)
+      const innerDefs = new Map(defs);
+      for (const p of params) innerDefs.delete(p);
+      let body = expandDefs(bodyResult.term, innerDefs);
+
+      // Desugar: f x y ::= e  →  f ::= \x y := e
+      if (params.length > 0)
+        body = params.reduceRight((acc, p) => Abs(p, acc), body);
+
+      defs.set(name, body);
+
+    } else {
+      // ── Expression ────────────────────────────────────────────────────────
+      const result = parse(rawLine);
+      if (!result.ok) {
+        errors.push(...result.errors);
+        continue;
+      }
+      rawExpr = result.term;
+      expr    = expandDefs(result.term, defs);
+    }
+  }
+
+  return { ok: errors.length === 0, errors, defs, expr, rawExpr };
 }

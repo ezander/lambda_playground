@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { parse } from "./parser/parser";
+import { parseProgram } from "./parser/parser";
 import { prettyPrint, dumpAST, assertRoundTrip } from "./parser/pretty";
 import { step } from "./evaluator/eval";
 import { Term } from "./parser/ast";
@@ -23,20 +23,20 @@ export default function App() {
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
 
-  const parseResult = parse(source);
+  const programResult = parseProgram(source);
   let roundTripError: string | null = null;
-  if (parseResult.ok) {
-    try { assertRoundTrip(parseResult.term); }
+  if (programResult.rawExpr) {
+    try { assertRoundTrip(programResult.rawExpr); }
     catch (e) { roundTripError = String(e); }
   }
 
   const handleLoad = useCallback(() => {
-    if (!parseResult.ok) return;
-    const term = parseResult.term;
+    if (!programResult.ok || !programResult.expr) return;
+    const term = programResult.expr;
     setLoaded({ term, done: step(term) === null, stepNum: 1 });
     setLoadedSource(source);
     setHistory([`1: ${prettyPrint(term)}`]);
-  }, [parseResult]);
+  }, [programResult, source]);
 
   const advance = useCallback((maxSteps: number) => {
     if (!loaded || loaded.done) return;
@@ -63,7 +63,7 @@ export default function App() {
   const handleRun  = useCallback(() => advance(1000), [advance]);
 
   const canStep = loaded !== null && !loaded.done && source === loadedSource;
-  const currentTerm = parseResult.ok ? parseResult.term : null;
+  const currentTerm = programResult.expr;
 
   return (
     <div className="app">
@@ -90,14 +90,10 @@ export default function App() {
               </button>
             ))}
           </div>
-          {!parseResult.ok && (
+          {(programResult.errors.length > 0 || roundTripError) && (
             <ul className="parse-errors">
-              {parseResult.errors.map((e, i) => <li key={i}>{e}</li>)}
-            </ul>
-          )}
-          {roundTripError && (
-            <ul className="parse-errors">
-              <li>{roundTripError}</li>
+              {programResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+              {roundTripError && <li>{roundTripError}</li>}
             </ul>
           )}
         </section>
@@ -123,7 +119,7 @@ export default function App() {
 
         {/* ── Controls ── */}
         <div className="eval-controls">
-          <button className="load-btn" onClick={handleLoad} disabled={!parseResult.ok}>
+          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
             load
           </button>
           <button onClick={handleStep} disabled={!canStep}>step</button>

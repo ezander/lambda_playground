@@ -1,8 +1,9 @@
 import { createToken, Lexer } from "chevrotain";
 
 // Tokens - order matters: more specific patterns first
-export const Backslash = createToken({ name: "Backslash", pattern: /\\/ });
-export const Assign    = createToken({ name: "Assign",    pattern: /:=|\./ });
+export const Backslash  = createToken({ name: "Backslash",  pattern: /\\/ });
+export const DefAssign  = createToken({ name: "DefAssign",  pattern: /::=/ }); // before Assign
+export const Assign     = createToken({ name: "Assign",     pattern: /:=|\./ });
 export const LParen    = createToken({ name: "LParen",    pattern: /\(/ });
 export const RParen    = createToken({ name: "RParen",    pattern: /\)/ });
 
@@ -29,6 +30,7 @@ export const LineComment = createToken({
 export const allTokens = [
   LineComment, // before WhiteSpace so # is matched first
   WhiteSpace,
+  DefAssign,   // ::= before := so ::= isn't tokenized as : then :=
   Assign,      // must come before Identifier (`:=` is not an identifier but be safe)
   Backslash,
   LParen,
