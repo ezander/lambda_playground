@@ -25,6 +25,8 @@
 
 ## For later
 * [ ] Make limits (steps, display) settable
-* [ ] Add unittests
+* [x] Add unittests
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [ ] make identified forms clickable, and go to line
+* [ ] why still abs, app and only rename later??
+* 
