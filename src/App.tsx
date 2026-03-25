@@ -183,7 +183,7 @@ export default function App() {
           <pre>{`term        ::= application
 application ::= atom+
 atom        ::= identifier | '(' term ')' | function
-function    ::= '\\' identifier+ ':=' term`}</pre>
+function    ::= '\\' identifier+ (':=' | '.') term`}</pre>
         </div>
       </footer>
     </div>
