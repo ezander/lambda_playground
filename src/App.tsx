@@ -14,18 +14,14 @@ const EXAMPLES = [
 ];
 
 type View = "pretty" | "ast";
-type EvalState =
-  | { phase: "idle" }
-  | { phase: "parsed";   term: Term }
-  | { phase: "stepping"; term: Term; stepCount: number }
-  | { phase: "done";     term: Term; stepCount: number; hitLimit: boolean };
+type Loaded = { term: Term; done: boolean; stepNum: number; hitLimit: boolean } | null;
 
 export default function App() {
-  const [source, setSource]     = useState(EXAMPLES[0].src);
-  const [view, setView]         = useState<View>("pretty");
-  const [evalState, setEvalState] = useState<EvalState>({ phase: "idle" });
+  const [source, setSource] = useState(EXAMPLES[0].src);
+  const [view, setView]     = useState<View>("pretty");
+  const [loaded, setLoaded] = useState<Loaded>(null);
+  const [history, setHistory] = useState<string[]>([]);
 
-  // Parse whenever source changes, resetting eval state
   const parseResult = parse(source);
   let roundTripError: string | null = null;
   if (parseResult.ok) {
@@ -33,63 +29,36 @@ export default function App() {
     catch (e) { roundTripError = String(e); }
   }
 
-  const handleSourceChange = (src: string) => {
-    setSource(src);
-    setEvalState({ phase: "idle" });
-  };
-
-  // Load a parsed term fresh
   const handleLoad = useCallback(() => {
     if (!parseResult.ok) return;
-    setEvalState({ phase: "parsed", term: parseResult.term });
+    const term = parseResult.term;
+    setLoaded({ term, done: step(term) === null, stepNum: 1, hitLimit: false });
+    setHistory([`1: ${prettyPrint(term)}`]);
   }, [parseResult]);
 
-  // Single step
   const handleStep = useCallback(() => {
-    const term =
-      evalState.phase === "parsed"   ? evalState.term :
-      evalState.phase === "stepping" ? evalState.term : null;
-    if (!term) return;
-
-    const stepCount =
-      evalState.phase === "stepping" ? evalState.stepCount : 0;
-
-    const next = step(term);
+    if (!loaded || loaded.done) return;
+    const next = step(loaded.term);
     if (next === null) {
-      setEvalState({ phase: "done", term, stepCount, hitLimit: false });
+      setLoaded({ ...loaded, done: true });
     } else {
-      setEvalState({ phase: "stepping", term: next, stepCount: stepCount + 1 });
+      const newNum = loaded.stepNum + 1;
+      setLoaded({ term: next, done: step(next) === null, stepNum: newNum, hitLimit: false });
+      setHistory(h => [`${newNum}: ${prettyPrint(next)}`, ...h].slice(0, 10));
     }
-  }, [evalState]);
+  }, [loaded]);
 
-  // Run to normal form
   const handleRun = useCallback(() => {
-    const term =
-      evalState.phase === "parsed"   ? evalState.term :
-      evalState.phase === "stepping" ? evalState.term : null;
-    if (!term) return;
+    if (!loaded || loaded.done) return;
+    const result = normalize(loaded.term);
+    const newNum = loaded.stepNum + result.steps;
+    const suffix = result.kind === "stepLimit" ? " (step limit)" : "";
+    setLoaded({ term: result.term, done: true, stepNum: newNum, hitLimit: result.kind === "stepLimit" });
+    setHistory(h => [`${newNum}: ${prettyPrint(result.term)}${suffix}`, ...h].slice(0, 10));
+  }, [loaded]);
 
-    const already = evalState.phase === "stepping" ? evalState.stepCount : 0;
-    const result = normalize(term);
-    const total = already + result.steps;
-
-    setEvalState({
-      phase: "done",
-      term: result.term,
-      stepCount: total,
-      hitLimit: result.kind === "stepLimit",
-    });
-  }, [evalState]);
-
-  // Current term being displayed (in eval panel)
-  const currentTerm =
-    evalState.phase === "idle" ? (parseResult.ok ? parseResult.term : null) :
-    evalState.phase === "parsed"   ? evalState.term :
-    evalState.phase === "stepping" ? evalState.term :
-    evalState.term;
-
-  const canStep = evalState.phase === "parsed" || evalState.phase === "stepping";
-  const isDone  = evalState.phase === "done";
+  const canStep = loaded !== null && !loaded.done;
+  const currentTerm = parseResult.ok ? parseResult.term : null;
 
   return (
     <div className="app">
@@ -105,25 +74,16 @@ export default function App() {
           <textarea
             id="source"
             value={source}
-            onChange={(e) => handleSourceChange(e.target.value)}
+            onChange={(e) => setSource(e.target.value)}
             spellCheck={false}
             rows={4}
           />
-          <div className="toolbar">
-            <div className="examples">
-              {EXAMPLES.map((ex) => (
-                <button key={ex.label} className="ex-btn" onClick={() => handleSourceChange(ex.src)}>
-                  {ex.label}
-                </button>
-              ))}
-            </div>
-            <button
-              className="load-btn"
-              onClick={handleLoad}
-              disabled={!parseResult.ok}
-            >
-              load
-            </button>
+          <div className="examples">
+            {EXAMPLES.map((ex) => (
+              <button key={ex.label} className="ex-btn" onClick={() => setSource(ex.src)}>
+                {ex.label}
+              </button>
+            ))}
           </div>
           {!parseResult.ok && (
             <ul className="parse-errors">
@@ -137,27 +97,7 @@ export default function App() {
           )}
         </section>
 
-        {/* ── Eval controls ── */}
-        <section className="eval-controls">
-          <button onClick={handleStep} disabled={!canStep}>step</button>
-          <button onClick={handleRun}  disabled={!canStep}>run</button>
-          {evalState.phase !== "idle" && (
-            <span className="step-count">
-              {evalState.phase === "stepping" && `${evalState.stepCount} step${evalState.stepCount !== 1 ? "s" : ""}`}
-              {isDone && (
-                <>
-                  {evalState.stepCount} step{evalState.stepCount !== 1 ? "s" : ""}
-                  {" — "}
-                  {evalState.hitLimit
-                    ? <span className="limit-warning">step limit reached</span>
-                    : <span className="normal-form">normal form</span>}
-                </>
-              )}
-            </span>
-          )}
-        </section>
-
-        {/* ── Output ── */}
+        {/* ── Live parse output ── */}
         <section className="output-section">
           <div className="output-tabs">
             <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")}>
@@ -175,6 +115,31 @@ export default function App() {
             )}
           </div>
         </section>
+
+        {/* ── Controls ── */}
+        <div className="eval-controls">
+          <button className="load-btn" onClick={handleLoad} disabled={!parseResult.ok}>
+            load
+          </button>
+          <button onClick={handleStep} disabled={!canStep}>step</button>
+          <button onClick={handleRun}  disabled={!canStep}>run</button>
+          {loaded?.done && (
+            <span className={loaded.hitLimit ? "limit-warning" : "normal-form"}>
+              {loaded.hitLimit ? "step limit reached" : "normal form"}
+            </span>
+          )}
+        </div>
+
+        {/* ── History ── */}
+        {history.length > 0 && (
+          <section className="history-section">
+            {history.map((entry, i) => (
+              <div key={i} className="history-entry">
+                <pre>{entry}</pre>
+              </div>
+            ))}
+          </section>
+        )}
       </main>
 
       <footer>

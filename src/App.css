@@ -78,19 +78,11 @@ textarea {
 }
 textarea:focus { border-color: var(--accent); }
 
-/* ── Toolbar ── */
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.6rem;
-  gap: 1rem;
-}
-
 .examples {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  margin-top: 0.6rem;
 }
 
 .ex-btn {
@@ -209,6 +201,32 @@ textarea:focus { border-color: var(--accent); }
   font-size: 0.8rem;
   color: var(--muted);
   font-style: italic;
+}
+
+/* ── History ── */
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.history-entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  border-radius: 2px;
+}
+
+.history-entry pre {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.history-entry:first-child {
+  border-color: var(--accent);
 }
 
 /* ── Footer ── */

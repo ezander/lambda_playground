@@ -23,13 +23,14 @@ function pp(term: Term, ctx: Context): string {
         body = body.body;
       }
       const s = `\\${params.join(" ")} := ${pp(body, "top")}`;
-      return `(${s})`;
+      return (ctx === "top") ? s : `(${s})`;
     }
 
     case "App": {
       const func = pp(term.func, "appFunc");
       const arg  = pp(term.arg,  "appArg");
-      return `${func} ${arg}`;
+      let s =  `${func} ${arg}`;
+      return (ctx === "top") ? s : `(${s})`;
     }
   }
 }
