@@ -74,6 +74,22 @@ export default function App() {
     setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
   }, [loaded, makeEntry]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "(") {
+      const ta = e.currentTarget;
+      const { selectionStart: start, selectionEnd: end } = ta;
+      if (start !== end) {
+        e.preventDefault();
+        const next = source.slice(0, start) + "(" + source.slice(start, end) + ")" + source.slice(end);
+        setSource(next);
+        requestAnimationFrame(() => {
+          ta.selectionStart = start + 1;
+          ta.selectionEnd   = end + 1;
+        });
+      }
+    }
+  }, [source]);
+
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(1000), [advance]);
   const handleLoadRun = useCallback(() => {
@@ -118,6 +134,7 @@ export default function App() {
             id="source"
             value={source}
             onChange={(e) => setSource(e.target.value)}
+            onKeyDown={handleKeyDown}
             spellCheck={false}
             rows={4}
           />
