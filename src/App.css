@@ -209,22 +209,40 @@ textarea:focus { border-color: var(--accent); }
 }
 
 .history-entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   padding: 0.6rem 1rem;
   border-radius: 2px;
 }
 
-.history-entry pre {
+.history-entry:first-child {
+  border-color: var(--accent);
+}
+
+.history-term {
   font-family: var(--mono);
   font-size: 0.9rem;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
+  flex: 1;
 }
 
-.history-entry:first-child {
-  border-color: var(--accent);
+.history-label {
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+
+.history-match {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── Footer ── */

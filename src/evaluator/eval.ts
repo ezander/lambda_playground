@@ -1,5 +1,27 @@
 import { Term, Var, Abs, App } from "../parser/ast";
 
+// ── Alpha equivalence ─────────────────────────────────────────────────────────
+// Two terms are alpha-equivalent if they differ only in the names of bound variables.
+// Free variables must match exactly.
+
+function canonical(t: Term, bound: Map<string, number>, depth: number): string {
+  switch (t.kind) {
+    case "Var":
+      return bound.has(t.name) ? `#${bound.get(t.name)}` : t.name;
+    case "App":
+      return `@(${canonical(t.func, bound, depth)},${canonical(t.arg, bound, depth)})`;
+    case "Abs": {
+      const nb = new Map(bound);
+      nb.set(t.param, depth);
+      return `λ(${canonical(t.body, nb, depth + 1)})`;
+    }
+  }
+}
+
+export function alphaEq(t1: Term, t2: Term): boolean {
+  return canonical(t1, new Map(), 0) === canonical(t2, new Map(), 0);
+}
+
 // ── Free variables ────────────────────────────────────────────────────────────
 
 export function freeVars(term: Term): Set<string> {

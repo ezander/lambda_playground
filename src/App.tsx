@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { parseProgram } from "./parser/parser";
 import { prettyPrint, dumpAST, assertRoundTrip } from "./parser/pretty";
-import { step } from "./evaluator/eval";
+import { step, alphaEq } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
 
@@ -15,13 +15,20 @@ const EXAMPLES = [
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number } | null;
+type HistoryEntry = { label: string; text: string; match?: string };
+
+function findMatch(term: Term, defs: Map<string, Term>): string | undefined {
+  for (const [name, defTerm] of defs)
+    if (alphaEq(term, defTerm)) return name;
+}
 
 export default function App() {
-  const [source, setSource] = useState(EXAMPLES[0].src);
-  const [view, setView]     = useState<View>("pretty");
-  const [loaded, setLoaded] = useState<Loaded>(null);
+  const [source, setSource]           = useState(EXAMPLES[0].src);
+  const [view, setView]               = useState<View>("pretty");
+  const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
+  const [defs, setDefs]               = useState<Map<string, Term>>(new Map());
+  const [history, setHistory]         = useState<HistoryEntry[]>([]);
 
   const programResult = parseProgram(source);
   let roundTripError: string | null = null;
@@ -30,39 +37,46 @@ export default function App() {
     catch (e) { roundTripError = String(e); }
   }
 
+  const makeEntry = useCallback((term: Term, stepNum: number, suffix = ""): HistoryEntry => ({
+    label: `${stepNum}:`,
+    text: prettyPrint(term) + suffix,
+    match: findMatch(term, defs),
+  }), [defs]);
+
   const handleLoad = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
+    const d = programResult.defs;
+    setDefs(d);
     setLoaded({ term, done: step(term) === null, stepNum: 1 });
     setLoadedSource(source);
-    setHistory([`1: ${prettyPrint(term)}`]);
+    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, d) }]);
   }, [programResult, source]);
 
   const advance = useCallback((maxSteps: number) => {
     if (!loaded || loaded.done) return;
     let current = loaded.term;
     let stepNum = loaded.stepNum;
-    const entries: string[] = [];
+    const entries: HistoryEntry[] = [];
     let i = 0;
     for (; i < maxSteps; i++) {
       const next = step(current);
       if (next === null) break;
       current = next;
-      entries.push(`${++stepNum}: ${prettyPrint(current)}`);
+      entries.push(makeEntry(current, ++stepNum));
     }
     const batchLimitHit = i === maxSteps && maxSteps > 1;
+    if (batchLimitHit && entries.length > 0)
+      entries[entries.length - 1].text += " (paused)";
     const done = step(current) === null;
-    const labeled = entries.map((e, j) =>
-      j === entries.length - 1 && batchLimitHit ? e + " (paused)" : e
-    );
     setLoaded({ term: current, done, stepNum });
-    setHistory(h => [...labeled.slice(-10).reverse(), ...h].slice(0, 10));
-  }, [loaded]);
+    setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
+  }, [loaded, makeEntry]);
 
   const handleStep = useCallback(() => advance(1),    [advance]);
   const handleRun  = useCallback(() => advance(1000), [advance]);
 
-  const canStep = loaded !== null && !loaded.done && source === loadedSource;
+  const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const currentTerm = programResult.expr;
 
   return (
@@ -134,7 +148,11 @@ export default function App() {
           <section className="history-section">
             {history.map((entry, i) => (
               <div key={i} className="history-entry">
-                <pre>{entry}</pre>
+                <code className="history-term">
+                  <span className="history-label">{entry.label}</span>
+                  {" "}{entry.text}
+                </code>
+                {entry.match && <span className="history-match">{entry.match}</span>}
               </div>
             ))}
           </section>
