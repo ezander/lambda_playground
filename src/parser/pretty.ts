@@ -1,4 +1,5 @@
 import { Term } from "./ast";
+import { parse } from "./parser";
 
 // Pretty-print a Term back to surface syntax.
 // Multi-param lambdas are re-compressed: \x := \y := body  →  \x y := body
@@ -22,7 +23,6 @@ function pp(term: Term, ctx: Context): string {
         body = body.body;
       }
       const s = `\\${params.join(" ")} := ${pp(body, "top")}`;
-      // return ctx === "appArg" ? `(${s})` : s;
       return `(${s})`;
     }
 
@@ -31,6 +31,19 @@ function pp(term: Term, ctx: Context): string {
       const arg  = pp(term.arg,  "appArg");
       return `${func} ${arg}`;
     }
+  }
+}
+
+// Assert that pretty-printing and re-parsing yields the same AST.
+// Throws if the round-trip fails — surfaces as a bug in the pretty-printer.
+export function assertRoundTrip(term: Term): void {
+  const printed = prettyPrint(term);
+  const result = parse(printed);
+  if (!result.ok) {
+    throw new Error(`round-trip parse failed on "${printed}": ${result.errors.join(", ")}`);
+  }
+  if (JSON.stringify(result.term) !== JSON.stringify(term)) {
+    throw new Error(`round-trip mismatch:\n  original: ${JSON.stringify(term)}\n  reparsed: ${JSON.stringify(result.term)}`);
   }
 }
 

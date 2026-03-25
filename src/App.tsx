@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { parse } from "./parser/parser";
-import { prettyPrint, dumpAST } from "./parser/pretty";
+import { prettyPrint, dumpAST, assertRoundTrip } from "./parser/pretty";
 import { step, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
@@ -27,6 +27,11 @@ export default function App() {
 
   // Parse whenever source changes, resetting eval state
   const parseResult = parse(source);
+  let roundTripError: string | null = null;
+  if (parseResult.ok) {
+    try { assertRoundTrip(parseResult.term); }
+    catch (e) { roundTripError = String(e); }
+  }
 
   const handleSourceChange = (src: string) => {
     setSource(src);
@@ -123,6 +128,11 @@ export default function App() {
           {!parseResult.ok && (
             <ul className="parse-errors">
               {parseResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          )}
+          {roundTripError && (
+            <ul className="parse-errors">
+              <li>{roundTripError}</li>
             </ul>
           )}
         </section>
