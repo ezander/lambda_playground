@@ -18,8 +18,12 @@ function canonical(t: Term, bound: Map<string, number>, depth: number): string {
   }
 }
 
+export function canonicalForm(t: Term): string {
+  return canonical(t, new Map(), 0);
+}
+
 export function alphaEq(t1: Term, t2: Term): boolean {
-  return canonical(t1, new Map(), 0) === canonical(t2, new Map(), 0);
+  return canonicalForm(t1) === canonicalForm(t2);
 }
 
 // ── Free variables ────────────────────────────────────────────────────────────

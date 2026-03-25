@@ -16,8 +16,15 @@
 * [x] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression
 * [x] Better examples or "clickable" definitions
 * [x] Better locate parser errors (clickable?)
+* [x] For the "matching display": a) display all matching definitions, separated by comma b) reduce both completely to normal form such that `add one one` displays `two` then two is `succ succ zero`
+* [ ] also allow 0, 1, ... as identifiers, we don't have numbers anyway, so why not, mean identifier can be any combi of digits and letters and stuff
+* [ ] Shall we give a warning or error when there are redefinitions and normal forms differ?
+* [ ] Where is currently the insertion point?
+* [ ] clear button would be nice
+* [ ] shortcuts would also be nice (e.g. f5 for load and run, f10 for step, ...)
 
 ## For later
 * [ ] Make limits (steps, display) settable
 * [ ] Add unittests
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
+* [ ] make identified forms clickable, and go to line

@@ -3,7 +3,7 @@ import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
-import { step, alphaEq } from "./evaluator/eval";
+import { step, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
 
@@ -75,9 +75,19 @@ type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number } | null;
 type HistoryEntry = { label: string; text: string; match?: string };
 
-function findMatch(term: Term, defs: Map<string, Term>): string | undefined {
-  for (const [name, defTerm] of defs)
-    if (alphaEq(term, defTerm)) return name;
+function buildNormDefs(defs: Map<string, Term>): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const [name, term] of defs)
+    m.set(name, canonicalForm(normalize(term).term));
+  return m;
+}
+
+function findMatch(term: Term, nd: Map<string, string>): string | undefined {
+  const key = canonicalForm(term);
+  const matches: string[] = [];
+  for (const [name, canon] of nd)
+    if (key === canon) matches.push(name);
+  return matches.length > 0 ? matches.join(", ") : undefined;
 }
 
 export default function App() {
@@ -88,6 +98,7 @@ export default function App() {
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [defs, setDefs]               = useState<Map<string, Term>>(new Map());
+  const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
 
   const programResult = parseProgram(source);
@@ -100,17 +111,19 @@ export default function App() {
   const makeEntry = useCallback((term: Term, stepNum: number, suffix = ""): HistoryEntry => ({
     label: `${stepNum}:`,
     text: prettyPrint(term) + suffix,
-    match: findMatch(term, defs),
-  }), [defs]);
+    match: findMatch(term, normDefs),
+  }), [normDefs]);
 
   const handleLoad = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
+    const nd = buildNormDefs(d);
     setDefs(d);
+    setNormDefs(nd);
     setLoaded({ term, done: step(term) === null, stepNum: 1 });
     setLoadedSource(source);
-    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, d) }]);
+    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }]);
   }, [programResult, source]);
 
   const advance = useCallback((maxSteps: number) => {
@@ -164,18 +177,20 @@ export default function App() {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
+    const nd = buildNormDefs(d);
     setDefs(d);
+    setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term
     const LIMIT = 1000;
     let current = term;
-    const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, d) }];
+    const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }];
     let i = 0;
     for (; i < LIMIT; i++) {
       const next = step(current);
       if (next === null) break;
       current = next;
-      entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, d) });
+      entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, nd) });
     }
     const batchLimitHit = i === LIMIT;
     if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
