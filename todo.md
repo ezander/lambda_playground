@@ -14,7 +14,7 @@
 * [x] Longer descriptive names in the AST (Application instead of App)
 * [x] Maybe a "load & run" button for directly loading and running the stuff
 * [x] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression
-* [ ] Better examples or "clickable" definitions
+* [x] Better examples or "clickable" definitions
 * [x] Better locate parser errors (clickable?)
 
 ## For later

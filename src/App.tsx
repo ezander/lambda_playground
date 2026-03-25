@@ -8,12 +8,68 @@ import { Term } from "./parser/ast";
 import "./App.css";
 
 const EXAMPLES = [
-  { label: "identity",     src: "(\\x := x) y" },
-  { label: "K combinator", src: "(\\x y := x) a b" },
-  { label: "S combinator", src: "(\\f g x := f x (g x)) (\\x y := x) (\\x := x) z" },
-  { label: "church true",  src: "(\\t f := t) a b" },
-  { label: "church false", src: "(\\t f := f) a b" },
+  { label: "booleans", src:
+`# Church booleans
+true    ::= \\x y. x
+false   ::= \\x y. y
+not p   ::= p false true
+and p q ::= p q false
+or  p q ::= p true q
+
+and (not false) true` },
+  { label: "SKI", src:
+`# SKI combinators
+I     ::= \\x. x
+K     ::= \\x y. x
+S f g x ::= f x (g x)
+
+# S K K reduces to I
+S K K z` },
+  { label: "numerals", src:
+`# Church numerals
+zero    ::= \\f x. x
+succ  n f x ::= f (n f x)
+plus  m n f x ::= m f (n f x)
+one   ::= succ zero
+two   ::= succ one
+three ::= succ two
+
+plus two three` },
+  { label: "Y combinator", src:
+`# Y combinator — diverges without a lazy argument
+Y   ::= \\f. (\\x. f (x x)) (\\x. f (x x))
+I   ::= \\x. x
+
+# Y I diverges; step carefully
+Y I` },
 ];
+
+const SNIPPETS: { label: string; def: string }[] = [
+  { label: "I",     def: "I       ::= \\x. x" },
+  { label: "K",     def: "K       ::= \\x y. x" },
+  { label: "S",     def: "S f g x ::= f x (g x)" },
+  { label: "true",  def: "true    ::= \\x y. x" },
+  { label: "false", def: "false   ::= \\x y. y" },
+  { label: "not",   def: "not p   ::= p false true" },
+  { label: "and",   def: "and p q ::= p q false" },
+  { label: "or",    def: "or  p q ::= p true q" },
+  { label: "zero",  def: "zero    ::= \\f x. x" },
+  { label: "succ",  def: "succ  n f x ::= f (n f x)" },
+  { label: "plus",  def: "plus  m n f x ::= m f (n f x)" },
+  { label: "Y",     def: "Y       ::= \\f. (\\x. f (x x)) (\\x. f (x x))" },
+];
+
+function insertSnippet(source: string, def: string): string {
+  const lines = source.split("\n");
+  // Insert before the last non-empty, non-comment, non-definition line
+  let insertAt = lines.length;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].replace(/#.*$/, "").trim();
+    if (line && !line.includes("::=")) { insertAt = i; break; }
+  }
+  lines.splice(insertAt, 0, def);
+  return lines.join("\n");
+}
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number } | null;
@@ -27,7 +83,7 @@ function findMatch(term: Term, defs: Map<string, Term>): string | undefined {
 export default function App() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showHelp, setShowHelp]       = useState(false);
-  const [source, setSource]           = useState(EXAMPLES[0].src);
+  const [source, setSource]           = useState(EXAMPLES[0].src.trimStart());
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
@@ -155,14 +211,27 @@ export default function App() {
             onChange={(e) => setSource(e.target.value)}
             onKeyDown={handleKeyDown}
             spellCheck={false}
-            rows={4}
+            rows={8}
           />
-          <div className="examples">
-            {EXAMPLES.map((ex) => (
-              <button key={ex.label} className="ex-btn" onClick={() => setSource(ex.src)}>
-                {ex.label}
-              </button>
-            ))}
+          <div className="example-row">
+            <span className="row-label">examples</span>
+            <div className="btn-group">
+              {EXAMPLES.map((ex) => (
+                <button key={ex.label} className="ex-btn" onClick={() => setSource(ex.src.trimStart())}>
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="example-row">
+            <span className="row-label">insert</span>
+            <div className="btn-group">
+              {SNIPPETS.map((s) => (
+                <button key={s.label} className="ex-btn snippet-btn" onClick={() => setSource(src => insertSnippet(src, s.def))}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
           {(programResult.errors.length > 0 || roundTripError) && (
             <ul className="parse-errors">
