@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { parse } from "./parser/parser";
 import { prettyPrint, dumpAST, assertRoundTrip } from "./parser/pretty";
-import { step, normalize } from "./evaluator/eval";
+import { step } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import "./App.css";
 
@@ -14,7 +14,7 @@ const EXAMPLES = [
 ];
 
 type View = "pretty" | "ast";
-type Loaded = { term: Term; done: boolean; stepNum: number; hitLimit: boolean } | null;
+type Loaded = { term: Term; done: boolean; stepNum: number } | null;
 
 export default function App() {
   const [source, setSource] = useState(EXAMPLES[0].src);
@@ -32,30 +32,33 @@ export default function App() {
   const handleLoad = useCallback(() => {
     if (!parseResult.ok) return;
     const term = parseResult.term;
-    setLoaded({ term, done: step(term) === null, stepNum: 1, hitLimit: false });
+    setLoaded({ term, done: step(term) === null, stepNum: 1 });
     setHistory([`1: ${prettyPrint(term)}`]);
   }, [parseResult]);
 
-  const handleStep = useCallback(() => {
+  const advance = useCallback((maxSteps: number) => {
     if (!loaded || loaded.done) return;
-    const next = step(loaded.term);
-    if (next === null) {
-      setLoaded({ ...loaded, done: true });
-    } else {
-      const newNum = loaded.stepNum + 1;
-      setLoaded({ term: next, done: step(next) === null, stepNum: newNum, hitLimit: false });
-      setHistory(h => [`${newNum}: ${prettyPrint(next)}`, ...h].slice(0, 10));
+    let current = loaded.term;
+    let stepNum = loaded.stepNum;
+    const entries: string[] = [];
+    let i = 0;
+    for (; i < maxSteps; i++) {
+      const next = step(current);
+      if (next === null) break;
+      current = next;
+      entries.push(`${++stepNum}: ${prettyPrint(current)}`);
     }
+    const batchLimitHit = i === maxSteps && maxSteps > 1;
+    const done = step(current) === null;
+    const labeled = entries.map((e, j) =>
+      j === entries.length - 1 && batchLimitHit ? e + " (paused)" : e
+    );
+    setLoaded({ term: current, done, stepNum });
+    setHistory(h => [...labeled.slice(-10).reverse(), ...h].slice(0, 10));
   }, [loaded]);
 
-  const handleRun = useCallback(() => {
-    if (!loaded || loaded.done) return;
-    const result = normalize(loaded.term);
-    const newNum = loaded.stepNum + result.steps;
-    const suffix = result.kind === "stepLimit" ? " (step limit)" : "";
-    setLoaded({ term: result.term, done: true, stepNum: newNum, hitLimit: result.kind === "stepLimit" });
-    setHistory(h => [`${newNum}: ${prettyPrint(result.term)}${suffix}`, ...h].slice(0, 10));
-  }, [loaded]);
+  const handleStep = useCallback(() => advance(1),    [advance]);
+  const handleRun  = useCallback(() => advance(1000), [advance]);
 
   const canStep = loaded !== null && !loaded.done;
   const currentTerm = parseResult.ok ? parseResult.term : null;
@@ -124,9 +127,7 @@ export default function App() {
           <button onClick={handleStep} disabled={!canStep}>step</button>
           <button onClick={handleRun}  disabled={!canStep}>run</button>
           {loaded?.done && (
-            <span className={loaded.hitLimit ? "limit-warning" : "normal-form"}>
-              {loaded.hitLimit ? "step limit reached" : "normal form"}
-            </span>
+            <span className="eval-status normal-form">normal form</span>
           )}
         </div>
 

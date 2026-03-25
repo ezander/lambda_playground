@@ -149,14 +149,12 @@ textarea:focus { border-color: var(--accent); }
 }
 .eval-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.step-count {
+.eval-status {
   font-family: var(--mono);
   font-size: 0.78rem;
-  color: var(--muted);
   margin-left: 0.4rem;
 }
-.normal-form  { color: var(--ok); }
-.limit-warning { color: var(--warn); }
+.normal-form { color: var(--ok); }
 
 /* ── Output ── */
 .output-section { display: flex; flex-direction: column; }
