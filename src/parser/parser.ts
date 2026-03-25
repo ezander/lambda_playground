@@ -153,8 +153,10 @@ export function parse(input: string): ParseResult {
     return {
       ok: false,
       errors: parser.errors.map((e) => ({
-        message: `Parse error at '${e.token.image}': ${e.message}`,
-        offset: e.token.startOffset,
+        message: e.token.image
+          ? `Parse error at '${e.token.image}': ${e.message}`
+          : `Parse error: ${e.message}`,
+        offset: e.token.image ? e.token.startOffset : undefined,
       })),
     };
   }
