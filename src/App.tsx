@@ -77,12 +77,14 @@ export default function App() {
   }, [loaded, makeEntry]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "(") {
+    const pairs: Record<string, string> = { "(": ")", "[": "]", "{": "}", "<": ">" };
+    const close = pairs[e.key];
+    if (close) {
       const ta = e.currentTarget;
       const { selectionStart: start, selectionEnd: end } = ta;
       if (start !== end) {
         e.preventDefault();
-        const next = source.slice(0, start) + "(" + source.slice(start, end) + ")" + source.slice(end);
+        const next = source.slice(0, start) + e.key + source.slice(start, end) + close + source.slice(end);
         setSource(next);
         requestAnimationFrame(() => {
           ta.selectionStart = start + 1;

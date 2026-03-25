@@ -61,7 +61,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </p>
 
         <h3>editor tips</h3>
-        <p>Select text and press <code>(</code> to wrap it in parentheses.</p>
+        <p>Select text and press <code>(</code>, <code>[</code>, <code>{"{"}</code>, or <code>&lt;</code> to wrap the selection in brackets.</p>
 
         <h3>grammar</h3>
         <pre>{`term        ::= application
