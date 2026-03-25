@@ -1,3 +1,5 @@
+## Todos
+
 * [x] For the pretty-printer, assert that when re-parsing the pretty-printed version it is the same as the original AST
 * [x] Make everything after `#` a comment until the end of the line
 * [x] Also allow `.` instead of `::=` having the same meaning.
@@ -10,10 +12,12 @@
 * [x] Add evaluation like `e[x:=a]` meaning something like `(\x . e)a`
 * [x] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
 * [x] Longer descriptive names in the AST (Application instead of App)
-* [ ] Add unittests
-* [~] Create grammar display from real grammar (?) — not worth it, update manually
-* [ ] Make limits (steps, display) settable
 * [x] Maybe a "load & run" button for directly loading and running the stuff
 * [x] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression
 * [ ] Better examples or "clickable" definitions
-* 
+* [x] Better locate parser errors (clickable?)
+
+## For later
+* [ ] Make limits (steps, display) settable
+* [ ] Add unittests
+* [~] Create grammar display from real grammar (?) — not worth it, update manually

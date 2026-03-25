@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
@@ -25,6 +25,7 @@ function findMatch(term: Term, defs: Map<string, Term>): string | undefined {
 }
 
 export default function App() {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showHelp, setShowHelp]       = useState(false);
   const [source, setSource]           = useState(EXAMPLES[0].src);
   const [view, setView]               = useState<View>("pretty");
@@ -75,6 +76,13 @@ export default function App() {
     setLoaded({ term: current, done, stepNum });
     setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
   }, [loaded, makeEntry]);
+
+  const jumpTo = useCallback((offset: number) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(offset, offset);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const pairs: Record<string, string> = { "(": ")", "[": "]", "{": "}", "<": ">" };
@@ -141,6 +149,7 @@ export default function App() {
         <section className="editor-section">
           <label htmlFor="source">expression</label>
           <textarea
+            ref={textareaRef}
             id="source"
             value={source}
             onChange={(e) => setSource(e.target.value)}
@@ -157,7 +166,13 @@ export default function App() {
           </div>
           {(programResult.errors.length > 0 || roundTripError) && (
             <ul className="parse-errors">
-              {programResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+              {programResult.errors.map((e, i) => (
+                <li
+                  key={i}
+                  className={e.offset !== undefined ? "parse-error-link" : ""}
+                  onClick={() => e.offset !== undefined && jumpTo(e.offset)}
+                >{e.message}</li>
+              ))}
               {roundTripError && <li>{roundTripError}</li>}
             </ul>
           )}

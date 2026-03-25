@@ -146,6 +146,11 @@ textarea:focus { border-color: var(--accent); }
   color: var(--warn);
   line-height: 1.7;
 }
+.parse-error-link {
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.parse-error-link:hover { text-decoration: underline; }
 
 /* ── Eval controls ── */
 .eval-controls {

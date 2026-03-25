@@ -130,9 +130,11 @@ const astBuilder = new AstBuilder();
 
 // ── 3. Public parse function ───────────────────────────────────────────────────
 
+export type LambdaError = { message: string; offset?: number };
+
 export type ParseResult =
   | { ok: true;  term: Term }
-  | { ok: false; errors: string[] };
+  | { ok: false; errors: LambdaError[] };
 
 export function parse(input: string): ParseResult {
   const { tokens, errors: lexErrors } = LambdaLexer.tokenize(input);
@@ -140,7 +142,7 @@ export function parse(input: string): ParseResult {
   if (lexErrors.length > 0) {
     return {
       ok: false,
-      errors: lexErrors.map((e) => `Lex error: ${e.message}`),
+      errors: lexErrors.map((e) => ({ message: `Lex error: ${e.message}`, offset: e.offset })),
     };
   }
 
@@ -150,9 +152,10 @@ export function parse(input: string): ParseResult {
   if (parser.errors.length > 0) {
     return {
       ok: false,
-      errors: parser.errors.map(
-        (e) => `Parse error at '${e.token.image}': ${e.message}`
-      ),
+      errors: parser.errors.map((e) => ({
+        message: `Parse error at '${e.token.image}': ${e.message}`,
+        offset: e.token.startOffset,
+      })),
     };
   }
 
@@ -188,7 +191,7 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 
 export type ProgramResult = {
   ok: boolean;
-  errors: string[];
+  errors: LambdaError[];
   defs: Map<string, Term>;
   expr: Term | null;    // last expression, with defs expanded
   rawExpr: Term | null; // last expression, before expansion
@@ -198,15 +201,20 @@ export function parseProgram(input: string): ProgramResult {
   const defs = new Map<string, Term>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
-  const errors: string[] = [];
+  const errors: LambdaError[] = [];
+  let lineOffset = 0;
 
   for (const rawLine of input.split("\n")) {
     const { tokens, errors: lexErrors } = LambdaLexer.tokenize(rawLine);
     if (lexErrors.length > 0) {
-      errors.push(...lexErrors.map((e) => `Lex error: ${e.message}`));
+      errors.push(...lexErrors.map((e) => ({
+        message: `Lex error: ${e.message}`,
+        offset: lineOffset + e.offset,
+      })));
+      lineOffset += rawLine.length + 1;
       continue;
     }
-    if (tokens.length === 0) continue; // blank or comment-only
+    if (tokens.length === 0) { lineOffset += rawLine.length + 1; continue; }
 
     const defIdx = tokens.findIndex((t) => t.tokenType === DefAssign);
 
@@ -214,17 +222,23 @@ export function parseProgram(input: string): ProgramResult {
       // ── Definition ────────────────────────────────────────────────────────
       const lhs = tokens.slice(0, defIdx);
       if (lhs.length === 0 || lhs.some((t) => t.tokenType !== Identifier)) {
-        errors.push(`Definition left-hand side must be identifiers only`);
+        errors.push({ message: `Definition left-hand side must be identifiers only`, offset: lineOffset });
+        lineOffset += rawLine.length + 1;
         continue;
       }
       const [nameToken, ...paramTokens] = lhs;
       const name   = nameToken.image;
       const params = paramTokens.map((t) => t.image);
 
-      const rhs = rawLine.slice(tokens[defIdx].startOffset + 3);
+      const rhsStart = tokens[defIdx].startOffset + 3;
+      const rhs = rawLine.slice(rhsStart);
       const bodyResult = parse(rhs);
       if (!bodyResult.ok) {
-        errors.push(...bodyResult.errors.map((e) => `In definition of '${name}': ${e}`));
+        errors.push(...bodyResult.errors.map((e) => ({
+          message: `In definition of '${name}': ${e.message}`,
+          offset: e.offset !== undefined ? lineOffset + rhsStart + e.offset : lineOffset,
+        })));
+        lineOffset += rawLine.length + 1;
         continue;
       }
 
@@ -243,12 +257,18 @@ export function parseProgram(input: string): ProgramResult {
       // ── Expression ────────────────────────────────────────────────────────
       const result = parse(rawLine);
       if (!result.ok) {
-        errors.push(...result.errors);
+        errors.push(...result.errors.map((e) => ({
+          message: e.message,
+          offset: e.offset !== undefined ? lineOffset + e.offset : undefined,
+        })));
+        lineOffset += rawLine.length + 1;
         continue;
       }
       rawExpr = result.term;
       expr    = expandDefs(result.term, defs);
     }
+
+    lineOffset += rawLine.length + 1;
   }
 
   return { ok: errors.length === 0, errors, defs, expr, rawExpr };
