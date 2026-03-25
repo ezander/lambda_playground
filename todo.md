@@ -5,13 +5,13 @@
 * [x] Definitions, e.g. `true ::= (\x y. x)` and later use `true x y` in formulas.
 * [x] With the definitions, make line breaks important. I.e. new line means new formula.
 * [x] Also allow for definitions `f x y ::= e` to mean `f ::= \x y := e`
-* [ ] Identification of certain normal forms (definitions) for display (replace vars, and compars asts)
-* [ ] Make the numbers in the history box line up with max. 4 digits
-* [ ] Add evaluation like `e[x:=a]` meaning something like `(\x . e)a`
+* [x] Identification of certain normal forms (definitions) for display (replace vars, and compars asts)
+* [x] Make the numbers in the history box line up with max. 4 digits
+* [x] Add evaluation like `e[x:=a]` meaning something like `(\x . e)a`
+* [ ] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
+* [ ] Longer descriptive names in the AST (Application instead of App)
 * [ ] Add unittests
 * [ ] Create grammar display from real grammar (?)
 * [ ] Make limits (steps, display) settable
-* [ ] Improve AST display (maybe with bars, better visualization what belongs to what, maybe expandable with triangles)
-* [ ] Maybe a "load & run" button
-* [ ] In the textbox: select and parenthesize/bracket expression
-* [ ] Longer descriptive names in the AST
+* [ ] Maybe a "load & run" button for directly loading and running the stuff
+* [ ] In the textbox i want to be able to select text and when i hit '(' parenthesize/bracket the whole selected expression

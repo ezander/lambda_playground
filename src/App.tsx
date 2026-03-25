@@ -164,7 +164,8 @@ export default function App() {
           <h2>grammar</h2>
           <pre>{`term        ::= application
 application ::= atom+
-atom        ::= identifier | '(' term ')' | function
+atom        ::= primary ('[' identifier ':=' term ']')*
+primary     ::= identifier | '(' term ')' | function
 function    ::= '\\' identifier+ (':=' | '.') term`}</pre>
         </div>
       </footer>

@@ -6,6 +6,8 @@ export const DefAssign  = createToken({ name: "DefAssign",  pattern: /::=/ }); /
 export const Assign     = createToken({ name: "Assign",     pattern: /:=|\./ });
 export const LParen    = createToken({ name: "LParen",    pattern: /\(/ });
 export const RParen    = createToken({ name: "RParen",    pattern: /\)/ });
+export const LBracket  = createToken({ name: "LBracket",  pattern: /\[/ });
+export const RBracket  = createToken({ name: "RBracket",  pattern: /\]/ });
 
 // Identifier: starts with a letter, then letters/digits/underscores
 export const Identifier = createToken({
@@ -35,6 +37,8 @@ export const allTokens = [
   Backslash,
   LParen,
   RParen,
+  LBracket,
+  RBracket,
   Identifier,
 ];
 

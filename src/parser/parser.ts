@@ -7,6 +7,8 @@ import {
   Assign,
   LParen,
   RParen,
+  LBracket,
+  RBracket,
   Identifier,
 } from "./lexer";
 import { Term, Var, Abs, App } from "./ast";
@@ -14,11 +16,10 @@ import { Term, Var, Abs, App } from "./ast";
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
 //
 //   term        ::= application
-//   application ::= atom+            (left-associative fold)
-//   atom        ::= Identifier
-//                 | '(' term ')'
-//                 | function
-//   function    ::= '\' Identifier+ ':=' term
+//   application ::= atom+                       (left-associative fold)
+//   atom        ::= primary ('[' Identifier ':=' term ']')*
+//   primary     ::= Identifier | '(' term ')' | function
+//   function    ::= '\' Identifier+ (':='|'.') term
 
 class LambdaParser extends CstParser {
   constructor() {
@@ -37,6 +38,11 @@ class LambdaParser extends CstParser {
   });
 
   atom = this.RULE("atom", () => {
+    this.SUBRULE(this.primary);
+    this.MANY(() => this.SUBRULE(this.subst));
+  });
+
+  primary = this.RULE("primary", () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.func) },
       { ALT: () => this.CONSUME(Identifier) },
@@ -48,6 +54,14 @@ class LambdaParser extends CstParser {
         },
       },
     ]);
+  });
+
+  subst = this.RULE("subst", () => {
+    this.CONSUME(LBracket);
+    this.CONSUME(Identifier);
+    this.CONSUME(Assign);
+    this.SUBRULE(this.term);
+    this.CONSUME(RBracket);
   });
 
   func = this.RULE("func", () => {
@@ -83,9 +97,25 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   atom(ctx: any): Term {
+    let base: Term = this.visit(ctx.primary);
+    for (const s of (ctx.subst ?? [])) {
+      const { param, arg } = this.visit(s) as { param: string; arg: Term };
+      base = App(Abs(param, base), arg);
+    }
+    return base;
+  }
+
+  primary(ctx: any): Term {
     if (ctx.func)       return this.visit(ctx.func);
     if (ctx.Identifier) return Var((ctx.Identifier[0] as IToken).image);
     return this.visit(ctx.term);
+  }
+
+  subst(ctx: any): { param: string; arg: Term } {
+    return {
+      param: (ctx.Identifier[0] as IToken).image,
+      arg:   this.visit(ctx.term),
+    };
   }
 
   func(ctx: any): Term {
