@@ -35,24 +35,26 @@
 * [x] Maybe we need eta-reduction?
 * [x] what about ; for multiline defs?
 * [x] tool tips over buttons
+* [x] recheck all tests and coverage
 
 ## For later or to consider
 
 * [ ] improve examples and inserts, maybe complete remove examples. therefore inserts can be multiline, - church booleans, church numerals, std combinators, pairs, list
-* [ ] maybe also a download button, to get the text as plain text file
-* [ ] ability to save and retrieve under different names in local storage 
+* [x] maybe also a download button, to get the text as plain text file
+* [x] ability to save and retrieve under different names in local storage
  
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] Make limits (steps, display) settable (or smaller?)
  
-* [ ] recheck all tests and coverage
 * [ ] think about greek vars for identifiers (but exclude some with specific meaning like lambda)
+
+
 ## Not approved
 
-* [ ] test also the UI?
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 * [ ] make identified forms clickable, and go to line
 * [ ] remove grammar and link from main page and just leave in help?
 * [ ] think about using `:=` for definitions (like hbr)
 * [ ] why still abs, app and only rename later??
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
+* [~] test also the UI?
