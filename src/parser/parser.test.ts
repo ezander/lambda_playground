@@ -200,6 +200,26 @@ describe("parseProgram", () => {
     expect(r.expr).toEqual(Var("x"));
   });
 
+  it("treats semicolons as statement separators", () => {
+    const r = parseProgram("I ::= \\x. x; I");
+    expect(r.ok).toBe(true);
+    expect(r.expr).toEqual(Abs("x", Var("x")));
+  });
+
+  it("allows multiple definitions on one line with semicolons", () => {
+    const r = parseProgram("K ::= \\x y. x; I ::= \\x. x; K");
+    expect(r.ok).toBe(true);
+    expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
+    expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
+    expect(r.expr).toEqual(Abs("x", Abs("y", Var("x"))));
+  });
+
+  it("ignores trailing semicolons", () => {
+    const r = parseProgram("x;");
+    expect(r.ok).toBe(true);
+    expect(r.expr).toEqual(Var("x"));
+  });
+
   it("reports an error for a bad definition body", () => {
     const r = parseProgram("f ::= (");
     expect(r.ok).toBe(false);

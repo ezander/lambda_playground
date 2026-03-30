@@ -31,12 +31,13 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>f x y</code></td><td>application (left-associative)</td></tr>
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment</td></tr>
+            <tr><td><code>;</code></td><td>statement separator (same as newline)</td></tr>
             <tr><td><code>x</code>, <code>x1</code>, <code>0</code>, <code>42</code></td><td>identifiers: any non-empty sequence of letters, digits, underscores</td></tr>
           </tbody>
         </table>
 
         <h3>definitions</h3>
-        <p>Each line is either a definition or an expression. Definitions are expanded into subsequent lines.</p>
+        <p>Each line (or <code>;</code>-separated statement) is either a definition or an expression. Definitions are expanded into subsequent statements.</p>
         <table className="help-table">
           <tbody>
             <tr><td><code>name ::= expr</code></td><td>define a name</td></tr>

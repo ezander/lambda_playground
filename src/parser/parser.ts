@@ -188,10 +188,10 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 }
 
 // ── Program parser ─────────────────────────────────────────────────────────────
-// A program is a sequence of newline-separated lines, each either:
+// A program is a sequence of newline- or semicolon-separated statements, each either:
 //   definition:  name param* ::= term
 //   expression:  term
-// Definitions are expanded eagerly into subsequent lines.
+// Definitions are expanded eagerly into subsequent statements.
 // The last expression is the term to evaluate.
 
 export type ProgramResult = {
@@ -209,7 +209,7 @@ export function parseProgram(input: string): ProgramResult {
   const errors: LambdaError[] = [];
   let lineOffset = 0;
 
-  for (const rawLine of input.split("\n")) {
+  for (const rawLine of input.split(/[;\n]/)) {
     const { tokens, errors: lexErrors } = LambdaLexer.tokenize(rawLine);
     if (lexErrors.length > 0) {
       errors.push(...lexErrors.map((e) => ({
