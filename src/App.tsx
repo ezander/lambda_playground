@@ -252,9 +252,9 @@ export default function App() {
             <label htmlFor="source">expression</label>
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
-              <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
-              <button className="help-btn" onClick={() => setShowHelp(true)} title="Help">?</button>
-              <button className="help-btn kino-btn" onClick={toggleKino} title="Kino mode">⛶</button>
+              <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
+              <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
+              <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
             </span>
           </div>
           <CodeMirror
@@ -274,7 +274,7 @@ export default function App() {
             <span className="row-label">examples</span>
             <div className="btn-group">
               {EXAMPLES.map((ex) => (
-                <button key={ex.label} className="ex-btn" onClick={() => setSourceAndSave(ex.src.trimStart())}>
+                <button key={ex.label} className="ex-btn" title={ex.src.trimStart()} onClick={() => setSourceAndSave(ex.src.trimStart())}>
                   {ex.label}
                 </button>
               ))}
@@ -284,7 +284,7 @@ export default function App() {
             <span className="row-label">insert</span>
             <div className="btn-group">
               {SNIPPETS.map((s) => (
-                <button key={s.label} className="ex-btn snippet-btn" onClick={() => insertSnippetAtCursor(s.def)}>
+                <button key={s.label} className="ex-btn snippet-btn" title={`Insert: ${s.def}`} onClick={() => insertSnippetAtCursor(s.def)}>
                   {s.label}
                 </button>
               ))}
@@ -310,10 +310,10 @@ export default function App() {
         {/* ── Live parse output ── */}
         <section className="output-section">
           <div className="output-tabs">
-            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")}>
+            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
               pretty print
             </button>
-            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")}>
+            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
               AST
             </button>
           </div>
@@ -330,17 +330,19 @@ export default function App() {
 
         {/* ── Controls ── */}
         <div className="eval-controls">
-          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
+          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
+            title="Parse and load the current expression into the history (F6)">
             load <kbd>F6</kbd>
           </button>
-          <button onClick={handleStep}    disabled={!canStep}>β-step <kbd>F10</kbd></button>
-          <button onClick={handleEtaStep} disabled={!canEtaStep}>η-step <kbd>F11</kbd></button>
-          <button onClick={handleRun}     disabled={!canStep}>run <kbd>F9</kbd></button>
-          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}>load &amp; run <kbd>F5</kbd></button>
+          <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
+          <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
+          <button onClick={handleRun}     disabled={!canStep}    title="Beta-reduce up to 1000 steps (F9)">run <kbd>F9</kbd></button>
+          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
+            title="Load and beta-reduce to normal form (F5)">load &amp; run <kbd>F5</kbd></button>
           {loaded?.done && (
             <span className="eval-status normal-form">normal form</span>
           )}
-          <label className="subst-toggle">
+          <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
             <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
             {" "}show subst
           </label>
