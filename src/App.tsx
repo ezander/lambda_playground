@@ -93,13 +93,23 @@ function findMatch(term: Term, nd: Map<string, string>): string | undefined {
 export default function App() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showHelp, setShowHelp]       = useState(false);
-  const [source, setSource]           = useState(EXAMPLES[0].src.trimStart());
+  const [source, setSource]           = useState(() =>
+    localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart()
+  );
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
+
+  const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
+    setSource(prev => {
+      const next = typeof s === "function" ? s(prev) : s;
+      localStorage.setItem("lambda-playground:source", next);
+      return next;
+    });
+  }, []);
 
   const programResult = parseProgram(source);
   let roundTripError: string | null = null;
@@ -161,7 +171,7 @@ export default function App() {
       if (start !== end) {
         e.preventDefault();
         const next = source.slice(0, start) + e.key + source.slice(start, end) + close + source.slice(end);
-        setSource(next);
+        setSourceAndSave(next);
         requestAnimationFrame(() => {
           ta.selectionStart = start + 1;
           ta.selectionEnd   = end + 1;
@@ -237,14 +247,14 @@ export default function App() {
             <label htmlFor="source">expression</label>
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
-              <button className="clear-btn" onClick={() => setSource("")}>clear</button>
+              <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
             </span>
           </div>
           <textarea
             ref={textareaRef}
             id="source"
             value={source}
-            onChange={(e) => { setSource(e.target.value); updateCursor(e.target); }}
+            onChange={(e) => { setSourceAndSave(e.target.value); updateCursor(e.target); }}
             onKeyDown={handleKeyDown}
             onKeyUp={(e) => updateCursor(e.currentTarget)}
             onClick={(e) => updateCursor(e.currentTarget)}
@@ -256,7 +266,7 @@ export default function App() {
             <span className="row-label">examples</span>
             <div className="btn-group">
               {EXAMPLES.map((ex) => (
-                <button key={ex.label} className="ex-btn" onClick={() => setSource(ex.src.trimStart())}>
+                <button key={ex.label} className="ex-btn" onClick={() => setSourceAndSave(ex.src.trimStart())}>
                   {ex.label}
                 </button>
               ))}
@@ -266,7 +276,7 @@ export default function App() {
             <span className="row-label">insert</span>
             <div className="btn-group">
               {SNIPPETS.map((s) => (
-                <button key={s.label} className="ex-btn snippet-btn" onClick={() => setSource(src => insertSnippet(src, s.def))}>
+                <button key={s.label} className="ex-btn snippet-btn" onClick={() => setSourceAndSave(src => insertSnippet(src, s.def))}>
                   {s.label}
                 </button>
               ))}

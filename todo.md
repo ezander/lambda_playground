@@ -23,16 +23,31 @@
 * [x] A clear button would be nice
 * [x] shortcuts would also be nice (e.g. f5 for load and run, f10 for step, ...)
 * [x] Add unittests
+* [x] save to browser local storage (save, restore)
+* [ ] make help button more prominent (maybe) or put closer to textfield
+* [ ] check church numerals, plus, and times
+* [ ] maybe add a full screen or kino mode for the text field
 
-## For later
+## For later or to consider
+
+* [ ] Maybe we need eta-reduction?
+* [ ] Make beta reductions via []
+* [ ] Make interpreter also accept lambda or lambda as unicode
+* [ ] Make ctrl-l insert unicode lambda
 * [ ] Make limits (steps, display) settable (or smaller?)
-* [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [ ] make identified forms clickable, and go to line
 * [ ] why still abs, app and only rename later??
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
-* [ ] think about using := for definitions (like hbr)
-* [ ] save to browser local storage
+* [ ] think about using `:=` for definitions (like hbr)
 * [ ] test also the UI?
 * [ ] put shortcuts directly on buttons?
 * [ ] use better textfield?
+* [ ] insertion point?? also: update pos on clear
+* [ ] remove grammar and link from main page and just leave in help?
+* [ ] let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform
+* [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
+* [ ] save under different names
 * 
+## Not approved
+
+* [~] Create grammar display from real grammar (?) — not worth it, update manually
