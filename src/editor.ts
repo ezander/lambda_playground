@@ -1,5 +1,5 @@
 import { EditorView, keymap } from "@codemirror/view";
-import { Extension } from "@codemirror/state";
+import { Extension, Prec } from "@codemirror/state";
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 // Matches the app's CSS variables.
@@ -61,11 +61,13 @@ function insertAt(view: EditorView, text: string): boolean {
   return true;
 }
 
-export const lambdaKeymap: Extension = keymap.of([
+export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
   { key: "{", run: v => wrapSelection(v, "{", "}") },
   { key: "<", run: v => wrapSelection(v, "<", ">") },
   { key: "Alt-l", run: v => insertAt(v, "λ") },
+  { key: "Alt-L", run: v => insertAt(v, "λ") },
   { key: "Alt-m", run: v => insertAt(v, "μ") },
-]);
+  { key: "Alt-M", run: v => insertAt(v, "μ") },
+]));
