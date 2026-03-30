@@ -265,6 +265,19 @@ label {
 }
 .normal-form { color: var(--ok); }
 
+.subst-toggle {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+  cursor: pointer;
+  user-select: none;
+}
+.subst-toggle input { accent-color: var(--accent); cursor: pointer; }
+
 /* ── Output ── */
 .output-section { display: flex; flex-direction: column; }
 

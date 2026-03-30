@@ -18,9 +18,19 @@ export type App = {
   arg: Term;
 };
 
-export type Term = Var | Abs | App;
+// Pending substitution: body[param:=arg], produced during two-phase beta reduction.
+// Semantically equivalent to App(Abs(param, body), arg).
+export type Subst = {
+  kind: "Subst";
+  body: Term;
+  param: string;
+  arg: Term;
+};
+
+export type Term = Var | Abs | App | Subst;
 
 // Constructors
 export const Var = (name: string): Var => ({ kind: "Var", name });
 export const Abs = (param: string, body: Term): Abs => ({ kind: "Abs", param, body });
 export const App = (func: Term, arg: Term): App => ({ kind: "App", func, arg });
+export const Subst = (body: Term, param: string, arg: Term): Subst => ({ kind: "Subst", body, param, arg });

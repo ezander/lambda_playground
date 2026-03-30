@@ -32,6 +32,12 @@ function pp(term: Term, ctx: Context): string {
       let s =  `${func} ${arg}`;
       return (ctx === "top") ? s : `(${s})`;
     }
+
+    case "Subst": {
+      // body[param:=arg] — body goes in primary position (parens for App/Abs)
+      const bodyStr = pp(term.body, "appArg");
+      return `${bodyStr}[${term.param}:=${pp(term.arg, "top")}]`;
+    }
   }
 }
 
@@ -58,5 +64,7 @@ export function dumpAST(term: Term, indent = 0): string {
       return `${pad}Abs(${term.param})\n${dumpAST(term.body, indent + 1)}`;
     case "App":
       return `${pad}App\n${dumpAST(term.func, indent + 1)}\n${dumpAST(term.arg, indent + 1)}`;
+    case "Subst":
+      return `${pad}Subst(${term.param})\n${dumpAST(term.body, indent + 1)}\n${dumpAST(term.arg, indent + 1)}`;
   }
 }

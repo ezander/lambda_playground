@@ -45,6 +45,22 @@ function AstNode({ term }: { term: Term }) {
           )}
         </div>
       );
+
+    case "Subst":
+      return (
+        <div className="ast-node">
+          <div className="ast-row" onClick={() => setOpen(o => !o)}>
+            <span className="ast-toggle">{open ? "▼" : "▶"}</span>
+            <span className="ast-label">Substitution <span className="ast-name">{term.param}</span></span>
+          </div>
+          {open && (
+            <div className="ast-children">
+              <AstNode term={term.body} />
+              <AstNode term={term.arg} />
+            </div>
+          )}
+        </div>
+      );
   }
 }
 

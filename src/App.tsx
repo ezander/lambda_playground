@@ -95,6 +95,7 @@ export default function App() {
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
   const [kinoMode, setKinoMode]       = useState(false);
+  const [showSubst, setShowSubst]     = useState(false);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -135,7 +136,7 @@ export default function App() {
     const entries: HistoryEntry[] = [];
     let i = 0;
     for (; i < maxSteps; i++) {
-      const next = step(current);
+      const next = step(current, showSubst);
       if (next === null) break;
       current = next;
       entries.push(makeEntry(current, ++stepNum));
@@ -143,10 +144,10 @@ export default function App() {
     const batchLimitHit = i === maxSteps && maxSteps > 1;
     if (batchLimitHit && entries.length > 0)
       entries[entries.length - 1].text += " (paused)";
-    const done = step(current) === null;
+    const done = step(current, showSubst) === null;
     setLoaded({ term: current, done, stepNum });
     setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
-  }, [loaded, makeEntry]);
+  }, [loaded, makeEntry, showSubst]);
 
   const jumpTo = useCallback((offset: number) => {
     const view = editorViewRef.current;
@@ -179,7 +180,7 @@ export default function App() {
     const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }];
     let i = 0;
     for (; i < LIMIT; i++) {
-      const next = step(current);
+      const next = step(current, showSubst);
       if (next === null) break;
       current = next;
       entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, nd) });
@@ -187,9 +188,9 @@ export default function App() {
     const batchLimitHit = i === LIMIT;
     if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
     const stepNum = entries.length;
-    setLoaded({ term: current, done: step(current) === null, stepNum });
+    setLoaded({ term: current, done: step(current, showSubst) === null, stepNum });
     setHistory(entries.slice(-10).reverse());
-  }, [programResult, source]);
+  }, [programResult, source, showSubst]);
 
   const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap], []);
 
@@ -327,6 +328,10 @@ export default function App() {
           {loaded?.done && (
             <span className="eval-status normal-form">normal form</span>
           )}
+          <label className="subst-toggle">
+            <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
+            {" "}show subst
+          </label>
         </div>
 
         {/* ── History ── */}

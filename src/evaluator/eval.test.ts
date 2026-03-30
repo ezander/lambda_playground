@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Var, Abs, App } from "../parser/ast";
+import { Var, Abs, App, Subst } from "../parser/ast";
 import { substitute, step, alphaEq, normalize } from "./eval";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,6 +88,36 @@ describe("step", () => {
     expect(s1).toEqual(App(Abs("y", Var("a")), Var("b")));
     const s2 = step(s1!);
     expect(s2).toEqual(Var("a"));
+  });
+});
+
+// ── step with showSubst ───────────────────────────────────────────────────────
+
+describe("step (showSubst=true)", () => {
+  it("phase 1: redex produces a Subst node", () => {
+    // (\x := x) y  →  x[x:=y]
+    const redex = App(I, Var("y"));
+    const result = step(redex, true);
+    expect(result).toEqual(Subst(Var("x"), "x", Var("y")));
+  });
+
+  it("phase 2: Subst node performs the substitution", () => {
+    // x[x:=y]  →  y
+    const s = Subst(Var("x"), "x", Var("y"));
+    expect(step(s)).toEqual(Var("y"));
+  });
+
+  it("two-phase takes two steps for a single beta", () => {
+    const redex = App(I, Var("y"));
+    const phase1 = step(redex, true);
+    expect(phase1?.kind).toBe("Subst");
+    const phase2 = step(phase1!, true);
+    expect(phase2).toEqual(Var("y"));
+  });
+
+  it("showSubst=false skips Subst node", () => {
+    // (\x := x) y  →  y  directly
+    expect(step(App(I, Var("y")))).toEqual(Var("y"));
   });
 });
 

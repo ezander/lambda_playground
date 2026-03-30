@@ -182,6 +182,8 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
       inner.delete(term.param);
       return Abs(term.param, expandDefs(term.body, inner));
     }
+    case "Subst":
+      return term; // Subst nodes only appear during evaluation, not in parsed programs
   }
 }
 

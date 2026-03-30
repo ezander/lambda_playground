@@ -1,4 +1,4 @@
-import { Term, Var, Abs, App } from "../parser/ast";
+import { Term, Var, Abs, App, Subst } from "../parser/ast";
 
 // ── Alpha equivalence ─────────────────────────────────────────────────────────
 // Two terms are alpha-equivalent if they differ only in the names of bound variables.
@@ -14,6 +14,12 @@ function canonical(t: Term, bound: Map<string, number>, depth: number): string {
       const nb = new Map(bound);
       nb.set(t.param, depth);
       return `λ(${canonical(t.body, nb, depth + 1)})`;
+    }
+    case "Subst": {
+      // Semantically equivalent to App(Abs(param, body), arg)
+      const nb = new Map(bound);
+      nb.set(t.param, depth);
+      return `@(λ(${canonical(t.body, nb, depth + 1)}),${canonical(t.arg, bound, depth)})`;
     }
   }
 }
@@ -32,12 +38,19 @@ export function freeVars(term: Term): Set<string> {
   switch (term.kind) {
     case "Var":
       return new Set([term.name]);
-    case "Abs":
+    case "Abs": {
       const fv = freeVars(term.body);
       fv.delete(term.param);
       return fv;
+    }
     case "App":
       return new Set([...freeVars(term.func), ...freeVars(term.arg)]);
+    case "Subst": {
+      // Same as App(Abs(param, body), arg)
+      const fv = freeVars(term.body);
+      fv.delete(term.param);
+      return new Set([...fv, ...freeVars(term.arg)]);
+    }
   }
 }
 
@@ -71,7 +84,7 @@ export function substitute(term: Term, x: string, replacement: Term): Term {
         substitute(term.arg,  x, replacement)
       );
 
-    case "Abs":
+    case "Abs": {
       // Bound variable is the same as what we're substituting — stop
       if (term.param === x) return term;
 
@@ -87,6 +100,26 @@ export function substitute(term: Term, x: string, replacement: Term): Term {
       const fresh = freshName(term.param, avoid);
       const renamedBody = substitute(term.body, term.param, Var(fresh));
       return Abs(fresh, substitute(renamedBody, x, replacement));
+    }
+
+    case "Subst": {
+      // Subst(body, param, arg)[x := repl]
+      // param acts as a binder for body (like Abs)
+      const newArg = substitute(term.arg, x, replacement);
+      if (term.param === x) {
+        // param shadows x in body — only substitute in arg
+        return Subst(term.body, term.param, newArg);
+      }
+      const fvRepl = freeVars(replacement);
+      if (!fvRepl.has(term.param)) {
+        return Subst(substitute(term.body, x, replacement), term.param, newArg);
+      }
+      // Capture-avoiding: rename param in body
+      const avoid = new Set([...fvRepl, ...freeVars(term.body), x]);
+      const fresh = freshName(term.param, avoid);
+      const renamedBody = substitute(term.body, term.param, Var(fresh));
+      return Subst(substitute(renamedBody, x, replacement), fresh, newArg);
+    }
   }
 }
 
@@ -97,29 +130,39 @@ export function substitute(term: Term, x: string, replacement: Term): Term {
 //   1. If the term is a redex (App(Abs, arg)), beta-reduce it.
 //   2. Otherwise recurse into func first, then arg, then body of Abs.
 
-export function step(term: Term): Term | null {
+// showSubst: when true, App(Abs, arg) first produces a Subst node (phase 1),
+// and a subsequent step on that Subst node performs the actual substitution (phase 2).
+export function step(term: Term, showSubst = false): Term | null {
   switch (term.kind) {
     case "Var":
       return null;
 
+    case "Subst":
+      // Phase 2: perform the pending substitution
+      return substitute(term.body, term.param, term.arg);
+
     case "App": {
       // Is this a redex?
       if (term.func.kind === "Abs") {
+        if (showSubst) {
+          // Phase 1: show substitution before performing it
+          return Subst(term.func.body, term.func.param, term.arg);
+        }
         // Beta reduction: (\x := body) arg  →  body[x := arg]
         return substitute(term.func.body, term.func.param, term.arg);
       }
       // Try to reduce func first (outermost-leftmost)
-      const func2 = step(term.func);
+      const func2 = step(term.func, showSubst);
       if (func2 !== null) return App(func2, term.arg);
       // Then try arg
-      const arg2 = step(term.arg);
+      const arg2 = step(term.arg, showSubst);
       if (arg2 !== null) return App(term.func, arg2);
       return null;
     }
 
     case "Abs": {
       // Reduce under the lambda (normal order goes under binders)
-      const body2 = step(term.body);
+      const body2 = step(term.body, showSubst);
       if (body2 !== null) return Abs(term.param, body2);
       return null;
     }
