@@ -60,6 +60,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <table className="help-table">
           <tbody>
             <tr><td><code>F5</code></td><td>load &amp; run</td></tr>
+            <tr><td><code>F11</code></td><td>toggle kino (fullscreen) mode</td></tr>
             <tr><td><code>F6</code></td><td>load</td></tr>
             <tr><td><code>F9</code></td><td>run</td></tr>
             <tr><td><code>F10</code></td><td>step</td></tr>

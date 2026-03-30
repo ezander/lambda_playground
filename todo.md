@@ -27,12 +27,14 @@
 * [x] make help button more prominent (maybe) or put closer to textfield
 * [x] put shortcuts directly on buttons?
 * [x] use better textfield?
-* [ ] maybe add a full screen or kino mode for the text field
+* [x] maybe add a full screen or kino mode for the text field
 * [x] make insertion point for definitions the current line, shift current line down, make also a symbol insertion for e.g. lambda, and mu which just inserts the unicode symbol at the current pos
 * [x] Make alt-l insert unicode lambda (also alt-m for μ)
 
 ## For later or to consider
 
+
+* [ ] maybe also a download button
 * [ ] check church numerals, plus, and times
 * [ ] Maybe we need eta-reduction?
 * [ ] Make beta reductions via [], i.e. let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform beta

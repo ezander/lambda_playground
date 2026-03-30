@@ -94,6 +94,7 @@ export default function App() {
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
+  const [kinoMode, setKinoMode]       = useState(false);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -192,22 +193,40 @@ export default function App() {
 
   const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap], []);
 
+  const toggleKino = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setKinoMode(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setKinoMode(false);
+    }
+  }, []);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
       if (e.key === "F10") { e.preventDefault(); handleStep(); }
+      if (e.key === "F11") { e.preventDefault(); toggleKino(); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, toggleKino]);
+
+  // Sync kino state if user exits fullscreen via browser (Escape)
+  useEffect(() => {
+    const handler = () => { if (!document.fullscreenElement) setKinoMode(false); };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const currentTerm = programResult.expr;
 
   return (
-    <div className="app">
+    <div className={kinoMode ? "app kino" : "app"}>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       <header>
         <h1>λ playground</h1>
@@ -222,7 +241,8 @@ export default function App() {
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
               <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
-              <button className="help-btn" onClick={() => setShowHelp(true)}>?</button>
+              <button className="help-btn" onClick={() => setShowHelp(true)} title="Help">?</button>
+              <button className="help-btn kino-btn" onClick={toggleKino} title="Kino mode (F11)">⛶</button>
             </span>
           </div>
           <CodeMirror
