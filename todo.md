@@ -36,12 +36,12 @@
 * [x] what about ; for multiline defs?
 * [x] tool tips over buttons
 * [x] recheck all tests and coverage
+* [x] maybe also a download button, to get the text as plain text file
+* [x] ability to save and retrieve under different names in local storage
 
 ## For later or to consider
 
 * [ ] improve examples and inserts, maybe complete remove examples. therefore inserts can be multiline, - church booleans, church numerals, std combinators, pairs, list
-* [x] maybe also a download button, to get the text as plain text file
-* [x] ability to save and retrieve under different names in local storage
  
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] Make limits (steps, display) settable (or smaller?)
