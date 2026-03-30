@@ -46,6 +46,21 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </table>
         <p>The <em>last expression line</em> is what gets loaded and evaluated. Redefining a name with a different normal form produces a warning.</p>
 
+        <h3>storage</h3>
+        <p>
+          The <em>storage</em> row lets you save and restore named snippets in the browser's local storage,
+          and download the editor content as a text file.
+        </p>
+        <table className="help-table">
+          <tbody>
+            <tr><td><strong>name input</strong></td><td>type a name for the slot; press Enter to save</td></tr>
+            <tr><td><strong>save</strong></td><td>save the current editor content under the given name</td></tr>
+            <tr><td><strong>delete</strong></td><td>delete the named slot from local storage</td></tr>
+            <tr><td><strong>download</strong></td><td>download the editor content as <em>name</em>.txt (or lambda.txt if no name is given)</td></tr>
+            <tr><td><strong>slot buttons</strong></td><td>click a saved name to load its content and select that name</td></tr>
+          </tbody>
+        </table>
+
         <h3>controls</h3>
         <table className="help-table">
           <tbody>

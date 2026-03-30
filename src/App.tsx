@@ -10,6 +10,17 @@ import { basicSetup } from "codemirror";
 import { lambdaTheme, lambdaKeymap } from "./editor";
 import "./App.css";
 
+const SAVE_PREFIX = "lambda-playground:saved:";
+
+function getSavedSlots(): string[] {
+  const slots: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(SAVE_PREFIX)) slots.push(key.slice(SAVE_PREFIX.length));
+  }
+  return slots.sort();
+}
+
 const EXAMPLES = [
   { label: "booleans", src:
 `# Church booleans
@@ -96,6 +107,8 @@ export default function App() {
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
   const [kinoMode, setKinoMode]       = useState(false);
   const [showSubst, setShowSubst]     = useState(false);
+  const [saveName, setSaveName]       = useState("");
+  const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -164,6 +177,36 @@ export default function App() {
     view.dispatch({ changes: { from: line.from, insert: def + "\n" } });
     view.focus();
   }, []);
+
+  const handleSaveSlot = useCallback(() => {
+    const name = saveName.trim();
+    if (!name) return;
+    localStorage.setItem(SAVE_PREFIX + name, source);
+    setSavedSlots(getSavedSlots());
+  }, [saveName, source]);
+
+  const handleLoadSlot = useCallback((name: string) => {
+    const saved = localStorage.getItem(SAVE_PREFIX + name);
+    if (saved !== null) { setSourceAndSave(saved); setSaveName(name); }
+  }, [setSourceAndSave]);
+
+  const handleDeleteSlot = useCallback(() => {
+    const name = saveName.trim();
+    if (!name) return;
+    localStorage.removeItem(SAVE_PREFIX + name);
+    setSavedSlots(getSavedSlots());
+    setSaveName("");
+  }, [saveName]);
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([source], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (saveName.trim() || "lambda") + ".txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [source, saveName]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(1000), [advance]);
@@ -287,6 +330,31 @@ export default function App() {
                 <button key={s.label} className="ex-btn snippet-btn" title={`Insert: ${s.def}`} onClick={() => insertSnippetAtCursor(s.def)}>
                   {s.label}
                 </button>
+              ))}
+            </div>
+          </div>
+          <div className="example-row">
+            <span className="row-label">storage</span>
+            <div className="storage-controls">
+              <input
+                className="save-name-input"
+                type="text"
+                placeholder="name…"
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSaveSlot(); }}
+              />
+              <button className="ex-btn" onClick={handleSaveSlot} disabled={!saveName.trim()}
+                title="Save current editor content under this name">save</button>
+              <button className="ex-btn" onClick={handleDeleteSlot}
+                disabled={!savedSlots.includes(saveName.trim())}
+                title="Delete this saved slot">delete</button>
+              <button className="ex-btn" onClick={handleDownload}
+                title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
+              {savedSlots.length > 0 && <span className="storage-sep" />}
+              {savedSlots.map(name => (
+                <button key={name} className="ex-btn snippet-btn" onClick={() => handleLoadSlot(name)}
+                  title={`Load "${name}"`}>{name}</button>
               ))}
             </div>
           </div>
