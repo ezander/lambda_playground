@@ -49,8 +49,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <table className="help-table">
           <tbody>
             <tr><td><strong>load</strong></td><td>parse and load the current expression into the history</td></tr>
-            <tr><td><strong>step</strong></td><td>perform one beta-reduction step</td></tr>
-            <tr><td><strong>run</strong></td><td>reduce up to 1000 steps; continue by pressing run again</td></tr>
+            <tr><td><strong>β-step</strong></td><td>perform one beta-reduction step</td></tr>
+            <tr><td><strong>η-step</strong></td><td>perform one eta-reduction step (λx. f x → f, when x ∉ fv(f)); disabled when none exists</td></tr>
+            <tr><td><strong>run</strong></td><td>reduce up to 1000 beta steps; continue by pressing run again</td></tr>
             <tr><td><strong>load &amp; run</strong></td><td>load and immediately run to normal form</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
           </tbody>
@@ -60,10 +61,10 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <table className="help-table">
           <tbody>
             <tr><td><code>F5</code></td><td>load &amp; run</td></tr>
-            <tr><td><code>F11</code></td><td>toggle kino (fullscreen) mode</td></tr>
             <tr><td><code>F6</code></td><td>load</td></tr>
             <tr><td><code>F9</code></td><td>run</td></tr>
-            <tr><td><code>F10</code></td><td>step</td></tr>
+            <tr><td><code>F10</code></td><td>β-step</td></tr>
+            <tr><td><code>F11</code></td><td>η-step</td></tr>
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-M</code></td><td>insert μ at cursor</td></tr>

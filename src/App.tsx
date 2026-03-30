@@ -3,7 +3,7 @@ import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
-import { step, canonicalForm, normalize } from "./evaluator/eval";
+import { step, etaStep, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { basicSetup } from "codemirror";
@@ -167,6 +167,16 @@ export default function App() {
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(1000), [advance]);
+
+  const handleEtaStep = useCallback(() => {
+    if (!loaded) return;
+    const next = etaStep(loaded.term);
+    if (next === null) return;
+    const stepNum = loaded.stepNum + 1;
+    const entry = makeEntry(next, stepNum);
+    setLoaded({ term: next, done: step(next, showSubst) === null, stepNum });
+    setHistory(h => [entry, ...h].slice(0, 10));
+  }, [loaded, makeEntry, showSubst]);
   const handleLoadRun = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
@@ -210,7 +220,7 @@ export default function App() {
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
       if (e.key === "F10") { e.preventDefault(); handleStep(); }
-      if (e.key === "F11") { e.preventDefault(); toggleKino(); }
+      if (e.key === "F11") { e.preventDefault(); handleEtaStep(); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -224,6 +234,7 @@ export default function App() {
   }, []);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
+  const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
 
   return (
@@ -243,7 +254,7 @@ export default function App() {
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
               <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Help">?</button>
-              <button className="help-btn kino-btn" onClick={toggleKino} title="Kino mode (F11)">⛶</button>
+              <button className="help-btn kino-btn" onClick={toggleKino} title="Kino mode">⛶</button>
             </span>
           </div>
           <CodeMirror
@@ -322,7 +333,8 @@ export default function App() {
           <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
             load <kbd>F6</kbd>
           </button>
-          <button onClick={handleStep}    disabled={!canStep}>step <kbd>F10</kbd></button>
+          <button onClick={handleStep}    disabled={!canStep}>β-step <kbd>F10</kbd></button>
+          <button onClick={handleEtaStep} disabled={!canEtaStep}>η-step <kbd>F11</kbd></button>
           <button onClick={handleRun}     disabled={!canStep}>run <kbd>F9</kbd></button>
           <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}>load &amp; run <kbd>F5</kbd></button>
           {loaded?.done && (

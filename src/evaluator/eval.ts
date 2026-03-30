@@ -169,6 +169,41 @@ export function step(term: Term, showSubst = false): Term | null {
   }
 }
 
+// ── Single eta step ───────────────────────────────────────────────────────────
+// Finds the leftmost-outermost eta-redex: λx. f x  where x ∉ fv(f).
+// Returns the reduced term, or null if no eta-redex exists.
+
+export function etaStep(term: Term): Term | null {
+  switch (term.kind) {
+    case "Var":
+      return null;
+    case "Abs": {
+      // Check for eta-redex at this node
+      if (
+        term.body.kind === "App" &&
+        term.body.arg.kind === "Var" &&
+        term.body.arg.name === term.param &&
+        !freeVars(term.body.func).has(term.param)
+      ) return term.body.func;
+      // Otherwise recurse into body
+      const b = etaStep(term.body);
+      return b !== null ? Abs(term.param, b) : null;
+    }
+    case "App": {
+      const f = etaStep(term.func);
+      if (f !== null) return App(f, term.arg);
+      const a = etaStep(term.arg);
+      return a !== null ? App(term.func, a) : null;
+    }
+    case "Subst": {
+      const b = etaStep(term.body);
+      if (b !== null) return Subst(b, term.param, term.arg);
+      const a = etaStep(term.arg);
+      return a !== null ? Subst(term.body, term.param, a) : null;
+    }
+  }
+}
+
 // ── Run to normal form ────────────────────────────────────────────────────────
 
 export type RunResult =

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Var, Abs, App, Subst } from "../parser/ast";
-import { substitute, step, alphaEq, normalize } from "./eval";
+import { substitute, step, etaStep, alphaEq, normalize } from "./eval";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -118,6 +118,37 @@ describe("step (showSubst=true)", () => {
   it("showSubst=false skips Subst node", () => {
     // (\x := x) y  →  y  directly
     expect(step(App(I, Var("y")))).toEqual(Var("y"));
+  });
+});
+
+// ── etaStep ───────────────────────────────────────────────────────────────────
+
+describe("etaStep", () => {
+  it("reduces a simple eta-redex: λx. f x → f", () => {
+    const term = Abs("x", App(Var("f"), Var("x")));
+    expect(etaStep(term)).toEqual(Var("f"));
+  });
+
+  it("returns null when x is free in f", () => {
+    // λx. x x — x appears free in the func, not an eta-redex
+    expect(etaStep(Abs("x", App(Var("x"), Var("x"))))).toBeNull();
+  });
+
+  it("returns null for a normal form with no eta-redex", () => {
+    expect(etaStep(I)).toBeNull();
+    expect(etaStep(Var("x"))).toBeNull();
+  });
+
+  it("reduces outermost-first", () => {
+    // λx. (λy. f y) x — outer is eta-redex (reduces to λy. f y), inner also is
+    const term = Abs("x", App(Abs("y", App(Var("f"), Var("y"))), Var("x")));
+    expect(etaStep(term)).toEqual(Abs("y", App(Var("f"), Var("y"))));
+  });
+
+  it("recurses into App", () => {
+    // f (λx. g x) — eta-redex in argument
+    const term = App(Var("f"), Abs("x", App(Var("g"), Var("x"))));
+    expect(etaStep(term)).toEqual(App(Var("f"), Var("g")));
   });
 });
 
