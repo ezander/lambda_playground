@@ -22,7 +22,7 @@ function pp(term: Term, ctx: Context): string {
         params.push(body.param);
         body = body.body;
       }
-      const s = `\\${params.join(" ")} := ${pp(body, "top")}`;
+      const s = `λ${params.join(" ")}. ${pp(body, "top")}`;
       return (ctx === "top") ? s : `(${s})`;
     }
 

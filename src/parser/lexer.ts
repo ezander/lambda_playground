@@ -1,7 +1,7 @@
 import { createToken, Lexer } from "chevrotain";
 
 // Tokens - order matters: more specific patterns first
-export const Backslash  = createToken({ name: "Backslash",  pattern: /\\/ });
+export const Backslash  = createToken({ name: "Backslash",  pattern: /\\|λ/ });
 export const DefAssign  = createToken({ name: "DefAssign",  pattern: /::=/ }); // before Assign
 export const Assign     = createToken({ name: "Assign",     pattern: /:=|\./ });
 export const LParen    = createToken({ name: "LParen",    pattern: /\(/ });

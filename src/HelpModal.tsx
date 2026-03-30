@@ -25,9 +25,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <h3>syntax</h3>
         <table className="help-table">
           <tbody>
-            <tr><td><code>\x := body</code></td><td>lambda abstraction</td></tr>
-            <tr><td><code>\x y := body</code></td><td>multi-param (desugars to nested lambdas)</td></tr>
-            <tr><td><code>\x . body</code></td><td><code>.</code> is an alias for <code>:=</code></td></tr>
+            <tr><td><code>λx. body</code></td><td>lambda abstraction (<code>\</code> also accepted)</td></tr>
+            <tr><td><code>λx y. body</code></td><td>multi-param (desugars to nested lambdas)</td></tr>
+            <tr><td><code>λx := body</code></td><td><code>:=</code> is an alias for <code>.</code></td></tr>
             <tr><td><code>f x y</code></td><td>application (left-associative)</td></tr>
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment</td></tr>
@@ -80,7 +80,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 application ::= atom+
 atom        ::= primary ('[' identifier ':=' term ']')*
 primary     ::= identifier | '(' term ')' | function
-function    ::= '\\' identifier+ (':=' | '.') term`}</pre>
+function    ::= ('\\' | 'λ') identifier+ (':=' | '.') term`}</pre>
       </div>
     </div>
   );

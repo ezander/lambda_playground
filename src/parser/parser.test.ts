@@ -24,6 +24,16 @@ describe("parse", () => {
     if (r.ok) expect(r.term).toEqual(Abs("x", Var("x")));
   });
 
+  it("parses a lambda with unicode λ", () => {
+    const r = parse("λx. x");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Abs("x", Var("x")));
+  });
+
+  it("pretty-prints lambdas with λ", () => {
+    expect(prettyPrint(Abs("x", Var("x")))).toBe("λx. x");
+  });
+
   it("desugars multi-param lambda", () => {
     const r = parse("\\x y. x");
     expect(r.ok).toBe(true);

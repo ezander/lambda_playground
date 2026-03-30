@@ -37,5 +37,5 @@ term        ::= application
 application ::= atom+
 atom        ::= primary ('[' identifier ':=' term ']')*
 primary     ::= identifier | '(' term ')' | function
-function    ::= '\' identifier+ (':=' | '.') term
+function    ::= ('\' | 'λ') identifier+ (':=' | '.') term
 ```

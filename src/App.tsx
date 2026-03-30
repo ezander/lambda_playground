@@ -334,7 +334,7 @@ export default function App() {
 application ::= atom+
 atom        ::= primary ('[' identifier ':=' term ']')*
 primary     ::= identifier | '(' term ')' | function
-function    ::= '\\' identifier+ (':=' | '.') term`}</pre>
+function    ::= ('\\' | 'λ') identifier+ (':=' | '.') term`}</pre>
         </div>
         <p className="attribution">
           inspired by <a href="https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html" target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>
