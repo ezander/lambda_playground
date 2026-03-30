@@ -62,17 +62,6 @@ const SNIPPETS: { label: string; def: string }[] = [
   { label: "Y",     def: "Y       ::= \\f. (\\x. f (x x)) (\\x. f (x x))" },
 ];
 
-function insertSnippet(source: string, def: string): string {
-  const lines = source.split("\n");
-  // Insert before the last non-empty, non-comment, non-definition line
-  let insertAt = lines.length;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i].replace(/#.*$/, "").trim();
-    if (line && !line.includes("::=")) { insertAt = i; break; }
-  }
-  lines.splice(insertAt, 0, def);
-  return lines.join("\n");
-}
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number } | null;
@@ -165,6 +154,15 @@ export default function App() {
     view.focus();
   }, []);
 
+  const insertSnippetAtCursor = useCallback((def: string) => {
+    const view = editorViewRef.current;
+    if (!view) return;
+    const pos = view.state.selection.main.head;
+    const line = view.state.doc.lineAt(pos);
+    view.dispatch({ changes: { from: line.from, insert: def + "\n" } });
+    view.focus();
+  }, []);
+
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(1000), [advance]);
   const handleLoadRun = useCallback(() => {
@@ -254,7 +252,7 @@ export default function App() {
             <span className="row-label">insert</span>
             <div className="btn-group">
               {SNIPPETS.map((s) => (
-                <button key={s.label} className="ex-btn snippet-btn" onClick={() => setSourceAndSave(src => insertSnippet(src, s.def))}>
+                <button key={s.label} className="ex-btn snippet-btn" onClick={() => insertSnippetAtCursor(s.def)}>
                   {s.label}
                 </button>
               ))}

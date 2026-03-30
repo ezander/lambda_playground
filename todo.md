@@ -28,7 +28,7 @@
 * [x] put shortcuts directly on buttons?
 * [x] use better textfield?
 * [ ] maybe add a full screen or kino mode for the text field
-* [ ] make insertion point for definitions the current line, shift current line down, make also a symbol insertion for e.g. lambda, and mu which just inserts the unicode symbol at the current pos
+* [x] make insertion point for definitions the current line, shift current line down, make also a symbol insertion for e.g. lambda, and mu which just inserts the unicode symbol at the current pos
 * [x] Make alt-l insert unicode lambda (also alt-m for μ)
 
 ## For later or to consider
