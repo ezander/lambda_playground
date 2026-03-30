@@ -9,6 +9,8 @@ import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { basicSetup } from "codemirror";
 import { lambdaTheme, lambdaKeymap } from "./editor";
 import "./App.css";
+import { examples as EXAMPLES } from "./data/examples";
+import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
@@ -21,57 +23,6 @@ function getSavedSlots(): string[] {
   return slots.sort();
 }
 
-const EXAMPLES = [
-  { label: "booleans", src:
-`# Church booleans
-true    ::= \\x y. x
-false   ::= \\x y. y
-not p   ::= p false true
-and p q ::= p q false
-or  p q ::= p true q
-
-and (not false) true` },
-  { label: "SKI", src:
-`# SKI combinators
-I     ::= \\x. x
-K     ::= \\x y. x
-S f g x ::= f x (g x)
-
-# S K K reduces to I
-S K K z` },
-  { label: "numerals", src:
-`# Church numerals
-zero    ::= \\f x. x
-succ  n f x ::= f (n f x)
-plus  m n f x ::= m f (n f x)
-one   ::= succ zero
-two   ::= succ one
-three ::= succ two
-
-plus two three` },
-  { label: "Y combinator", src:
-`# Y combinator — diverges without a lazy argument
-Y   ::= \\f. (\\x. f (x x)) (\\x. f (x x))
-I   ::= \\x. x
-
-# Y I diverges; step carefully
-Y I` },
-];
-
-const SNIPPETS: { label: string; def: string }[] = [
-  { label: "I",     def: "I       ::= \\x. x" },
-  { label: "K",     def: "K       ::= \\x y. x" },
-  { label: "S",     def: "S f g x ::= f x (g x)" },
-  { label: "true",  def: "true    ::= \\x y. x" },
-  { label: "false", def: "false   ::= \\x y. y" },
-  { label: "not",   def: "not p   ::= p false true" },
-  { label: "and",   def: "and p q ::= p q false" },
-  { label: "or",    def: "or  p q ::= p true q" },
-  { label: "zero",  def: "zero    ::= \\f x. x" },
-  { label: "succ",  def: "succ  n f x ::= f (n f x)" },
-  { label: "plus",  def: "plus  m n f x ::= m f (n f x)" },
-  { label: "Y",     def: "Y       ::= \\f. (\\x. f (x x)) (\\x. f (x x))" },
-];
 
 
 type View = "pretty" | "ast";
@@ -327,7 +278,7 @@ export default function App() {
             <span className="row-label">insert</span>
             <div className="btn-group">
               {SNIPPETS.map((s) => (
-                <button key={s.label} className="ex-btn snippet-btn" title={`Insert: ${s.def}`} onClick={() => insertSnippetAtCursor(s.def)}>
+                <button key={s.label} className="ex-btn snippet-btn" title={`Insert at cursor:\n${s.def}`} onClick={() => insertSnippetAtCursor(s.def)}>
                   {s.label}
                 </button>
               ))}

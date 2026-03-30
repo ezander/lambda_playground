@@ -46,6 +46,14 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </table>
         <p>The <em>last expression line</em> is what gets loaded and evaluated. Redefining a name with a different normal form produces a warning.</p>
 
+        <h3>examples &amp; inserts</h3>
+        <p>
+          The <em>examples</em> row loads a complete standalone program into the editor (replacing its content).
+          The <em>insert</em> row inserts a block of definitions at the current cursor line — useful for
+          building up programs incrementally from Church booleans, numerals, combinators, pairs, or lists.
+          Hover a button to preview what will be inserted.
+        </p>
+
         <h3>storage</h3>
         <p>
           The <em>storage</em> row lets you save and restore named snippets in the browser's local storage,

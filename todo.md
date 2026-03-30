@@ -41,7 +41,7 @@
 
 ## For later or to consider
 
-* [ ] improve examples and inserts, maybe complete remove examples. therefore inserts can be multiline, - church booleans, church numerals, std combinators, pairs, list
+* [x] improve examples and inserts, maybe complete remove examples. therefore inserts can be multiline, - church booleans, church numerals, std combinators, pairs, list
  
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] Make limits (steps, display) settable (or smaller?)
