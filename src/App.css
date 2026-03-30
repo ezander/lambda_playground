@@ -117,23 +117,8 @@ label {
 }
 .clear-btn:hover { color: var(--warn); }
 
-/* ── Textarea ── */
-textarea {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 0.95rem;
-  padding: 0.85rem 1rem;
-  resize: vertical;
-  outline: none;
-  border-radius: 2px;
-  line-height: 1.65;
-  transition: border-color 0.15s;
-  margin-top: 0;
-}
-textarea:focus { border-color: var(--accent); }
+/* ── CodeMirror editor ── */
+.cm-editor { width: 100%; }
 
 .example-row {
   display: flex;

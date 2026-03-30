@@ -1,10 +1,13 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { step, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
+import CodeMirror, { EditorView } from "@uiw/react-codemirror";
+import { basicSetup } from "codemirror";
+import { lambdaTheme, bracketWrapKeymap } from "./editor";
 import "./App.css";
 
 const EXAMPLES = [
@@ -91,7 +94,7 @@ function findMatch(term: Term, nd: Map<string, string>): string | undefined {
 }
 
 export default function App() {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
   const [showHelp, setShowHelp]       = useState(false);
   const [source, setSource]           = useState(() =>
     localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart()
@@ -156,29 +159,11 @@ export default function App() {
   }, [loaded, makeEntry]);
 
   const jumpTo = useCallback((offset: number) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.focus();
-    ta.setSelectionRange(offset, offset);
+    const view = editorViewRef.current;
+    if (!view) return;
+    view.dispatch({ selection: { anchor: offset } });
+    view.focus();
   }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const pairs: Record<string, string> = { "(": ")", "[": "]", "{": "}", "<": ">" };
-    const close = pairs[e.key];
-    if (close) {
-      const ta = e.currentTarget;
-      const { selectionStart: start, selectionEnd: end } = ta;
-      if (start !== end) {
-        e.preventDefault();
-        const next = source.slice(0, start) + e.key + source.slice(start, end) + close + source.slice(end);
-        setSourceAndSave(next);
-        requestAnimationFrame(() => {
-          ta.selectionStart = start + 1;
-          ta.selectionEnd   = end + 1;
-        });
-      }
-    }
-  }, [source]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(1000), [advance]);
@@ -207,11 +192,7 @@ export default function App() {
     setHistory(entries.slice(-10).reverse());
   }, [programResult, source]);
 
-  const updateCursor = useCallback((ta: HTMLTextAreaElement) => {
-    const text = ta.value.slice(0, ta.selectionStart);
-    const lines = text.split("\n");
-    setCursorPos({ line: lines.length, col: lines[lines.length - 1].length + 1 });
-  }, []);
+  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, bracketWrapKeymap], []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -250,17 +231,18 @@ export default function App() {
               <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
             </span>
           </div>
-          <textarea
-            ref={textareaRef}
-            id="source"
+          <CodeMirror
             value={source}
-            onChange={(e) => { setSourceAndSave(e.target.value); updateCursor(e.target); }}
-            onKeyDown={handleKeyDown}
-            onKeyUp={(e) => updateCursor(e.currentTarget)}
-            onClick={(e) => updateCursor(e.currentTarget)}
-            onSelect={(e) => updateCursor(e.currentTarget)}
-            spellCheck={false}
-            rows={8}
+            extensions={editorExtensions}
+            onChange={(val) => setSourceAndSave(val)}
+            onCreateEditor={(view) => { editorViewRef.current = view; }}
+            onUpdate={(update) => {
+              if (update.selectionSet) {
+                const pos = update.state.selection.main.head;
+                const line = update.state.doc.lineAt(pos);
+                setCursorPos({ line: line.number, col: pos - line.from + 1 });
+              }
+            }}
           />
           <div className="example-row">
             <span className="row-label">examples</span>
