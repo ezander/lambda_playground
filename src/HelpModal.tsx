@@ -64,6 +64,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>F9</code></td><td>run</td></tr>
             <tr><td><code>F10</code></td><td>step</td></tr>
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
+            <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
+            <tr><td><code>Alt-M</code></td><td>insert μ at cursor</td></tr>
           </tbody>
         </table>
 

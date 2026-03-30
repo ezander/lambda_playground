@@ -24,30 +24,31 @@
 * [x] shortcuts would also be nice (e.g. f5 for load and run, f10 for step, ...)
 * [x] Add unittests
 * [x] save to browser local storage (save, restore)
-* [ ] make help button more prominent (maybe) or put closer to textfield
-* [ ] check church numerals, plus, and times
+* [x] make help button more prominent (maybe) or put closer to textfield
+* [x] put shortcuts directly on buttons?
+* [x] use better textfield?
 * [ ] maybe add a full screen or kino mode for the text field
+* [ ] make insertion point for definitions the current line, shift current line down, make also a symbol insertion for e.g. lambda, and mu which just inserts the unicode symbol at the current pos
+* [x] Make alt-l insert unicode lambda (also alt-m for μ)
 
 ## For later or to consider
 
+* [ ] check church numerals, plus, and times
 * [ ] Maybe we need eta-reduction?
-* [ ] Make beta reductions via []
+* [ ] Make beta reductions via [], i.e. let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform beta
+ 
 * [ ] Make interpreter also accept lambda or lambda as unicode
-* [ ] Make ctrl-l insert unicode lambda
-* [ ] Make limits (steps, display) settable (or smaller?)
-* [ ] make identified forms clickable, and go to line
-* [ ] why still abs, app and only rename later??
-* [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
-* [ ] think about using `:=` for definitions (like hbr)
+
 * [ ] test also the UI?
-* [ ] put shortcuts directly on buttons?
-* [ ] use better textfield?
-* [ ] insertion point?? also: update pos on clear
-* [ ] remove grammar and link from main page and just leave in help?
-* [ ] let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform
+* [ ] ability to save and retrieve under different names in local storage 
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
-* [ ] save under different names
-* 
+* [ ] Make limits (steps, display) settable (or smaller?)
+ 
 ## Not approved
 
+* [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
+* [ ] make identified forms clickable, and go to line
+* [ ] remove grammar and link from main page and just leave in help?
+* [ ] think about using `:=` for definitions (like hbr)
+* [ ] why still abs, app and only rename later??
 * [~] Create grammar display from real grammar (?) — not worth it, update manually

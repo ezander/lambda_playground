@@ -52,9 +52,20 @@ function wrapSelection(view: EditorView, open: string, close: string): boolean {
   return true;
 }
 
-export const bracketWrapKeymap: Extension = keymap.of([
+function insertAt(view: EditorView, text: string): boolean {
+  const { from, to } = view.state.selection.main;
+  view.dispatch({
+    changes: { from, to, insert: text },
+    selection: { anchor: from + text.length },
+  });
+  return true;
+}
+
+export const lambdaKeymap: Extension = keymap.of([
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
   { key: "{", run: v => wrapSelection(v, "{", "}") },
   { key: "<", run: v => wrapSelection(v, "<", ">") },
+  { key: "Alt-l", run: v => insertAt(v, "λ") },
+  { key: "Alt-m", run: v => insertAt(v, "μ") },
 ]);

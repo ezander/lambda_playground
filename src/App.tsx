@@ -7,7 +7,7 @@ import { step, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { basicSetup } from "codemirror";
-import { lambdaTheme, bracketWrapKeymap } from "./editor";
+import { lambdaTheme, lambdaKeymap } from "./editor";
 import "./App.css";
 
 const EXAMPLES = [
@@ -192,7 +192,7 @@ export default function App() {
     setHistory(entries.slice(-10).reverse());
   }, [programResult, source]);
 
-  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, bracketWrapKeymap], []);
+  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap], []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -212,13 +212,8 @@ export default function App() {
     <div className="app">
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       <header>
-        <div className="header-row">
-          <div>
-            <h1>λ playground</h1>
-            <p className="subtitle">a small lambda dialect</p>
-          </div>
-          <button className="help-btn" onClick={() => setShowHelp(true)}>?</button>
-        </div>
+        <h1>λ playground</h1>
+        <p className="subtitle">a small lambda dialect</p>
       </header>
 
       <main>
@@ -229,6 +224,7 @@ export default function App() {
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
               <button className="clear-btn" onClick={() => setSourceAndSave("")}>clear</button>
+              <button className="help-btn" onClick={() => setShowHelp(true)}>?</button>
             </span>
           </div>
           <CodeMirror
@@ -304,12 +300,12 @@ export default function App() {
 
         {/* ── Controls ── */}
         <div className="eval-controls">
-          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr} title="Load expression (F6)">
-            load
+          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}>
+            load <kbd>F6</kbd>
           </button>
-          <button onClick={handleStep}    disabled={!canStep} title="One reduction step (F10)">step</button>
-          <button onClick={handleRun}     disabled={!canStep} title="Run up to 1000 steps (F9)">run</button>
-          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr} title="Load and run (F5)">load &amp; run</button>
+          <button onClick={handleStep}    disabled={!canStep}>step <kbd>F10</kbd></button>
+          <button onClick={handleRun}     disabled={!canStep}>run <kbd>F9</kbd></button>
+          <button onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}>load &amp; run <kbd>F5</kbd></button>
           {loaded?.done && (
             <span className="eval-status normal-form">normal form</span>
           )}

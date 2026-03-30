@@ -220,6 +220,12 @@ label {
   color: var(--accent);
 }
 .eval-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+.eval-controls kbd {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  opacity: 0.55;
+  margin-left: 0.2rem;
+}
 
 .eval-status {
   font-family: var(--mono);
