@@ -54,17 +54,3 @@ export function assertRoundTrip(term: Term): void {
   }
 }
 
-// Indented AST dump
-export function dumpAST(term: Term, indent = 0): string {
-  const pad = "  ".repeat(indent);
-  switch (term.kind) {
-    case "Var":
-      return `${pad}Var(${term.name})`;
-    case "Abs":
-      return `${pad}Abs(${term.param})\n${dumpAST(term.body, indent + 1)}`;
-    case "App":
-      return `${pad}App\n${dumpAST(term.func, indent + 1)}\n${dumpAST(term.arg, indent + 1)}`;
-    case "Subst":
-      return `${pad}Subst(${term.param})\n${dumpAST(term.body, indent + 1)}\n${dumpAST(term.arg, indent + 1)}`;
-  }
-}

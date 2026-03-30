@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Var, Abs, App, Subst } from "../parser/ast";
-import { substitute, step, etaStep, alphaEq, normalize } from "./eval";
+import { substitute, step, etaStep, freeVars, alphaEq, normalize, canonicalForm } from "./eval";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,63 @@ describe("substitute", () => {
       expect(result.param).not.toBe("y");  // renamed
       expect(result.body).toEqual(Var("y")); // body is the substituted value
     }
+  });
+
+  it("Subst: param shadows substitution variable in body", () => {
+    // x[x:=x][x:=a] — param shadows x in body, but x in arg gets substituted
+    const s = Subst(Var("x"), "x", Var("x"));
+    expect(substitute(s, "x", Var("a"))).toEqual(Subst(Var("x"), "x", Var("a")));
+  });
+
+  it("Subst: substitutes freely when no capture risk", () => {
+    // body[p:=arg][x:=a] where p≠x and a has no free p
+    const s = Subst(Var("x"), "p", Var("b"));
+    expect(substitute(s, "x", Var("a"))).toEqual(Subst(Var("a"), "p", Var("b")));
+  });
+
+  it("Subst: capture-avoiding rename when replacement contains param", () => {
+    // body[p:=arg][x:=p] — replacement 'p' would be captured by Subst's param
+    const s = Subst(Var("x"), "p", Var("b"));
+    const result = substitute(s, "x", Var("p"));
+    expect(result.kind).toBe("Subst");
+    if (result.kind === "Subst") {
+      expect(result.param).not.toBe("p"); // renamed to avoid capture
+    }
+  });
+});
+
+// ── canonicalForm ─────────────────────────────────────────────────────────────
+
+describe("canonicalForm", () => {
+  it("Subst is canonical-equivalent to App(Abs(param, body), arg)", () => {
+    // x[x:=a] should have same canonical form as (\x. x) a
+    const subst = Subst(Var("x"), "x", Var("a"));
+    const appAbs = App(Abs("x", Var("x")), Var("a"));
+    expect(canonicalForm(subst)).toBe(canonicalForm(appAbs));
+  });
+});
+
+// ── freeVars ──────────────────────────────────────────────────────────────────
+
+describe("freeVars", () => {
+  it("Var: free variable is itself", () => {
+    expect(freeVars(Var("x"))).toEqual(new Set(["x"]));
+  });
+
+  it("Abs: bound variable is not free", () => {
+    expect(freeVars(Abs("x", Var("x")))).toEqual(new Set());
+    expect(freeVars(Abs("x", Var("y")))).toEqual(new Set(["y"]));
+  });
+
+  it("App: union of free vars", () => {
+    expect(freeVars(App(Var("f"), Var("x")))).toEqual(new Set(["f", "x"]));
+  });
+
+  it("Subst: param is bound in body, arg is free", () => {
+    // x[x:=a]  — x bound in body, a free from arg
+    expect(freeVars(Subst(Var("x"), "x", Var("a")))).toEqual(new Set(["a"]));
+    // y[x:=a]  — y and a are both free
+    expect(freeVars(Subst(Var("y"), "x", Var("a")))).toEqual(new Set(["y", "a"]));
   });
 });
 
@@ -149,6 +206,15 @@ describe("etaStep", () => {
     // f (λx. g x) — eta-redex in argument
     const term = App(Var("f"), Abs("x", App(Var("g"), Var("x"))));
     expect(etaStep(term)).toEqual(App(Var("f"), Var("g")));
+  });
+
+  it("recurses into Subst body and arg", () => {
+    // (λx. f x)[p:=a] — eta-redex in body
+    const s = Subst(Abs("x", App(Var("f"), Var("x"))), "p", Var("a"));
+    expect(etaStep(s)).toEqual(Subst(Var("f"), "p", Var("a")));
+    // b[p:=(λx. g x)] — eta-redex in arg
+    const s2 = Subst(Var("b"), "p", Abs("x", App(Var("g"), Var("x"))));
+    expect(etaStep(s2)).toEqual(Subst(Var("b"), "p", Var("g")));
   });
 });
 

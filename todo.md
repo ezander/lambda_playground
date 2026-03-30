@@ -33,25 +33,23 @@
 * [x] Make interpreter also accept lambda or lambda as unicode
 * [x] Make beta reductions via [], i.e. let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform beta
 * [x] Maybe we need eta-reduction?
+* [x] what about ; for multiline defs?
+* [x] tool tips over buttons
 
 ## For later or to consider
-
-* [x] what about ; for multiline defs?
-* [ ] tool tips over buttons
-* 
 
 * [ ] improve examples and inserts, maybe complete remove examples. therefore inserts can be multiline, - church booleans, church numerals, std combinators, pairs, list
 * [ ] maybe also a download button, to get the text as plain text file
 * [ ] ability to save and retrieve under different names in local storage 
-* 
+ 
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] Make limits (steps, display) settable (or smaller?)
-* 
-* [ ] test also the UI?
+ 
 * [ ] recheck all tests and coverage
-
+* [ ] think about greek vars for identifiers (but exclude some with specific meaning like lambda)
 ## Not approved
 
+* [ ] test also the UI?
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 * [ ] make identified forms clickable, and go to line
 * [ ] remove grammar and link from main page and just leave in help?

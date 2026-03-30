@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Var, Abs, App, Term } from "./ast";
+import { Var, Abs, App, Subst, Term } from "./ast";
 import { parse, parseProgram, expandDefs } from "./parser";
-import { prettyPrint } from "./pretty";
+import { prettyPrint, assertRoundTrip } from "./pretty";
 
 // ── parse (single expression) ─────────────────────────────────────────────────
 
@@ -97,6 +97,11 @@ describe("parse", () => {
     const r = parse("(x");
     expect(r.ok).toBe(false);
   });
+
+  it("returns an error for unrecognised characters", () => {
+    const r = parse("@");
+    expect(r.ok).toBe(false);
+  });
 });
 
 // ── pretty-printer round-trip ─────────────────────────────────────────────────
@@ -132,6 +137,30 @@ describe("prettyPrint round-trip", () => {
   });
 });
 
+// ── prettyPrint Subst ─────────────────────────────────────────────────────────
+
+describe("prettyPrint Subst", () => {
+  it("prints Var body: x[y:=a]", () => {
+    expect(prettyPrint(Subst(Var("x"), "y", Var("a")))).toBe("x[y:=a]");
+  });
+
+  it("wraps App body in parens: (f x)[y:=a]", () => {
+    expect(prettyPrint(Subst(App(Var("f"), Var("x")), "y", Var("a")))).toBe("(f x)[y:=a]");
+  });
+
+  it("wraps Abs body in parens: (λx. x)[y:=a]", () => {
+    expect(prettyPrint(Subst(Abs("x", Var("x")), "y", Var("a")))).toBe("(λx. x)[y:=a]");
+  });
+});
+
+// ── assertRoundTrip ───────────────────────────────────────────────────────────
+
+describe("assertRoundTrip", () => {
+  it("passes for well-formed terms", () => {
+    expect(() => assertRoundTrip(Abs("x", Var("x")))).not.toThrow();
+  });
+});
+
 // ── expandDefs ────────────────────────────────────────────────────────────────
 
 describe("expandDefs", () => {
@@ -155,6 +184,12 @@ describe("expandDefs", () => {
     const defs = new Map([["x", Var("replaced")]]);
     // \x := x  — the x in the body is bound, not the def
     expect(expandDefs(Abs("x", Var("x")), defs)).toEqual(Abs("x", Var("x")));
+  });
+
+  it("Subst passes through unchanged", () => {
+    const defs = new Map([["I", Abs("x", Var("x"))]]);
+    const s = Subst(Var("y"), "p", Var("a"));
+    expect(expandDefs(s, defs)).toEqual(s);
   });
 });
 
@@ -246,5 +281,18 @@ describe("parseProgram", () => {
     // At least one error should have offset >= 4
     const offsets = r.errors.map(e => e.offset).filter(o => o !== undefined);
     expect(offsets.some(o => o! >= 4)).toBe(true);
+  });
+
+  it("reports an error for a definition with non-identifier on LHS", () => {
+    // '(x) ::= y' — LHS contains a non-identifier token
+    const r = parseProgram("(x) ::= y");
+    expect(r.ok).toBe(false);
+    expect(r.errors.some(e => e.message.includes("left-hand side"))).toBe(true);
+  });
+
+  it("reports a lex error for unrecognised characters", () => {
+    const r = parseProgram("@");
+    expect(r.ok).toBe(false);
+    expect(r.errors.some(e => e.message.includes("Lex error"))).toBe(true);
   });
 });
