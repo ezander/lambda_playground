@@ -65,6 +65,7 @@ export default function App() {
   const [showSubst, setShowSubst]     = useState(false);
   const [saveName, setSaveName]       = useState("");
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
+  const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
   const [slotOpen, setSlotOpen]       = useState(false);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
@@ -144,23 +145,29 @@ export default function App() {
   const handleSaveSlot = useCallback(() => {
     const name = saveName.trim();
     if (!name) return;
+    if (savedSlots.includes(name) && name !== loadedSlotName) {
+      if (!window.confirm(`Overwrite saved entry "${name}"?`)) return;
+    }
     localStorage.setItem(SAVE_PREFIX + name, source);
     setSavedSlots(getSavedSlots());
-  }, [saveName, source]);
+    setLoadedSlotName(name);
+  }, [saveName, source, savedSlots, loadedSlotName]);
 
   const handleLoadSlot = useCallback(() => {
     const name = saveName.trim();
     if (!name) return;
     const saved = localStorage.getItem(SAVE_PREFIX + name);
-    if (saved !== null) setSourceAndSave(saved);
+    if (saved !== null) { setSourceAndSave(saved); setLoadedSlotName(name); }
   }, [saveName, setSourceAndSave]);
 
   const handleDeleteSlot = useCallback(() => {
     const name = saveName.trim();
     if (!name) return;
+    if (!window.confirm(`Delete saved entry "${name}"?`)) return;
     localStorage.removeItem(SAVE_PREFIX + name);
     setSavedSlots(getSavedSlots());
     setSaveName("");
+    setLoadedSlotName(null);
   }, [saveName]);
 
   const handleDownload = useCallback(() => {
@@ -298,7 +305,7 @@ export default function App() {
               <div className="select-wrap">
                 <select className="tool-select" onChange={e => {
                   const ex = EXAMPLES.find(x => x.label === e.target.value);
-                  if (ex) setSourceAndSave(ex.src.trimStart());
+                  if (ex) { setSourceAndSave(ex.src.trimStart()); setSaveName(""); setLoadedSlotName(null); }
                 }}>
                   {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
                 </select>
