@@ -121,15 +121,17 @@ function buildDecorations(view: EditorView): DecorationSet {
 
   // AST-based identifier highlighting
   if (parsed) {
-    const defNames = new Set(parsed.defs.keys());
+    const allDefNames = new Set(parsed.defs.keys());
 
-    for (const { namePos, body, positions } of parsed.defInfos) {
+    const knownDefs = new Set<string>();
+    for (const { name, namePos, body, positions } of parsed.defInfos) {
       tks.push({ from: namePos.from, to: namePos.to, m: mDefName });
-      walkTerm(body, positions, defNames, new Set(), tks);
+      walkTerm(body, positions, knownDefs, new Set(), tks); // only names defined before this one
+      knownDefs.add(name);
     }
 
     for (const { term, positions } of parsed.exprInfos)
-      walkTerm(term, positions, defNames, new Set(), tks);
+      walkTerm(term, positions, allDefNames, new Set(), tks);
   }
 
   tks.sort((a, b) => a.from - b.from || a.to - b.to);

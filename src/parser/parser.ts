@@ -235,6 +235,7 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 
 // Per-definition info needed for accurate syntax highlighting
 export type DefInfo = {
+  name:      string;      // the defined identifier
   namePos:   Pos;         // source position of the defined name
   body:      Term;        // raw body (pre-expansion), Abs-wrapped for LHS params
   positions: PositionMap; // positions for identifiers within body
@@ -325,6 +326,7 @@ export function parseProgram(input: string): ProgramResult {
         rawBody = abs;
       }
       defInfos.push({
+        name: nameToken.image,
         namePos: { from: lineOffset + nameToken.startOffset, to: lineOffset + (nameToken.endOffset ?? nameToken.startOffset) + 1 },
         body: rawBody,
         positions,
