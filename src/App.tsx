@@ -11,6 +11,7 @@ import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { lambdaTheme, lambdaKeymap } from "./editor";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
+import LZString from "lz-string";
 import { examples as EXAMPLES } from "./data/examples";
 import { snippets as SNIPPETS } from "./data/snippets";
 
@@ -50,9 +51,11 @@ export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]       = useState(false);
-  const [source, setSource]           = useState(() =>
-    localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart()
-  );
+  const [source, setSource]           = useState(() => {
+    const p = new URLSearchParams(window.location.search).get("s");
+    if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
+    return localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart();
+  });
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
@@ -67,6 +70,7 @@ export default function App() {
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
   const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
   const [slotOpen, setSlotOpen]       = useState(false);
+  const [shareLabel, setShareLabel]   = useState("share");
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -261,6 +265,14 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handler);
   }, [slotOpen]);
 
+  const handleShare = useCallback(async () => {
+    const encoded = LZString.compressToEncodedURIComponent(source);
+    const url = `${location.origin}${location.pathname}?s=${encoded}`;
+    await navigator.clipboard.writeText(url);
+    setShareLabel("copied!");
+    setTimeout(() => setShareLabel("share"), 2000);
+  }, [source]);
+
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
@@ -283,6 +295,7 @@ export default function App() {
               <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
               <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
               <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
+              <button className="clear-btn" onClick={handleShare} title="Copy share link to clipboard">{shareLabel}</button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
               <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
             </span>
