@@ -31,6 +31,17 @@ e[x:=a]              # substitution: desugars to (λx. e) a
 ;                    # statement separator (same as newline)
 ```
 
+### Identifiers
+
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η are reserved). This lets you write combinators like `ω`, `Ω`, `Θ` directly.
+
+Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
+
+```
+`church 0` = λf x. x
+`church 0`              # evaluates the definition
+```
+
 ### Definitions
 
 ```

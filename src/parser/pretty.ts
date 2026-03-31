@@ -7,19 +7,27 @@ export function prettyPrint(term: Term): string {
   return pp(term, "top");
 }
 
+// Names that need backtick-quoting: anything not matching the plain identifier charset.
+// Excludes λ (\u03BB) and π (\u03C0) since those are keyword tokens.
+const SAFE_IDENT = /^[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF]+$/;
+
+function safeName(name: string): string {
+  return SAFE_IDENT.test(name) ? name : `\`${name}\``;
+}
+
 type Context = "top" | "appFunc" | "appArg";
 
 function pp(term: Term, ctx: Context): string {
   switch (term.kind) {
     case "Var":
-      return term.name;
+      return safeName(term.name);
 
     case "Abs": {
       // Collect consecutive params for pretty compression
       const params: string[] = [];
       let body: Term = term;
       while (body.kind === "Abs") {
-        params.push(body.param);
+        params.push(safeName(body.param));
         body = body.body;
       }
       const s = `λ${params.join(" ")}. ${pp(body, "top")}`;
@@ -38,7 +46,7 @@ function pp(term: Term, ctx: Context): string {
     case "Subst": {
       // body[param:=arg] — body goes in primary position (parens for App/Abs)
       const bodyStr = pp(term.body, "appArg");
-      return `${bodyStr}[${term.param}:=${pp(term.arg, "top")}]`;
+      return `${bodyStr}[${safeName(term.param)}:=${pp(term.arg, "top")}]`;
     }
   }
 }

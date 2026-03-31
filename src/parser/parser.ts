@@ -1,4 +1,4 @@
-import { CstParser, CstNode, IToken } from "chevrotain";
+import { CstParser, CstNode, IToken, tokenMatcher } from "chevrotain";
 import {
   allTokens,
   LambdaLexer,
@@ -11,7 +11,14 @@ import {
   LBracket,
   RBracket,
   Identifier,
+  IdentifierLike,
+  BacktickIdent,
 } from "./lexer";
+
+// Strip backtick quotes from a BacktickIdent token; leave plain identifiers unchanged.
+function tokenName(tok: IToken): string {
+  return tok.tokenType === BacktickIdent ? tok.image.slice(1, -1) : tok.image;
+}
 import { Term, Var, Abs, App, Pos } from "./ast";
 import { normalize, alphaEq } from "../evaluator/eval";
 
@@ -47,7 +54,7 @@ class LambdaParser extends CstParser {
   primary = this.RULE("primary", () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.func) },
-      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(IdentifierLike) },
       {
         ALT: () => {
           this.CONSUME(LParen);
@@ -60,7 +67,7 @@ class LambdaParser extends CstParser {
 
   subst = this.RULE("subst", () => {
     this.CONSUME(LBracket);
-    this.CONSUME(Identifier);
+    this.CONSUME(IdentifierLike);
     this.CONSUME(Assign);
     this.SUBRULE(this.term);
     this.CONSUME(RBracket);
@@ -69,7 +76,7 @@ class LambdaParser extends CstParser {
   func = this.RULE("func", () => {
     this.CONSUME(Backslash);
     this.AT_LEAST_ONE(() => {
-      this.CONSUME(Identifier);
+      this.CONSUME(IdentifierLike);
     });
     this.CONSUME(Assign);
     this.SUBRULE(this.term);
@@ -135,9 +142,9 @@ class AstBuilder extends BaseCstVisitor {
 
   primary(ctx: any): Term {
     if (ctx.func) return this.visit(ctx.func);
-    if (ctx.Identifier) {
-      const tok = ctx.Identifier[0] as IToken;
-      const v = Var(tok.image);
+    if (ctx.IdentifierLike) {
+      const tok = ctx.IdentifierLike[0] as IToken;
+      const v = Var(tokenName(tok));
       this.positions.vars.set(v, this.pos(tok));
       return v;
     }
@@ -145,20 +152,21 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   subst(ctx: any): { param: string; paramTok: IToken; arg: Term } {
+    const tok = ctx.IdentifierLike[0] as IToken;
     return {
-      param:    (ctx.Identifier[0] as IToken).image,
-      paramTok:  ctx.Identifier[0] as IToken,
-      arg:       this.visit(ctx.term),
+      param:    tokenName(tok),
+      paramTok: tok,
+      arg:      this.visit(ctx.term),
     };
   }
 
   func(ctx: any): Term {
-    const toks: IToken[] = ctx.Identifier;
+    const toks: IToken[] = ctx.IdentifierLike;
     const body: Term = this.visit(ctx.term);
     // Desugar \x y z := body  →  Abs(x, Abs(y, Abs(z, body)))
     let result = body;
     for (let i = toks.length - 1; i >= 0; i--) {
-      const abs = Abs(toks[i].image, result);
+      const abs = Abs(tokenName(toks[i]), result);
       this.positions.params.set(abs, this.pos(toks[i]));
       result = abs;
     }
@@ -294,14 +302,14 @@ export function parseProgram(input: string): ProgramResult {
     if (defIdx >= 0) {
       // ── Definition ────────────────────────────────────────────────────────
       const lhs = tokens.slice(0, defIdx);
-      if (lhs.length === 0 || lhs.some((t) => t.tokenType !== Identifier)) {
+      if (lhs.length === 0 || lhs.some((t) => !tokenMatcher(t, IdentifierLike))) {
         errors.push({ message: `Definition left-hand side must be identifiers only`, offset: lineOffset });
         lineOffset += rawLine.length + 1;
         continue;
       }
       const [nameToken, ...paramTokens] = lhs;
-      const name   = nameToken.image;
-      const params = paramTokens.map((t) => t.image);
+      const name   = tokenName(nameToken);
+      const params = paramTokens.map(tokenName);
 
       const rhsStart = tokens[defIdx].startOffset + 1;
       const rhs = rawLine.slice(rhsStart);
@@ -337,12 +345,12 @@ export function parseProgram(input: string): ProgramResult {
       let rawBody: Term = bodyResult.term;
       for (let i = paramTokens.length - 1; i >= 0; i--) {
         const tok = paramTokens[i];
-        const abs = Abs(tok.image, rawBody);
+        const abs = Abs(tokenName(tok), rawBody);
         positions.params.set(abs, { from: lineOffset + tok.startOffset, to: lineOffset + (tok.endOffset ?? tok.startOffset) + 1 });
         rawBody = abs;
       }
       defInfos.push({
-        name: nameToken.image,
+        name,
         namePos: { from: lineOffset + nameToken.startOffset, to: lineOffset + (nameToken.endOffset ?? nameToken.startOffset) + 1 },
         body: rawBody,
         positions,

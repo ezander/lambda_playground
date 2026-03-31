@@ -32,7 +32,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment</td></tr>
             <tr><td><code>;</code></td><td>statement separator (same as newline)</td></tr>
-            <tr><td><code>x</code>, <code>x1</code>, <code>0</code>, <code>42</code></td><td>identifiers: any non-empty sequence of letters, digits, underscores</td></tr>
+            <tr><td><code>x</code>, <code>x₁</code>, <code>ω</code>, <code>Ω</code></td><td>identifiers: letters, digits, underscores, and Greek (except λ, π; α/β/η reserved)</td></tr>
+            <tr><td><code>`any name`</code></td><td>backtick-quoted identifier — allows spaces and special chars</td></tr>
           </tbody>
         </table>
 
@@ -106,16 +107,19 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </p>
 
         <h3>grammar</h3>
-        <pre>{`program     → statement (('\\n' | ';') statement)*
-statement   → definition | print | term
-definition  → identifier+ '=' term
-print       → 'π' term
-term        → application
-application → atom+
-atom        → primary ('[' identifier ':=' term ']')*
-primary     → identifier | '(' term ')' | function
-function    → ('\\' | 'λ') identifier+ (':=' | '.') term
-identifier  → [a-zA-Z0-9_]+`}</pre>
+        <pre>{
+"program     ::= statement (('\\n' | ';') statement)*\n" +
+"statement   ::= definition | print | term\n" +
+"definition  ::= identLike+ '=' term\n" +
+"print       ::= 'π' term\n" +
+"term        ::= application\n" +
+"application ::= atom+\n" +
+"atom        ::= primary ('[' identLike ':=' term ']')*\n" +
+"primary     ::= identLike | '(' term ')' | function\n" +
+"function    ::= ('\\\\' | 'λ') identLike+ (':=' | '.') term\n" +
+"identLike   ::= identifier | '`' [^`\\n]+ '`'\n" +
+"identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF]+   (excluding λ, π; α/β/η reserved)"
+}</pre>
       </div>
     </div>
   );

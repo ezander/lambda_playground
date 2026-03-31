@@ -33,14 +33,15 @@ user input → lexer.ts → CST parser → AST visitor → ast.ts nodes → eval
 ### Grammar
 
 ```
-program     → statement (('\n' | ';') statement)*
-statement   → definition | print | term
-definition  → identifier+ '=' term
-print       → 'π' term
-term        → application
-application → atom+
-atom        → primary ('[' identifier ':=' term ']')*
-primary     → identifier | '(' term ')' | function
-function    → ('\' | 'λ') identifier+ (':=' | '.') term
-identifier  → [a-zA-Z0-9_]+
+program     ::= statement (('\n' | ';') statement)*
+statement   ::= definition | print | term
+definition  ::= identLike+ '=' term
+print       ::= 'π' term
+term        ::= application
+application ::= atom+
+atom        ::= primary ('[' identLike ':=' term ']')*
+primary     ::= identLike | '(' term ')' | function
+function    ::= ('\' | 'λ') identLike+ (':=' | '.') term
+identLike   ::= identifier | '`' [^`\n]+ '`'
+identifier  ::= [a-zA-Z0-9_\u0370-\u03FF]+  (excluding λ, π; α/β/η reserved)
 ```
