@@ -6,7 +6,7 @@ import { HelpModal } from "./HelpModal";
 import { step, etaStep, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
-import { basicSetup } from "codemirror";
+import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { lambdaTheme, lambdaKeymap } from "./editor";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
@@ -217,7 +217,10 @@ export default function App() {
     setHistory(entries.slice(-10).reverse());
   }, [programResult, source, showSubst]);
 
-  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap, parsedField, lambdaHighlight], []);
+  const editorExtensions = useMemo(() => [
+    lineNumbers({ formatNumber: n => String(n).padStart(3, "\u00a0") }),
+    lambdaTheme, lambdaKeymap, parsedField, lambdaHighlight,
+  ], []);
 
   const toggleKino = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -285,6 +288,7 @@ export default function App() {
             </span>
           </div>
           <CodeMirror
+            basicSetup={{ lineNumbers: false }}
             value={source}
             extensions={editorExtensions}
             onChange={(val) => setSourceAndSave(val)}
