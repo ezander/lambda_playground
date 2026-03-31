@@ -2,13 +2,17 @@
 
 An interactive browser-based playground for an untyped lambda dialect with step-by-step beta/eta reduction, definitions, and syntax highlighting. Inspired by [hbr's Lambda Calculus evaluator](https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html).
 
+> 99% vibe-coded — all implementation by [Claude Code](https://claude.ai/code).
+
 ## Features
 
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
 - Named definitions with eager expansion into subsequent lines
 - Shorthand `f x y = e` desugars to `f = \x y := e`
+- `π expr` print statements: evaluate an expression to normal form and show it in the output panel
 - Live parsing on every keystroke with clickable error locations
 - Syntax highlighting: defined names, lambda binders, bound/free variables, comments
+- Greek letters in identifiers (ω, Ω, Θ, …); backtick-quoted identifiers for arbitrary names
 - Two-phase beta reduction: optionally show `e[x:=a]` substitution as an intermediate step
 - Eta reduction as a separate step
 - Step-by-step or batch evaluation; continue after pausing
@@ -16,6 +20,7 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Alpha-equivalence matching: history entries show the definition name when a result matches
 - Toggle between pretty-printed syntax and interactive collapsible AST view
 - Named save/load slots in browser local storage; slot picker dropdown; download as plain text
+- Share button: encodes editor content into a URL (LZ-compressed) and copies it to the clipboard
 - Kino (fullscreen) mode for the editor
 - Select text and press `(`, `[`, `{`, or `<` to wrap in brackets
 
@@ -49,10 +54,11 @@ true  = λx y. x          # define a name
 false = λx y. y
 and p q = p q false       # shorthand: f x y = e  means  f = λx y := e
 
-and true false              # last expression line is what gets evaluated
+π and true false          # print to output panel (normalized)
+and true false            # last expression line is what gets evaluated
 ```
 
-Definitions are expanded eagerly. The last non-definition line is loaded and evaluated.
+Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression.
 
 ## Toolbar
 
@@ -72,6 +78,18 @@ Below the editor, a compact toolbar provides three groups:
 | η-step | F11 | One eta-reduction step (λx. f x → f) |
 | run | F9 | Up to 1000 beta steps; press again to continue |
 | show substitution | | Show `e[x:=a]` as an intermediate step before beta-reducing |
+| share | | Encode editor content as a URL and copy to clipboard |
+| clear | | Clear the editor |
+
+### Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Ctrl-/` | Toggle `#` comment on current line or all selected lines |
+| `( [ { <` with selection | Wrap selected text in the chosen brackets |
+| `Alt-L` | Insert λ at cursor |
+| `Alt-M` | Insert μ at cursor |
+| `Alt-P` | Insert π at cursor |
 
 ## Development
 
