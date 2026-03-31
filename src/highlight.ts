@@ -132,9 +132,8 @@ function buildDecorations(view: EditorView): DecorationSet {
       walkTerm(body, positions, defNames, new Set(), tks);
     }
 
-    if (parsed.rawExpr && parsed.rawExprPositions) {
-      walkTerm(parsed.rawExpr, parsed.rawExprPositions, defNames, new Set(), tks);
-    }
+    for (const { term, positions } of parsed.exprInfos)
+      walkTerm(term, positions, defNames, new Set(), tks);
   }
 
   tks.sort((a, b) => a.from - b.from || a.to - b.to);

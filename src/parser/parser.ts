@@ -247,8 +247,8 @@ export type ProgramResult = {
   expr: Term | null;    // last expression, with defs expanded
   rawExpr: Term | null; // last expression, before expansion
   // For syntax highlighting:
-  defInfos:          DefInfo[];
-  rawExprPositions:  PositionMap | null;
+  defInfos:  DefInfo[];
+  exprInfos: { term: Term; positions: PositionMap }[];
 };
 
 export function parseProgram(input: string): ProgramResult {
@@ -256,8 +256,8 @@ export function parseProgram(input: string): ProgramResult {
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
-  const defInfos: DefInfo[] = [];
-  let rawExprPositions: PositionMap | null = null;
+  const defInfos:  DefInfo[] = [];
+  const exprInfos: { term: Term; positions: PositionMap }[] = [];
   let lineOffset = 0;
 
   for (const rawLine of input.split(/[;\n]/)) {
@@ -343,11 +343,11 @@ export function parseProgram(input: string): ProgramResult {
       }
       rawExpr = result.term;
       expr    = expandDefs(result.term, defs);
-      rawExprPositions = result.positions;
+      exprInfos.push({ term: result.term, positions: result.positions });
     }
 
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, rawExprPositions };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos };
 }
