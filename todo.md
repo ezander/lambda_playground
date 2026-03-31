@@ -44,24 +44,24 @@
 
 * [ ] again, improve examples (i will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc)
-* [ ] think about multi-evaluation and/or printing intermediate expressions
+* [x] think about multi-evaluation and/or printing intermediate expressions  ← π print statements
 * [ ] make a settings box, e.g. for this evaluate thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] Make limits (steps, display) settable (or smaller?)
 
-* [ ] think about greek vars for identifiers (but exclude some with specific meaning like lambda)
+* [x] think about greek vars for identifiers (but exclude some with specific meaning like lambda)  ← full Greek block; α/β/η reserved
+* [x] think also about identifiers with spaces and stuff defined by `Bla \phi \omega`, could also be used for printing  ← backtick-quoted identifiers
 * [ ] introduce typed lambda calculus
-* [ ] maybe add symbols pi and tau, where (pi expr) reduces and print prints the expression and (tau expr) print the type of expr
+* [x] maybe add symbols pi and tau, where (pi expr) reduces and print prints the expression  ← π done; τ not planned
 * [ ] could think of more symbols like beta, and eta for reductions
-* [ ] where do evaluation/print boxes then land (also with question mark: show ast? highlight? identify normalized?) 
-* [ ] think also about identifiers with spaces and stuff defined by `Bla \phi \omega`, could also be used for printing
+* [x] where do evaluation/print boxes then land  ← π output panel above history
+* [x] I think \pi shall evaluate the expression, print in a list, with two lines, original expr above, and reduced and normalized expr below
+* [ ] \pi can appear inside exprs (what's then the result? the result itself? or I? or does it take two and returns the latter?)
+* [ ] does the latter make sense? when it's in the expression all subst and redex have been applied already, so the source expr does not say much
+* [ ] when we show which subst is to be made (hygenically), shall we clean it somehow (like x -> x', or x -> x5)
+* [x] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)  ← min 3 digits
+* [ ] what about horizontal rulers, and boxes where the resulst will show up
 * [ ] hbr uses 'where' clauses. shall we? dunno
 * [ ] should we have line continuation with e.g. \
-* [ ] I think \pi shall evaluate the expression, print in a list, with two lines, original expr above, and reduced and normalized expr below
-* [ ] \pi can appear inside exprs (what's then the result? the result itself? or I? or does it take two and returns the latter?)
-* [ ] does the latter make sense? when it's in the expression all subst and redex have been applied already, so the source expr does not say much 
-* [ ] when we show which subst is to be made (hygenically), shall we clean it somehow (like x -> x', or x -> x5)
-* [ ] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)
-* [ ] what about horizontal rulers, and boxes where the resulst will show up
 
 ## Not approved
 
