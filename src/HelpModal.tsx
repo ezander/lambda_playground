@@ -72,11 +72,12 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <h3>controls</h3>
         <table className="help-table">
           <tbody>
+            <tr><td><strong>load &amp; run</strong></td><td>load and immediately run to normal form</td></tr>
             <tr><td><strong>load</strong></td><td>parse and load the current expression into the history</td></tr>
             <tr><td><strong>β-step</strong></td><td>perform one beta-reduction step</td></tr>
             <tr><td><strong>η-step</strong></td><td>perform one eta-reduction step (λx. f x → f, when x ∉ fv(f)); disabled when none exists</td></tr>
             <tr><td><strong>run</strong></td><td>reduce up to 1000 beta steps; continue by pressing run again</td></tr>
-            <tr><td><strong>load &amp; run</strong></td><td>load and immediately run to normal form</td></tr>
+            <tr><td><strong>show substitution</strong></td><td>show substitution <code>e[x:=a]</code> as an intermediate step before beta-reducing</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
           </tbody>
         </table>
