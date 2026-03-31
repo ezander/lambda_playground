@@ -29,8 +29,10 @@ function pp(term: Term, ctx: Context): string {
     case "App": {
       const func = pp(term.func, "appFunc");
       const arg  = pp(term.arg,  "appArg");
-      let s =  `${func} ${arg}`;
-      return (ctx === "top") ? s : `(${s})`;
+      const s = `${func} ${arg}`;
+      // Application is left-associative, so App in func position never needs
+      // parens: (f a) b == f a b. Only in arg position parens are required.
+      return (ctx === "appArg") ? `(${s})` : s;
     }
 
     case "Subst": {

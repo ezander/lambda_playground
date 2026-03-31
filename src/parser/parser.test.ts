@@ -135,6 +135,12 @@ describe("prettyPrint round-trip", () => {
     const t = App(App(Var("f"), Var("x")), Var("y"));
     expect(roundTrip(t)).toEqual(t);
   });
+  it("left-assoc App prints without parens: f x y not (f x) y", () => {
+    expect(prettyPrint(App(App(Var("f"), Var("x")), Var("y")))).toBe("f x y");
+  });
+  it("right-nested App in arg position keeps parens: f (g x y)", () => {
+    expect(prettyPrint(App(Var("f"), App(App(Var("g"), Var("x")), Var("y"))))).toBe("f (g x y)");
+  });
 });
 
 // ── prettyPrint Subst ─────────────────────────────────────────────────────────
