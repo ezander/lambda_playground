@@ -48,24 +48,24 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         <h3>examples &amp; inserts</h3>
         <p>
-          The <em>examples</em> row loads a complete standalone program into the editor (replacing its content).
-          The <em>insert</em> row inserts a block of definitions at the current cursor line — useful for
+          The <em>examples</em> dropdown loads a complete standalone program into the editor (replacing its content).
+          The <em>insert</em> dropdown inserts a block of definitions at the current cursor line — useful for
           building up programs incrementally from Church booleans, numerals, combinators, pairs, or lists.
-          Hover a button to preview what will be inserted.
         </p>
 
         <h3>storage</h3>
         <p>
-          The <em>storage</em> row lets you save and restore named snippets in the browser's local storage,
+          The <em>storage</em> controls let you save and restore named snippets in the browser's local storage,
           and download the editor content as a text file.
         </p>
         <table className="help-table">
           <tbody>
-            <tr><td><strong>name input</strong></td><td>type a name for the slot; press Enter to save</td></tr>
-            <tr><td><strong>save</strong></td><td>save the current editor content under the given name</td></tr>
-            <tr><td><strong>delete</strong></td><td>delete the named slot from local storage</td></tr>
+            <tr><td><strong>name field</strong></td><td>type a name for the slot; press Enter to save</td></tr>
+            <tr><td><strong>▾</strong></td><td>open a dropdown of saved names; selecting one fills the name field</td></tr>
+            <tr><td><strong>load</strong></td><td>load the content saved under the current name into the editor</td></tr>
+            <tr><td><strong>save</strong></td><td>save the current editor content under the given name; confirms before overwriting</td></tr>
+            <tr><td><strong>delete</strong></td><td>delete the named slot from local storage (asks for confirmation)</td></tr>
             <tr><td><strong>download</strong></td><td>download the editor content as <em>name</em>.txt (or lambda.txt if no name is given)</td></tr>
-            <tr><td><strong>slot buttons</strong></td><td>click a saved name to load its content and select that name</td></tr>
           </tbody>
         </table>
 

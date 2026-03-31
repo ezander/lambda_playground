@@ -15,7 +15,7 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Normal-order (leftmost-outermost) beta reduction with capture-avoiding substitution
 - Alpha-equivalence matching: history entries show the definition name when a result matches
 - Toggle between pretty-printed syntax and interactive collapsible AST view
-- Named save/load slots in browser local storage; download as plain text
+- Named save/load slots in browser local storage; slot picker dropdown; download as plain text
 - Kino (fullscreen) mode for the editor
 - Select text and press `(`, `[`, `{`, or `<` to wrap in brackets
 
@@ -42,6 +42,14 @@ and true false              # last expression line is what gets evaluated
 ```
 
 Definitions are expanded eagerly. The last non-definition line is loaded and evaluated.
+
+## Toolbar
+
+Below the editor, a compact toolbar provides three groups:
+
+- **examples** — dropdown; selecting an entry replaces the editor content with a complete example program
+- **insert** — dropdown; selecting an entry inserts a block of definitions at the current cursor line
+- **storage** — name field + `▾` slot picker + load / save / delete / download; saves named snippets to browser local storage; overwrite and delete both ask for confirmation
 
 ## Controls
 

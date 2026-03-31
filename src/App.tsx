@@ -288,7 +288,7 @@ export default function App() {
             value={source}
             extensions={editorExtensions}
             onChange={(val) => setSourceAndSave(val)}
-            onCreateEditor={(view) => { editorViewRef.current = view; }}
+            onCreateEditor={(view) => { editorViewRef.current = view; view.dispatch({ effects: setParsed.of(programResult) }); }}
             onUpdate={(update) => {
               if (update.selectionSet) {
                 const pos = update.state.selection.main.head;

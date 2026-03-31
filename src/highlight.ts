@@ -113,14 +113,10 @@ function buildDecorations(view: EditorView): DecorationSet {
   const parsed = view.state.field(parsedField);
   const tks: Tk[] = [];
 
-  // Structural tokens (comments, operators, λ) — scan visible lines only
-  for (const { from, to } of view.visibleRanges) {
-    const first = doc.lineAt(from).number;
-    const last  = doc.lineAt(to).number;
-    for (let n = first; n <= last; n++) {
-      const line = doc.line(n);
-      scanStructural(line.text, line.from, tks);
-    }
+  // Structural tokens (comments, operators, λ) — scan full document
+  for (let n = 1; n <= doc.lines; n++) {
+    const line = doc.line(n);
+    scanStructural(line.text, line.from, tks);
   }
 
   // AST-based identifier highlighting
