@@ -47,7 +47,8 @@ function findMatch(term: Term, nd: Map<string, string>): string | undefined {
 }
 
 export default function App() {
-  const editorViewRef = useRef<EditorView | null>(null);
+  const editorViewRef   = useRef<EditorView | null>(null);
+  const slotPickerRef   = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]       = useState(false);
   const [source, setSource]           = useState(() =>
     localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart()
@@ -64,6 +65,7 @@ export default function App() {
   const [showSubst, setShowSubst]     = useState(false);
   const [saveName, setSaveName]       = useState("");
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
+  const [slotOpen, setSlotOpen]       = useState(false);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -146,10 +148,12 @@ export default function App() {
     setSavedSlots(getSavedSlots());
   }, [saveName, source]);
 
-  const handleLoadSlot = useCallback((name: string) => {
+  const handleLoadSlot = useCallback(() => {
+    const name = saveName.trim();
+    if (!name) return;
     const saved = localStorage.getItem(SAVE_PREFIX + name);
-    if (saved !== null) { setSourceAndSave(saved); setSaveName(name); }
-  }, [setSourceAndSave]);
+    if (saved !== null) setSourceAndSave(saved);
+  }, [saveName, setSourceAndSave]);
 
   const handleDeleteSlot = useCallback(() => {
     const name = saveName.trim();
@@ -237,6 +241,16 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
+  // Close slot picker on outside click
+  useEffect(() => {
+    if (!slotOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!slotPickerRef.current?.contains(e.target as Node)) setSlotOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [slotOpen]);
+
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
@@ -278,49 +292,68 @@ export default function App() {
               setCanRedo(redoDepth(update.state) > 0);
             }}
           />
-          <div className="example-row">
-            <span className="row-label">examples</span>
-            <div className="btn-group">
-              {EXAMPLES.map((ex) => (
-                <button key={ex.label} className="ex-btn" title={ex.src.trimStart()} onClick={() => setSourceAndSave(ex.src.trimStart())}>
-                  {ex.label}
-                </button>
-              ))}
+          <div className="toolbar">
+            <div className="toolbar-group">
+              <span className="row-label">examples</span>
+              <div className="select-wrap">
+                <select className="tool-select" onChange={e => {
+                  const ex = EXAMPLES.find(x => x.label === e.target.value);
+                  if (ex) setSourceAndSave(ex.src.trimStart());
+                }}>
+                  {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
+                </select>
+              </div>
             </div>
-          </div>
-          <div className="example-row">
-            <span className="row-label">insert</span>
-            <div className="btn-group">
-              {SNIPPETS.map((s) => (
-                <button key={s.label} className="ex-btn snippet-btn" title={`Insert at cursor:\n${s.def}`} onClick={() => insertSnippetAtCursor(s.def)}>
-                  {s.label}
-                </button>
-              ))}
+            <span className="toolbar-sep" />
+            <div className="toolbar-group">
+              <span className="row-label">insert</span>
+              <div className="select-wrap">
+                <select className="tool-select" onChange={e => {
+                  const s = SNIPPETS.find(x => x.label === e.target.value);
+                  if (s) insertSnippetAtCursor(s.def);
+                }}>
+                  {SNIPPETS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
+                </select>
+              </div>
             </div>
-          </div>
-          <div className="example-row">
-            <span className="row-label">storage</span>
-            <div className="storage-controls">
-              <input
-                className="save-name-input"
-                type="text"
-                placeholder="name…"
-                value={saveName}
-                onChange={e => setSaveName(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleSaveSlot(); }}
-              />
+            <span className="toolbar-sep" />
+            <div className="toolbar-group">
+              <span className="row-label">storage</span>
+              <div className="storage-combo">
+                <input
+                  className="save-name-input"
+                  type="text"
+                  placeholder="name…"
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleSaveSlot(); }}
+                />
+                <div className="slot-picker" ref={slotPickerRef}>
+                  <button className="tool-select slot-picker-btn" onClick={() => setSlotOpen(o => !o)}
+                    disabled={savedSlots.length === 0} title="Select a saved slot">▾</button>
+                  {slotOpen && (
+                    <div className="slot-picker-menu">
+                      {savedSlots.map(name => (
+                        <button key={name} className="slot-picker-item"
+                          onClick={() => { setSaveName(name); setSlotOpen(false); }}>
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button className="ex-btn" onClick={handleLoadSlot}
+                disabled={!savedSlots.includes(saveName.trim())}
+                title="Load saved content into editor">load</button>
               <button className="ex-btn" onClick={handleSaveSlot} disabled={!saveName.trim()}
                 title="Save current editor content under this name">save</button>
               <button className="ex-btn" onClick={handleDeleteSlot}
                 disabled={!savedSlots.includes(saveName.trim())}
                 title="Delete this saved slot">delete</button>
+              <span className="toolbar-sep" />
               <button className="ex-btn" onClick={handleDownload}
                 title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
-              {savedSlots.length > 0 && <span className="storage-sep" />}
-              {savedSlots.map(name => (
-                <button key={name} className="ex-btn snippet-btn" onClick={() => handleLoadSlot(name)}
-                  title={`Load "${name}"`}>{name}</button>
-              ))}
             </div>
           </div>
           {(programResult.errors.length > 0 || roundTripError) && (

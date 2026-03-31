@@ -166,11 +166,26 @@ label {
 /* ── CodeMirror editor ── */
 .cm-editor { width: 100%; max-height: 60vh; }
 
-.example-row {
+/* ── Compact toolbar (examples / insert / storage) ── */
+.toolbar {
   display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
   margin-top: 0.5rem;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 .row-label {
@@ -179,16 +194,40 @@ label {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
-  padding-top: 0.25rem;
   white-space: nowrap;
-  min-width: 4rem;
 }
 
-.btn-group {
+.select-wrap {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  align-items: center;
 }
+.select-wrap::after {
+  content: "▾";
+  position: absolute;
+  right: 0.45rem;
+  font-size: 0.65rem;
+  color: var(--muted);
+  pointer-events: none;
+  transition: color 0.15s;
+}
+.select-wrap:hover::after { color: var(--accent); }
+
+.tool-select {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.2rem 1.4rem 0.2rem 0.4rem;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tool-select:hover { border-color: var(--accent); color: var(--accent); }
+.tool-select option { background: var(--surface); color: var(--text); }
 
 .ex-btn {
   font-family: var(--mono);
@@ -201,18 +240,13 @@ label {
   border-radius: 2px;
   transition: border-color 0.15s, color 0.15s;
 }
-.ex-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ex-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.ex-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.snippet-btn { opacity: 0.7; }
-.snippet-btn:hover { opacity: 1; }
-
-.storage-controls {
+.storage-combo {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
 }
-
 .save-name-input {
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -220,20 +254,53 @@ label {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 0.2rem 0.5rem;
-  border-radius: 2px;
-  width: 8rem;
+  border-radius: 2px 0 0 2px;
+  width: 12rem;
   outline: none;
   transition: border-color 0.15s;
 }
 .save-name-input::placeholder { color: var(--muted); opacity: 1; }
 .save-name-input:focus { border-color: var(--accent); }
+.storage-combo:hover .save-name-input,
+.storage-combo:hover .slot-picker-btn { border-color: var(--accent); }
 
-.storage-sep {
-  width: 1px;
-  height: 1rem;
-  background: var(--border);
-  flex-shrink: 0;
+.storage-combo .slot-picker { display: flex; align-items: center; }
+.storage-combo .slot-picker-btn {
+  border-radius: 0 2px 2px 0;
+  border-left: none;
+  padding: 0.2rem 0.3rem;
 }
+
+.slot-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.slot-picker-menu {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  min-width: 8rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.slot-picker-item {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+.slot-picker-item:hover { background: rgba(255,255,255,0.06); color: var(--accent); }
 
 .load-btn {
   font-family: var(--mono);
