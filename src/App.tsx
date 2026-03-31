@@ -8,6 +8,7 @@ import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { basicSetup } from "codemirror";
 import { lambdaTheme, lambdaKeymap } from "./editor";
+import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
 import { examples as EXAMPLES } from "./data/examples";
 import { snippets as SNIPPETS } from "./data/snippets";
@@ -70,6 +71,12 @@ export default function App() {
   }, []);
 
   const programResult = parseProgram(source);
+
+  // Push parse result into the CodeMirror StateField for syntax highlighting
+  useEffect(() => {
+    editorViewRef.current?.dispatch({ effects: setParsed.of(programResult) });
+  }, [programResult]);
+
   let roundTripError: string | null = null;
   if (programResult.rawExpr) {
     try { assertRoundTrip(programResult.rawExpr); }
@@ -196,7 +203,7 @@ export default function App() {
     setHistory(entries.slice(-10).reverse());
   }, [programResult, source, showSubst]);
 
-  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap], []);
+  const editorExtensions = useMemo(() => [basicSetup, lambdaTheme, lambdaKeymap, parsedField, lambdaHighlight], []);
 
   const toggleKino = useCallback(() => {
     if (!document.fullscreenElement) {

@@ -1,6 +1,8 @@
 // AST node types for the lambda dialect
 // All nodes are fully normalized: Abs has exactly one parameter.
 
+export type Pos = { from: number; to: number };
+
 export type Var = {
   kind: "Var";
   name: string;

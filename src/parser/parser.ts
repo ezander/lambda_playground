@@ -11,7 +11,7 @@ import {
   RBracket,
   Identifier,
 } from "./lexer";
-import { Term, Var, Abs, App } from "./ast";
+import { Term, Var, Abs, App, Pos } from "./ast";
 import { normalize, alphaEq } from "../evaluator/eval";
 
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
@@ -79,12 +79,37 @@ export const parser = new LambdaParser();
 
 // ── 2. CST → AST visitor ──────────────────────────────────────────────────────
 
+// ── Position map ──────────────────────────────────────────────────────────────
+// Positions are stored outside the Term objects so the term structure stays
+// plain and all existing equality checks / tests continue to work unchanged.
+
+export type PositionMap = {
+  vars:   WeakMap<Var,  Pos>; // source range of each Var's identifier token
+  params: WeakMap<Abs,  Pos>; // source range of each Abs's param identifier
+};
+
+function emptyPositionMap(): PositionMap {
+  return { vars: new WeakMap(), params: new WeakMap() };
+}
+
 const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 class AstBuilder extends BaseCstVisitor {
+  offset   = 0;
+  positions: PositionMap = emptyPositionMap();
+
   constructor() {
     super();
     this.validateVisitor();
+  }
+
+  reset(offset: number) {
+    this.offset    = offset;
+    this.positions = emptyPositionMap();
+  }
+
+  private pos(tok: IToken): Pos {
+    return { from: this.offset + tok.startOffset, to: this.offset + (tok.endOffset ?? tok.startOffset) + 1 };
   }
 
   term(ctx: any): Term {
@@ -93,37 +118,50 @@ class AstBuilder extends BaseCstVisitor {
 
   application(ctx: any): Term {
     const atoms: Term[] = ctx.atom.map((a: CstNode) => this.visit(a));
-    // fold left: [f, x, y] → App(App(f, x), y)
     return atoms.reduce((func, arg) => App(func, arg));
   }
 
   atom(ctx: any): Term {
     let base: Term = this.visit(ctx.primary);
     for (const s of (ctx.subst ?? [])) {
-      const { param, arg } = this.visit(s) as { param: string; arg: Term };
-      base = App(Abs(param, base), arg);
+      const { param, paramTok, arg } = this.visit(s) as { param: string; paramTok: IToken; arg: Term };
+      const abs = Abs(param, base);
+      this.positions.params.set(abs, this.pos(paramTok));
+      base = App(abs, arg);
     }
     return base;
   }
 
   primary(ctx: any): Term {
-    if (ctx.func)       return this.visit(ctx.func);
-    if (ctx.Identifier) return Var((ctx.Identifier[0] as IToken).image);
+    if (ctx.func) return this.visit(ctx.func);
+    if (ctx.Identifier) {
+      const tok = ctx.Identifier[0] as IToken;
+      const v = Var(tok.image);
+      this.positions.vars.set(v, this.pos(tok));
+      return v;
+    }
     return this.visit(ctx.term);
   }
 
-  subst(ctx: any): { param: string; arg: Term } {
+  subst(ctx: any): { param: string; paramTok: IToken; arg: Term } {
     return {
-      param: (ctx.Identifier[0] as IToken).image,
-      arg:   this.visit(ctx.term),
+      param:    (ctx.Identifier[0] as IToken).image,
+      paramTok:  ctx.Identifier[0] as IToken,
+      arg:       this.visit(ctx.term),
     };
   }
 
   func(ctx: any): Term {
-    const params: string[] = ctx.Identifier.map((t: IToken) => t.image);
+    const toks: IToken[] = ctx.Identifier;
     const body: Term = this.visit(ctx.term);
     // Desugar \x y z := body  →  Abs(x, Abs(y, Abs(z, body)))
-    return params.reduceRight((acc, param) => Abs(param, acc), body);
+    let result = body;
+    for (let i = toks.length - 1; i >= 0; i--) {
+      const abs = Abs(toks[i].image, result);
+      this.positions.params.set(abs, this.pos(toks[i]));
+      result = abs;
+    }
+    return result;
   }
 }
 
@@ -134,10 +172,10 @@ const astBuilder = new AstBuilder();
 export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning" };
 
 export type ParseResult =
-  | { ok: true;  term: Term }
+  | { ok: true;  term: Term; positions: PositionMap }
   | { ok: false; errors: LambdaError[] };
 
-export function parse(input: string): ParseResult {
+export function parse(input: string, offset = 0): ParseResult {
   const { tokens, errors: lexErrors } = LambdaLexer.tokenize(input);
 
   if (lexErrors.length > 0) {
@@ -162,8 +200,9 @@ export function parse(input: string): ParseResult {
     };
   }
 
+  astBuilder.reset(offset);
   const term = astBuilder.visit(cst);
-  return { ok: true, term };
+  return { ok: true, term, positions: astBuilder.positions };
 }
 
 // ── Definition expansion ───────────────────────────────────────────────────────
@@ -194,12 +233,22 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 // Definitions are expanded eagerly into subsequent statements.
 // The last expression is the term to evaluate.
 
+// Per-definition info needed for accurate syntax highlighting
+export type DefInfo = {
+  namePos:   Pos;         // source position of the defined name
+  body:      Term;        // raw body (pre-expansion), Abs-wrapped for LHS params
+  positions: PositionMap; // positions for identifiers within body
+};
+
 export type ProgramResult = {
   ok: boolean;
   errors: LambdaError[];
   defs: Map<string, Term>;
   expr: Term | null;    // last expression, with defs expanded
   rawExpr: Term | null; // last expression, before expansion
+  // For syntax highlighting:
+  defInfos:          DefInfo[];
+  rawExprPositions:  PositionMap | null;
 };
 
 export function parseProgram(input: string): ProgramResult {
@@ -207,6 +256,8 @@ export function parseProgram(input: string): ProgramResult {
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
+  const defInfos: DefInfo[] = [];
+  let rawExprPositions: PositionMap | null = null;
   let lineOffset = 0;
 
   for (const rawLine of input.split(/[;\n]/)) {
@@ -237,7 +288,7 @@ export function parseProgram(input: string): ProgramResult {
 
       const rhsStart = tokens[defIdx].startOffset + 3;
       const rhs = rawLine.slice(rhsStart);
-      const bodyResult = parse(rhs);
+      const bodyResult = parse(rhs, lineOffset + rhsStart);
       if (!bodyResult.ok) {
         errors.push(...bodyResult.errors.map((e) => ({
           message: `In definition of '${name}': ${e.message}`,
@@ -264,9 +315,24 @@ export function parseProgram(input: string): ProgramResult {
       }
       defs.set(name, body);
 
+      // Build raw body for highlighting: wrap in Abs nodes with param positions
+      const positions = bodyResult.positions;
+      let rawBody: Term = bodyResult.term;
+      for (let i = paramTokens.length - 1; i >= 0; i--) {
+        const tok = paramTokens[i];
+        const abs = Abs(tok.image, rawBody);
+        positions.params.set(abs, { from: lineOffset + tok.startOffset, to: lineOffset + (tok.endOffset ?? tok.startOffset) + 1 });
+        rawBody = abs;
+      }
+      defInfos.push({
+        namePos: { from: lineOffset + nameToken.startOffset, to: lineOffset + (nameToken.endOffset ?? nameToken.startOffset) + 1 },
+        body: rawBody,
+        positions,
+      });
+
     } else {
       // ── Expression ────────────────────────────────────────────────────────
-      const result = parse(rawLine);
+      const result = parse(rawLine, lineOffset);
       if (!result.ok) {
         errors.push(...result.errors.map((e) => ({
           message: e.message,
@@ -277,10 +343,11 @@ export function parseProgram(input: string): ProgramResult {
       }
       rawExpr = result.term;
       expr    = expandDefs(result.term, defs);
+      rawExprPositions = result.positions;
     }
 
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, rawExprPositions };
 }

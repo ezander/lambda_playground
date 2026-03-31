@@ -37,6 +37,15 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cm-lineNumbers .cm-gutterElement": { padding: "0 0.6rem" },
   ".cm-selectionBackground, ::selection": { background: "rgba(201,168,76,0.2) !important" },
   ".cm-scroller": { overflow: "auto", background: "#1a1a1a" },
+  // ── Syntax highlighting ──
+  ".cml-comment":  { color: "#6b6660", fontStyle: "italic" },
+  ".cml-op":       { color: "#7a7060" },
+  ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
+  ".cml-def-name": { color: "#c9a84c", fontWeight: "600" },
+  ".cml-def-use":  { color: "#c9a84c" },
+  ".cml-param":    { color: "#4caf7d", fontWeight: "600" },  // binder (declaration site)
+  ".cml-bound":    { color: "#4caf7d" },                     // bound variable use
+  ".cml-free":     { color: "#7ab0c8" },                     // free variable
 }, { dark: true });
 
 // ── Bracket-wrap keymap ───────────────────────────────────────────────────────
