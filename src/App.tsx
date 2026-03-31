@@ -7,6 +7,7 @@ import { step, etaStep, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { basicSetup } from "codemirror";
+import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { lambdaTheme, lambdaKeymap } from "./editor";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
@@ -57,6 +58,8 @@ export default function App() {
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
+  const [canUndo, setCanUndo]         = useState(false);
+  const [canRedo, setCanRedo]         = useState(false);
   const [kinoMode, setKinoMode]       = useState(false);
   const [showSubst, setShowSubst]     = useState(false);
   const [saveName, setSaveName]       = useState("");
@@ -243,7 +246,7 @@ export default function App() {
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       <header>
         <h1>λ playground</h1>
-        <p className="subtitle">a small lambda dialect</p>
+        <p className="subtitle">an untyped lambda dialect</p>
       </header>
 
       <main>
@@ -253,6 +256,8 @@ export default function App() {
             <label htmlFor="source">expression</label>
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
+              <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
+              <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
               <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
               <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
@@ -269,6 +274,8 @@ export default function App() {
                 const line = update.state.doc.lineAt(pos);
                 setCursorPos({ line: line.number, col: pos - line.from + 1 });
               }
+              setCanUndo(undoDepth(update.state) > 0);
+              setCanRedo(redoDepth(update.state) > 0);
             }}
           />
           <div className="example-row">
@@ -333,27 +340,6 @@ export default function App() {
           )}
         </section>
 
-        {/* ── Live parse output ── */}
-        <section className="output-section">
-          <div className="output-tabs">
-            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
-              pretty print
-            </button>
-            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
-              AST
-            </button>
-          </div>
-          <div className="output">
-            {currentTerm ? (
-              view === "pretty"
-                ? <pre>{prettyPrint(currentTerm)}</pre>
-                : <AstView term={currentTerm} />
-            ) : (
-              <span className="placeholder">parse result will appear here</span>
-            )}
-          </div>
-        </section>
-
         {/* ── Controls ── */}
         <div className="eval-controls">
           <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
@@ -388,6 +374,27 @@ export default function App() {
             ))}
           </section>
         )}
+
+        {/* ── Live parse output ── */}
+        <section className="output-section">
+          <div className="output-tabs">
+            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
+              pretty print
+            </button>
+            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
+              AST
+            </button>
+          </div>
+          <div className="output">
+            {currentTerm ? (
+              view === "pretty"
+                ? <pre>{prettyPrint(currentTerm)}</pre>
+                : <AstView term={currentTerm} />
+            ) : (
+              <span className="placeholder">parse result will appear here</span>
+            )}
+          </div>
+        </section>
       </main>
 
       <footer>

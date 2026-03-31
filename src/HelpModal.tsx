@@ -16,7 +16,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         <h2>λ playground</h2>
         <p>
-          An interactive playground for a small lambda calculus dialect, inspired
+          An interactive playground for an untyped lambda dialect, inspired
           by <a href={INSPIRATION_URL} target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>.
           Expressions are evaluated using <strong>normal-order</strong> (leftmost-outermost)
           beta reduction with capture-avoiding substitution.
