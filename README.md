@@ -6,7 +6,7 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
 - Named definitions with eager expansion into subsequent lines
-- Shorthand `f x y ::= e` desugars to `f ::= \x y := e`
+- Shorthand `f x y = e` desugars to `f = \x y := e`
 - Live parsing on every keystroke with clickable error locations
 - Syntax highlighting: defined names, lambda binders, bound/free variables, comments
 - Two-phase beta reduction: optionally show `e[x:=a]` substitution as an intermediate step
@@ -34,9 +34,9 @@ e[x:=a]              # substitution: desugars to (λx. e) a
 ### Definitions
 
 ```
-true  ::= λx y. x          # define a name
-false ::= λx y. y
-and p q ::= p q false       # shorthand: f x y ::= e  means  f ::= λx y := e
+true  = λx y. x          # define a name
+false = λx y. y
+and p q = p q false       # shorthand: f x y = e  means  f = λx y := e
 
 and true false              # last expression line is what gets evaluated
 ```

@@ -40,8 +40,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <p>Each line (or <code>;</code>-separated statement) is either a definition or an expression. Definitions are expanded into subsequent statements.</p>
         <table className="help-table">
           <tbody>
-            <tr><td><code>name ::= expr</code></td><td>define a name</td></tr>
-            <tr><td><code>f x y ::= expr</code></td><td>shorthand for <code>f ::= \x y := expr</code></td></tr>
+            <tr><td><code>name = expr</code></td><td>define a name</td></tr>
+            <tr><td><code>f x y = expr</code></td><td>shorthand for <code>f = \x y := expr</code></td></tr>
+            <tr><td><code>π expr</code></td><td>evaluate <code>expr</code> to normal form and show result in the output panel</td></tr>
           </tbody>
         </table>
         <p>The <em>last expression line</em> is what gets loaded and evaluated. Redefining a name with a different normal form produces a warning.</p>
@@ -94,6 +95,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-M</code></td><td>insert μ at cursor</td></tr>
+            <tr><td><code>Alt-P</code></td><td>insert π at cursor</td></tr>
           </tbody>
         </table>
 
@@ -105,8 +107,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         <h3>grammar</h3>
         <pre>{`program     → statement (('\\n' | ';') statement)*
-statement   → definition | term
-definition  → identifier+ '::=' term
+statement   → definition | print | term
+definition  → identifier+ '=' term
+print       → 'π' term
 term        → application
 application → atom+
 atom        → primary ('[' identifier ':=' term ']')*

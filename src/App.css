@@ -474,6 +474,40 @@ label {
   border-left: 1px solid var(--border);
 }
 
+/* ── π results ── */
+.print-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.print-entry {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 2px;
+  padding: 0.5rem 1rem;
+  gap: 0.25rem;
+}
+
+.print-src {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.print-result {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 /* ── History ── */
 .history-section {
   display: flex;

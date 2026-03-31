@@ -9,6 +9,7 @@ import { Term, Var, Abs } from "./parser/ast";
 const mComment  = Decoration.mark({ class: "cml-comment" });
 const mOp       = Decoration.mark({ class: "cml-op" });
 const mLambda   = Decoration.mark({ class: "cml-lambda" });
+const mPi       = Decoration.mark({ class: "cml-pi" });
 const mDefName  = Decoration.mark({ class: "cml-def-name" });
 const mDefUse   = Decoration.mark({ class: "cml-def-use" });
 const mBound    = Decoration.mark({ class: "cml-bound" });
@@ -40,11 +41,16 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
 
   const code = ci >= 0 ? text.slice(0, ci) : text;
 
-  // ::= definition operator
-  let p = code.indexOf("::=");
-  while (p >= 0) {
-    tks.push({ from: lineFrom + p, to: lineFrom + p + 3, m: mOp });
-    p = code.indexOf("::=", p + 3);
+  // = definition operator (standalone, not part of :=)
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === "=" && (i === 0 || code[i - 1] !== ":"))
+      tks.push({ from: lineFrom + i, to: lineFrom + i + 1, m: mOp });
+  }
+
+  // π print marker
+  if (code.trimStart().startsWith("π")) {
+    const pi = code.indexOf("π");
+    tks.push({ from: lineFrom + pi, to: lineFrom + pi + 1, m: mPi });
   }
 
   // λ/\ keyword + scan ahead for . or := body separator
@@ -62,11 +68,10 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
   }
 
   // := inside substitution [x:=a]
-  p = code.indexOf(":=");
-  while (p >= 0) {
-    if (p === 0 || code[p - 1] !== ":")   // exclude ::=
-      tks.push({ from: lineFrom + p, to: lineFrom + p + 2, m: mOp });
-    p = code.indexOf(":=", p + 2);
+  let q = code.indexOf(":=");
+  while (q >= 0) {
+    tks.push({ from: lineFrom + q, to: lineFrom + q + 2, m: mOp });
+    q = code.indexOf(":=", q + 2);
   }
 }
 

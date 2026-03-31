@@ -273,6 +273,19 @@ export default function App() {
     setTimeout(() => setShareLabel("share"), 2000);
   }, [source]);
 
+  const printResults = useMemo(() => {
+    const nd = buildNormDefs(programResult.defs);
+    return programResult.printInfos.map(({ raw, expanded }) => {
+      const { term, kind } = normalize(expanded);
+      return {
+        src:    prettyPrint(raw),
+        result: prettyPrint(term),
+        normal: kind === "normalForm",
+        match:  findMatch(term, nd),
+      };
+    });
+  }, [programResult]);
+
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
@@ -417,6 +430,24 @@ export default function App() {
           </label>
         </div>
 
+        {/* ── π results ── */}
+        {printResults.length > 0 && (
+          <section className="print-section">
+            {printResults.map((r, i) => (
+              <div key={i} className="print-entry">
+                <code className="print-src">π {r.src}</code>
+                <code className="print-result">
+                  {r.result}
+                  {r.normal
+                    ? <span className="eval-status normal-form"> normal form</span>
+                    : <span className="eval-status"> (step limit)</span>}
+                  {r.match && <span className="history-match">{r.match}</span>}
+                </code>
+              </div>
+            ))}
+          </section>
+        )}
+
         {/* ── History ── */}
         {history.length > 0 && (
           <section className="history-section">
@@ -458,8 +489,9 @@ export default function App() {
         <div className="grammar">
           <h2>grammar</h2>
           <pre>{`program     → statement (('\\n' | ';') statement)*
-statement   → definition | term
-definition  → identifier+ '::=' term
+statement   → definition | print | term
+definition  → identifier+ '=' term
+print       → 'π' term
 term        → application
 application → atom+
 atom        → primary ('[' identifier ':=' term ']')*

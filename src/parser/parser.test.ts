@@ -209,21 +209,21 @@ describe("parseProgram", () => {
   });
 
   it("parses a definition and expression", () => {
-    const r = parseProgram("I ::= \\x. x\nI");
+    const r = parseProgram("I = \\x. x\nI");
     expect(r.ok).toBe(true);
     // expr should be the expanded form (the body of I)
     expect(r.expr).toEqual(Abs("x", Var("x")));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
   });
 
-  it("desugars param shorthand  f x ::= e  →  f ::= \\x := e", () => {
-    const r = parseProgram("K x y ::= x\nK");
+  it("desugars param shorthand  f x = e  →  f = \\x := e", () => {
+    const r = parseProgram("K x y = x\nK");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
   });
 
   it("expands definitions eagerly into later lines", () => {
-    const r = parseProgram("I ::= \\x. x\nf ::= I\nf");
+    const r = parseProgram("I = \\x. x\nf = I\nf");
     expect(r.ok).toBe(true);
     // f should expand to I's body, not the symbol I
     expect(r.expr).toEqual(Abs("x", Var("x")));
@@ -242,13 +242,13 @@ describe("parseProgram", () => {
   });
 
   it("treats semicolons as statement separators", () => {
-    const r = parseProgram("I ::= \\x. x; I");
+    const r = parseProgram("I = \\x. x; I");
     expect(r.ok).toBe(true);
     expect(r.expr).toEqual(Abs("x", Var("x")));
   });
 
   it("allows multiple definitions on one line with semicolons", () => {
-    const r = parseProgram("K ::= \\x y. x; I ::= \\x. x; K");
+    const r = parseProgram("K = \\x y. x; I = \\x. x; K");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
@@ -262,20 +262,20 @@ describe("parseProgram", () => {
   });
 
   it("reports an error for a bad definition body", () => {
-    const r = parseProgram("f ::= (");
+    const r = parseProgram("f = (");
     expect(r.ok).toBe(false);
     expect(r.errors.length).toBeGreaterThan(0);
   });
 
   it("warns on redefinition with different normal form", () => {
-    const r = parseProgram("I ::= \\x. x\nI ::= \\x. x x");
+    const r = parseProgram("I = \\x. x\nI = \\x. x x");
     expect(r.ok).toBe(true); // warning doesn't block loading
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
   });
 
   it("does not warn on redefinition with the same normal form", () => {
     // \x y. x  and  \a b. a  are alpha-equivalent
-    const r = parseProgram("T ::= \\x y. x\nT ::= \\a b. a");
+    const r = parseProgram("T = \\x y. x\nT = \\a b. a");
     expect(r.ok).toBe(true);
     expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
   });
@@ -290,8 +290,8 @@ describe("parseProgram", () => {
   });
 
   it("reports an error for a definition with non-identifier on LHS", () => {
-    // '(x) ::= y' — LHS contains a non-identifier token
-    const r = parseProgram("(x) ::= y");
+    // '(x) = y' — LHS contains a non-identifier token
+    const r = parseProgram("(x) = y");
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.includes("left-hand side"))).toBe(true);
   });

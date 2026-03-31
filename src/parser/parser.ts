@@ -3,7 +3,8 @@ import {
   allTokens,
   LambdaLexer,
   Backslash,
-  DefAssign,
+  Pi,
+  Equals,
   Assign,
   LParen,
   RParen,
@@ -248,8 +249,10 @@ export type ProgramResult = {
   expr: Term | null;    // last expression, with defs expanded
   rawExpr: Term | null; // last expression, before expansion
   // For syntax highlighting:
-  defInfos:  DefInfo[];
-  exprInfos: { term: Term; positions: PositionMap }[];
+  defInfos:   DefInfo[];
+  exprInfos:  { term: Term; positions: PositionMap }[];
+  // π-marked print statements (expanded, ready to evaluate):
+  printInfos: { raw: Term; expanded: Term; positions: PositionMap }[];
 };
 
 export function parseProgram(input: string): ProgramResult {
@@ -257,8 +260,9 @@ export function parseProgram(input: string): ProgramResult {
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
-  const defInfos:  DefInfo[] = [];
-  const exprInfos: { term: Term; positions: PositionMap }[] = [];
+  const defInfos:   DefInfo[] = [];
+  const exprInfos:  { term: Term; positions: PositionMap }[] = [];
+  const printInfos: { raw: Term; expanded: Term; positions: PositionMap }[] = [];
   let lineOffset = 0;
 
   for (const rawLine of input.split(/[;\n]/)) {
@@ -273,7 +277,19 @@ export function parseProgram(input: string): ProgramResult {
     }
     if (tokens.length === 0) { lineOffset += rawLine.length + 1; continue; }
 
-    const defIdx = tokens.findIndex((t) => t.tokenType === DefAssign);
+    // ── π print statement ──────────────────────────────────────────────────────
+    if (tokens[0]?.tokenType === Pi) {
+      const rest = rawLine.slice(tokens[0].endOffset! + 1);
+      const result = parse(rest, lineOffset + tokens[0].endOffset! + 1);
+      if (result.ok) {
+        printInfos.push({ raw: result.term, expanded: expandDefs(result.term, defs), positions: result.positions });
+        exprInfos.push({ term: result.term, positions: result.positions });
+      }
+      lineOffset += rawLine.length + 1;
+      continue;
+    }
+
+    const defIdx = tokens.findIndex((t) => t.tokenType === Equals);
 
     if (defIdx >= 0) {
       // ── Definition ────────────────────────────────────────────────────────
@@ -287,7 +303,7 @@ export function parseProgram(input: string): ProgramResult {
       const name   = nameToken.image;
       const params = paramTokens.map((t) => t.image);
 
-      const rhsStart = tokens[defIdx].startOffset + 3;
+      const rhsStart = tokens[defIdx].startOffset + 1;
       const rhs = rawLine.slice(rhsStart);
       const bodyResult = parse(rhs, lineOffset + rhsStart);
       if (!bodyResult.ok) {
@@ -351,5 +367,5 @@ export function parseProgram(input: string): ProgramResult {
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos };
 }

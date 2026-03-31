@@ -41,6 +41,7 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-comment":  { color: "#6b6660", fontStyle: "italic" },
   ".cml-op":       { color: "#7a7060" },
   ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
+  ".cml-pi":       { color: "#e8e4dc", fontWeight: "600" },
   ".cml-def-name": { color: "#c9a84c", fontWeight: "600" },
   ".cml-def-use":  { color: "#c9a84c" },
   ".cml-param":    { color: "#4caf7d", fontWeight: "600" },  // binder (declaration site)
@@ -112,4 +113,6 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-L", run: v => insertAt(v, "λ") },
   { key: "Alt-m", run: v => insertAt(v, "μ") },
   { key: "Alt-M", run: v => insertAt(v, "μ") },
+  { key: "Alt-p", run: v => insertAt(v, "π") },
+  { key: "Alt-P", run: v => insertAt(v, "π") },
 ]));
