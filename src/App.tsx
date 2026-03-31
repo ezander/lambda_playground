@@ -400,11 +400,15 @@ export default function App() {
       <footer>
         <div className="grammar">
           <h2>grammar</h2>
-          <pre>{`term        ::= application
-application ::= atom+
-atom        ::= primary ('[' identifier ':=' term ']')*
-primary     ::= identifier | '(' term ')' | function
-function    ::= ('\\' | 'λ') identifier+ (':=' | '.') term`}</pre>
+          <pre>{`program     → statement (('\\n' | ';') statement)*
+statement   → definition | term
+definition  → identifier+ '::=' term
+term        → application
+application → atom+
+atom        → primary ('[' identifier ':=' term ']')*
+primary     → identifier | '(' term ')' | function
+function    → ('\\' | 'λ') identifier+ (':=' | '.') term
+identifier  → [a-zA-Z0-9_]+`}</pre>
         </div>
         <p className="attribution">
           inspired by <a href="https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html" target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>

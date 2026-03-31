@@ -104,11 +104,15 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         </p>
 
         <h3>grammar</h3>
-        <pre>{`term        ::= application
-application ::= atom+
-atom        ::= primary ('[' identifier ':=' term ']')*
-primary     ::= identifier | '(' term ')' | function
-function    ::= ('\\' | 'λ') identifier+ (':=' | '.') term`}</pre>
+        <pre>{`program     → statement (('\\n' | ';') statement)*
+statement   → definition | term
+definition  → identifier+ '::=' term
+term        → application
+application → atom+
+atom        → primary ('[' identifier ':=' term ']')*
+primary     → identifier | '(' term ')' | function
+function    → ('\\' | 'λ') identifier+ (':=' | '.') term
+identifier  → [a-zA-Z0-9_]+`}</pre>
       </div>
     </div>
   );
