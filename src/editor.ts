@@ -52,6 +52,38 @@ function wrapSelection(view: EditorView, open: string, close: string): boolean {
   return true;
 }
 
+// ── Line-comment toggle ───────────────────────────────────────────────────────
+// Ctrl-/ toggles # comments on all lines covered by the selection (or cursor).
+
+function toggleLineComment(view: EditorView): boolean {
+  const state = view.state;
+  const { from, to } = state.selection.main;
+  const firstLine = state.doc.lineAt(from);
+  // If selection ends exactly at a line start, don't include that (empty) line
+  const lastLine  = state.doc.lineAt(
+    to > from && to === state.doc.lineAt(to).from ? to - 1 : to
+  );
+
+  const lines = [];
+  for (let n = firstLine.number; n <= lastLine.number; n++)
+    lines.push(state.doc.line(n));
+
+  const allCommented = lines.every(l => l.text === "" || l.text.startsWith("#"));
+
+  const changes = lines.flatMap(line => {
+    if (allCommented) {
+      if (line.text.startsWith("# ")) return [{ from: line.from, to: line.from + 2, insert: "" }];
+      if (line.text.startsWith("#"))   return [{ from: line.from, to: line.from + 1, insert: "" }];
+      return [];
+    } else {
+      return line.text.length > 0 ? [{ from: line.from, insert: "# " }] : [];
+    }
+  });
+
+  if (changes.length > 0) view.dispatch({ changes });
+  return true;
+}
+
 function insertAt(view: EditorView, text: string): boolean {
   const { from, to } = view.state.selection.main;
   view.dispatch({
@@ -62,6 +94,7 @@ function insertAt(view: EditorView, text: string): boolean {
 }
 
 export const lambdaKeymap: Extension = Prec.highest(keymap.of([
+  { key: "Ctrl-/", run: toggleLineComment },
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
   { key: "{", run: v => wrapSelection(v, "{", "}") },
