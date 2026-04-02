@@ -761,6 +761,14 @@ label {
   flex-shrink: 0;
 }
 
+.history-entry-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Modal ── */
 .modal-backdrop {
   position: fixed;

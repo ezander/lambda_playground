@@ -64,7 +64,7 @@ function getSavedSlots(): string[] {
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
-type HistoryEntry = { label: string; text: string; match?: string };
+type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" };
 
 function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
   const m = new Map<string, string>();
@@ -141,10 +141,11 @@ export default function App() {
     catch (e) { roundTripError = String(e); }
   }
 
-  const makeEntry = useCallback((term: Term, stepNum: number, suffix = "", normal = true): HistoryEntry => ({
+  const makeEntry = useCallback((term: Term, stepNum: number, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry => ({
     label: `${stepNum}:`,
     text: prettyPrint(term) + suffix,
     match: normal ? findMatch(term, normDefs) : undefined,
+    status,
   }), [normDefs]);
 
   const mergeConfig = useCallback((pragma: PragmaConfig): Config =>
@@ -157,9 +158,10 @@ export default function App() {
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
     const nd = buildNormDefs(d, effectiveConfig);
     setNormDefs(nd);
-    setLoaded({ term, done: step(term) === null, stepNum: 1, effectiveConfig });
+    const done = step(term) === null;
+    setLoaded({ term, done, stepNum: 1, effectiveConfig });
     setLoadedSource(source);
-    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }]);
+    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
 
   const advance = useCallback((maxSteps: number) => {
@@ -175,11 +177,16 @@ export default function App() {
       entries.push(makeEntry(current, ++stepNum));
     }
     const batchLimitHit = i === maxSteps && maxSteps > 1;
-    if (batchLimitHit && entries.length > 0) {
-      entries[entries.length - 1].text += " (paused)";
-      entries[entries.length - 1].match = undefined;
-    }
     const done = step(current, showSubst) === null;
+    // Tag the last entry with its terminal status
+    if (entries.length > 0) {
+      const last = entries[entries.length - 1];
+      if (batchLimitHit) {
+        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
+      } else if (done) {
+        entries[entries.length - 1] = { ...last, status: "normalForm" };
+      }
+    }
     setLoaded({ term: current, done, stepNum, effectiveConfig: loaded.effectiveConfig });
     const maxHistory = loaded.effectiveConfig.maxHistory;
     setHistory(h => [...entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
@@ -247,8 +254,10 @@ export default function App() {
     const next = etaStep(loaded.term);
     if (next === null) return;
     const stepNum = loaded.stepNum + 1;
+    const done = step(next, showSubst) === null;
     const entry = makeEntry(next, stepNum);
-    setLoaded({ term: next, done: step(next, showSubst) === null, stepNum, effectiveConfig: loaded.effectiveConfig });
+    if (done) entry.status = "normalForm";
+    setLoaded({ term: next, done, stepNum, effectiveConfig: loaded.effectiveConfig });
     setHistory(h => [entry, ...h].slice(0, loaded.effectiveConfig.maxHistory));
   }, [loaded, makeEntry, showSubst]);
   const handleLoadRun = useCallback(() => {
@@ -271,9 +280,17 @@ export default function App() {
       entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, nd) });
     }
     const batchLimitHit = i === LIMIT;
-    if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
+    const done = step(current, showSubst) === null;
+    if (entries.length > 0) {
+      const last = entries[entries.length - 1];
+      if (batchLimitHit) {
+        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
+      } else if (done) {
+        entries[entries.length - 1] = { ...last, status: "normalForm" };
+      }
+    }
     const stepNum = entries.length;
-    setLoaded({ term: current, done: step(current, showSubst) === null, stepNum, effectiveConfig });
+    setLoaded({ term: current, done, stepNum, effectiveConfig });
     setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
   }, [programResult, source, showSubst, mergeConfig]);
 
@@ -553,7 +570,6 @@ export default function App() {
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
             <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${loaded?.effectiveConfig.maxSteps ?? config.maxSteps} steps (F9)`}>run <kbd>F9</kbd></button>
-            {loaded?.done && <span className="eval-status normal-form">normal form</span>}
             <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
               <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
               {" "}show substitution
@@ -567,7 +583,14 @@ export default function App() {
                     <span className="history-label">{entry.label}</span>
                     {" "}{entry.text}
                   </code>
-                  {entry.match && <span className="history-match">{entry.match}</span>}
+                  {entry.status && (
+                    <span className="history-entry-status">
+                      {entry.status === "normalForm"
+                        ? <span className="eval-status normal-form">normal form</span>
+                        : <span className="eval-status did-not-terminate">did not terminate</span>}
+                      {entry.match && <span className="history-match"><span className="print-equiv">≡</span> {entry.match}</span>}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
