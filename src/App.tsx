@@ -81,6 +81,15 @@ function findMatch(term: Term, nd: Map<string, string>): string | undefined {
   return matches.length > 0 ? matches.join(", ") : undefined;
 }
 
+function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry {
+  return {
+    label: `${stepNum}:`,
+    text: prettyPrint(term) + suffix,
+    match: normal ? findMatch(term, nd) : undefined,
+    status,
+  };
+}
+
 export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
@@ -141,12 +150,11 @@ export default function App() {
     catch (e) { roundTripError = String(e); }
   }
 
-  const makeEntry = useCallback((term: Term, stepNum: number, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry => ({
-    label: `${stepNum}:`,
-    text: prettyPrint(term) + suffix,
-    match: normal ? findMatch(term, normDefs) : undefined,
-    status,
-  }), [normDefs]);
+  const makeEntry = useCallback(
+    (term: Term, stepNum: number, suffix = "", normal = true, status?: HistoryEntry["status"]) =>
+      buildEntry(term, stepNum, normDefs, suffix, normal, status),
+    [normDefs]
+  );
 
   const mergeConfig = useCallback((pragma: PragmaConfig): Config =>
     ({ ...config, ...pragma }), [config]);
@@ -170,14 +178,15 @@ export default function App() {
     let stepNum = loaded.stepNum;
     const entries: HistoryEntry[] = [];
     let i = 0;
+    let lastNext: Term | null = null;
     for (; i < maxSteps; i++) {
-      const next = step(current, showSubst);
-      if (next === null) break;
-      current = next;
+      lastNext = step(current, showSubst);
+      if (lastNext === null) break;
+      current = lastNext;
       entries.push(makeEntry(current, ++stepNum));
     }
     const batchLimitHit = i === maxSteps && maxSteps > 1;
-    const done = step(current, showSubst) === null;
+    const done = lastNext === null || step(current, showSubst) === null;
     // Tag the last entry with its terminal status
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
@@ -271,16 +280,17 @@ export default function App() {
     // Run immediately from the fresh term
     const LIMIT = effectiveConfig.maxSteps;
     let current = term;
-    const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }];
+    const entries: HistoryEntry[] = [buildEntry(term, 1, nd)];
     let i = 0;
+    let lastNext: Term | null = null;
     for (; i < LIMIT; i++) {
-      const next = step(current, showSubst);
-      if (next === null) break;
-      current = next;
-      entries.push({ label: `${i + 2}:`, text: prettyPrint(current), match: findMatch(current, nd) });
+      lastNext = step(current, showSubst);
+      if (lastNext === null) break;
+      current = lastNext;
+      entries.push(buildEntry(current, i + 2, nd));
     }
     const batchLimitHit = i === LIMIT;
-    const done = step(current, showSubst) === null;
+    const done = lastNext === null || step(current, showSubst) === null;
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
       if (batchLimitHit) {

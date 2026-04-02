@@ -82,8 +82,10 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>load</strong></td><td>parse and load the current expression into the history</td></tr>
             <tr><td><strong>β-step</strong></td><td>perform one beta-reduction step</td></tr>
             <tr><td><strong>η-step</strong></td><td>perform one eta-reduction step (λx. f x → f, when x ∉ fv(f)); disabled when none exists</td></tr>
-            <tr><td><strong>run</strong></td><td>reduce up to 1000 beta steps; continue by pressing run again</td></tr>
+            <tr><td><strong>run</strong></td><td>reduce up to the configured step limit; continue by pressing run again</td></tr>
             <tr><td><strong>show substitution</strong></td><td>show substitution <code>e[x:=a]</code> as an intermediate step before beta-reducing</td></tr>
+            <tr><td><strong>find</strong></td><td>open the editor's find/replace bar (same as <code>Ctrl-F</code>)</td></tr>
+            <tr><td><strong>⚙</strong></td><td>open settings: max steps per run, max history entries; saved to local storage</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
           </tbody>
         </table>
@@ -104,9 +106,20 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           </tbody>
         </table>
 
+        <h3>in-source config</h3>
+        <p>
+          A line beginning with <code>#!</code> sets a runtime option for that program run (overrides the settings dialog; reset when the run ends):
+        </p>
+        <table className="help-table">
+          <tbody>
+            <tr><td><code>#! max-steps=500</code></td><td>limit beta steps per <strong>run</strong> press</td></tr>
+            <tr><td><code>#! max-history=20</code></td><td>max history entries shown</td></tr>
+          </tbody>
+        </table>
+
         <h3>history</h3>
         <p>
-          Each reduction step is shown numbered and newest-first, up to 10 entries.
+          Each reduction step is shown numbered and newest-first, up to the configured limit (default 10).
           If a term is alpha-equivalent to a definition's normal form, the definition name is shown on the right.
         </p>
 

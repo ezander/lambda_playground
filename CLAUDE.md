@@ -27,8 +27,10 @@ user input → lexer.ts → CST parser → AST visitor → ast.ts nodes → eval
 - **`src/parser/lexer.ts`** — Chevrotain tokenizer for the custom syntax.
 - **`src/parser/parser.ts`** — Two-phase: Chevrotain CST parser + AST visitor. Desugars multi-param lambdas (`\x y := body` → nested `Abs`) and folds left-associative application.
 - **`src/parser/pretty.ts`** — Serializes AST back to surface syntax.
-- **`src/evaluator/eval.ts`** — Normal-order (leftmost-outermost) beta reduction with capture-avoiding substitution and alpha-renaming. Fresh variable counter. Default step limit: 1000.
-- **`src/App.tsx`** — UI state machine: `idle → parsed → stepping → done`. Parses on every keystroke; supports step-by-step and full evaluation.
+- **`src/evaluator/eval.ts`** — Normal-order beta reduction; `EvalConfig = { maxSteps?: number }` controls the step limit (default 1000).
+- **`src/App.tsx`** — Main UI. `Config = { maxSteps, maxHistory }` persisted in localStorage. `Loaded` state carries `effectiveConfig` (merged from `Config` + pragma overrides). `buildEntry` is a module-level helper for constructing history entries.
+- **`src/SettingsModal.tsx`** — Settings dialog (⚙): draft state, OK/Cancel, click-outside = accept.
+- **`src/parser/parser.ts`** — `PragmaConfig = { maxSteps?, maxHistory? }` parsed from `#!` lines before tokenisation; included in `ProgramResult`.
 
 ### Grammar
 

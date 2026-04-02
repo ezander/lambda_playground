@@ -54,11 +54,10 @@
 * [x] allow + - * / as identifiers (and maybe ^ ~ & | for booleans) so we can write e.g. `+ m n = m S n` and `* m n = m (+ n) 0`
 * [x] make all three displays (expr, reductions, output) have a name and be collapsible
 * [x] what about horizontal rulers, and boxes where the result will show up?
+* [x] Introduce options (pragma syntax?) `#pragma option(eta-conversion=true)`, `#pragma option(max-beta=10000)`, maybe better than settings box, or use `{max-beta=10000,}`
+* [x] Make limits (steps, display) settable (or smaller?)
 
 ## Up next
- 
-* [ ] Introduce options (pragma syntax?) `#pragma option(eta-conversion=true)`, `#pragma option(max-beta=10000)`, maybe better than settings box, or use `{max-beta=10000,}`
-* [ ] Make limits (steps, display) settable (or smaller?)
 
 ## Consider
 
@@ -68,7 +67,7 @@
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
  
-* [ ] make a settings box (?), e.g. for this reduction thing, the number of steps, lines to display and so on, save to local storage if wanted
+* [x] make a settings box (?), e.g. for this reduction thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc.)
 * [ ] examples and snippets are curr essentially the same, make snippets really useful (list gists), examples longer, with explanations, tutorials extra?
@@ -78,7 +77,7 @@
 * [ ] make more demos and connect to a tutorial (basics, booleans, numerals, combinators)
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 * [ ] think about a leetcode-like layout of the ui, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises) 
-* [ ] remove grammar and link from main page and just leave in help? maybe also remove hrb? diverged too much
+* [x] remove grammar and link from main page and just leave in help? maybe also remove hrb? diverged too much
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 * [ ] (Q: for identification: as long as at least one is an abstraction, apply new var to both sides?)
 

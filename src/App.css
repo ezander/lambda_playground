@@ -508,7 +508,6 @@ label {
 .eval-status {
   font-family: var(--mono);
   font-size: 0.78rem;
-  margin-left: 0.4rem;
 }
 .normal-form { color: var(--ok); }
 .did-not-terminate { color: var(--warn); }

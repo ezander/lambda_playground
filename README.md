@@ -48,6 +48,15 @@ Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 `church 0`              # evaluates the definition
 ```
 
+### In-source config
+
+Lines starting with `#!` set runtime options for that program run (override the settings dialog; reset when the run ends):
+
+```
+#! max-steps=500      # beta steps per "run" press
+#! max-history=20     # max history entries shown
+```
+
 ### Definitions
 
 ```
@@ -77,8 +86,10 @@ Below the editor, a compact toolbar provides three groups:
 | load | F6 | Parse and load the current expression into the history |
 | β-step | F10 | One beta-reduction step |
 | η-step | F11 | One eta-reduction step (λx. f x → f) |
-| run | F9 | Up to 1000 beta steps; press again to continue |
+| run | F9 | Up to N beta steps (default 1000); press again to continue |
 | show substitution | | Show `e[x:=a]` as an intermediate step before beta-reducing |
+| find | Ctrl-F | Open the editor's find/replace bar |
+| ⚙ | | Settings dialog: max steps per run, max history entries |
 | share | | Encode editor content as a URL and copy to clipboard |
 | clear | | Clear the editor |
 
