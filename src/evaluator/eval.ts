@@ -204,6 +204,23 @@ export function etaStep(term: Term): Term | null {
   }
 }
 
+// ── Definition matching helpers ───────────────────────────────────────────────
+
+export function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const [name, term] of defs)
+    m.set(name, canonicalForm(normalize(term, cfg).term));
+  return m;
+}
+
+export function findMatch(term: Term, nd: Map<string, string>): string | undefined {
+  const key = canonicalForm(term);
+  const matches: string[] = [];
+  for (const [name, canon] of nd)
+    if (key === canon) matches.push(name);
+  return matches.length > 0 ? matches.join(", ") : undefined;
+}
+
 // ── Run to normal form ────────────────────────────────────────────────────────
 
 export type RunResult =

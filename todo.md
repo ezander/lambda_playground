@@ -49,6 +49,7 @@
 * [x] I think \pi shall evaluate the expression, print in a list, with two lines, original expr above, and reduced and normalized expr below
 * [x] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)
 * [x] display (did not terminate) instead of (step limit reached) in pi display
+* [x] think about using `:=` for definitions
 * [x] we need a better way of typing greeks (e.g. \alpha [tab], or alpha[alt-space], or alpha[ctrl-g] or something, some select symbol thing, or ctrl-g, combo-select alpha) or as html entity like &alpha; which is auto-replaced
 * [x] symbol insert box?
 * [x] allow + - * / as identifiers (and maybe ^ ~ & | for booleans) so we can write e.g. `+ m n = m S n` and `* m n = m (+ n) 0`
@@ -63,17 +64,10 @@
 * [x] maybe different max-step values for "run" and for "print" eval (and maybe also for "normalize check") ← max-steps-print, max-steps-run, max-steps-ident; max-steps pragma sets print+ident
 * [x] separate max-history and visible-history and scroll when more than visible-history is stored ← history panel scrolls, default 200 entries
 * [x] In the editor: the line numbers should match the baseline of the text lines, not the top
+* [x] Should we directly normalize definitions or make that optional ← normalize by default; #! no-normalize-defs / #! normalize-defs pragma; warns on step limit
 
 ## Up next
 
-
-* [x] Should we directly normalize definitions or make that optional ← normalize by default; #! no-normalize-defs / #! normalize-defs pragma; warns on step limit
-* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
-* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
-
-## Consider
-
-* [ ] think about a leetcode-like layout of the ui
 * [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc.)
 * [ ] examples and snippets are curr essentially the same, make snippets really useful (list gists), examples longer, with explanations, tutorials extra?
@@ -82,24 +76,30 @@
 * [ ] make a demo with church numerals, and scott numerals
 * [ ] make more demos and connect to a tutorial (basics, booleans, numerals, combinators)
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
-* [ ] think about a leetcode-like layout of the ui, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises) 
+
+## Consider
+
+* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
+* [ ] (Q: for identification: as long as at least one is an abstraction, apply new var to both sides?) / switched on/off via a flag
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
-* [ ] (Q: for identification: as long as at least one is an abstraction, apply new var to both sides?)
+* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
 
 ## For later
 
+* [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
+* [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
+* [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
 * [ ] make identified forms clickable and go to line
 * [ ] introduce typed lambda calculus (τ for type inf?)
 
 ## Questionable
  
 * [ ] *if* \pi can appear inside exprs (what's then the result? the result itself? or I? or does it take two and returns the latter?). does that make sense? when it's in the expression, all subst and redex have been applied already, so the source expr does not say much
-* [ ] should we have line continuation with e.g. \?
-* [ ] hbr uses 'where' clauses. shall we? dunno
+* [ ] should we have line continuation with e.g. \ or next line starts with tab?
 * [ ] why still abs, app and only rename later??
-* [ ] think about using `:=` for definitions (like hbr)
 
 ## Don't do
 
+* [~] hbr uses 'where' clauses. shall we? dunno
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [~] test also the UI?
