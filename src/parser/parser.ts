@@ -274,7 +274,7 @@ export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
   "normalize-defs":  ["normalizeDefs"],
 };
 
-const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
+export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
 
 export type ProgramResult = {
   ok: boolean;

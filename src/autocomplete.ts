@@ -2,14 +2,17 @@ import { autocompletion, startCompletion, CompletionContext, CompletionResult } 
 import { keymap, Extension } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { parsedField } from "./highlight";
-import { KNOWN_PRAGMAS } from "./parser/parser";
+import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
 
 // Matches any identifier-like token (alphanumeric/Greek/operator chars)
 const IDENT_RE = /[a-zA-Z0-9_\u0370-\u03FF+\-*/^~&|<>!?=]+/;
-// Pragma keys are lowercase with hyphens
+// Pragma keys are lowercase with hyphens, optional no- prefix
 const PRAGMA_KEY_RE = /[a-z-]+/;
 
-const PRAGMA_OPTIONS = Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const }));
+const PRAGMA_OPTIONS = [
+  ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
+  ...([...BOOLEAN_PRAGMAS]).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
+];
 
 function completionSource(context: CompletionContext): CompletionResult | null {
   const parsed = context.state.field(parsedField);
