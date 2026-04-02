@@ -262,7 +262,7 @@ export type PragmaConfig = {
   maxHistory?: number;
 };
 
-const KNOWN_PRAGMAS: Record<string, keyof PragmaConfig> = {
+export const KNOWN_PRAGMAS: Record<string, keyof PragmaConfig> = {
   "max-steps":   "maxSteps",
   "max-history": "maxHistory",
 };

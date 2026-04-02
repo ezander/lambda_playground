@@ -11,6 +11,7 @@ import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS } from "./editor";
+import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
 import { Settings, Share2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
@@ -306,7 +307,7 @@ export default function App() {
 
   const editorExtensions = useMemo(() => [
     lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
-    lambdaTheme, lambdaKeymap, parsedField, lambdaHighlight,
+    lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
   ], []);
 
   const toggleKino = useCallback(() => {
