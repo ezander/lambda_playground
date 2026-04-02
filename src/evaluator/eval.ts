@@ -228,5 +228,7 @@ export function normalize(
     current = next;
     steps++;
   }
+  // The last step may have produced a normal form — check before declaring step limit
+  if (step(current) === null) return { kind: "normalForm", term: current, steps };
   return { kind: "stepLimit", term: current, steps };
 }

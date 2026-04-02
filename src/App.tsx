@@ -167,9 +167,9 @@ export default function App() {
     const nd = buildNormDefs(d, effectiveConfig);
     setNormDefs(nd);
     const done = step(term) === null;
-    setLoaded({ term, done, stepNum: 1, effectiveConfig });
+    setLoaded({ term, done, stepNum: 0, effectiveConfig });
     setLoadedSource(source);
-    setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
+    setHistory([{ label: "0:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
 
   const advance = useCallback((maxSteps: number) => {
@@ -185,15 +185,15 @@ export default function App() {
       current = lastNext;
       entries.push(makeEntry(current, ++stepNum));
     }
-    const batchLimitHit = i === maxSteps && maxSteps > 1;
     const done = lastNext === null || step(current, showSubst) === null;
+    const batchLimitHit = !done && i === maxSteps && maxSteps > 1;
     // Tag the last entry with its terminal status
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
-      if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
-      } else if (done) {
+      if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
+      } else if (batchLimitHit) {
+        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
       }
     }
     setLoaded({ term: current, done, stepNum, effectiveConfig: loaded.effectiveConfig });
@@ -280,26 +280,26 @@ export default function App() {
     // Run immediately from the fresh term
     const LIMIT = effectiveConfig.maxSteps;
     let current = term;
-    const entries: HistoryEntry[] = [buildEntry(term, 1, nd)];
+    const entries: HistoryEntry[] = [buildEntry(term, 0, nd)];
     let i = 0;
     let lastNext: Term | null = null;
     for (; i < LIMIT; i++) {
       lastNext = step(current, showSubst);
       if (lastNext === null) break;
       current = lastNext;
-      entries.push(buildEntry(current, i + 2, nd));
+      entries.push(buildEntry(current, i + 1, nd));
     }
-    const batchLimitHit = i === LIMIT;
     const done = lastNext === null || step(current, showSubst) === null;
+    const batchLimitHit = !done && i === LIMIT;
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
-      if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
-      } else if (done) {
+      if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
+      } else if (batchLimitHit) {
+        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
       }
     }
-    const stepNum = entries.length;
+    const stepNum = entries.length - 1;
     setLoaded({ term: current, done, stepNum, effectiveConfig });
     setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
   }, [programResult, source, showSubst, mergeConfig]);
