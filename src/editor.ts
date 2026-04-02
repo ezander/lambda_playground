@@ -34,7 +34,7 @@ export const lambdaTheme: Extension = EditorView.theme({
     border: "none",
     borderRight: "1px solid #2e2e2e",
   },
-  ".cm-lineNumbers .cm-gutterElement": { padding: "0 0.6rem", fontSize: "0.75em" },
+  ".cm-lineNumbers .cm-gutterElement": { padding: "0 0.6rem", fontSize: "0.75em", display: "flex", alignItems: "center", paddingTop: "1px" },
   ".cm-selectionBackground, ::selection": { background: "rgba(201,168,76,0.2) !important" },
   ".cm-scroller": { overflow: "auto", background: "#1a1a1a" },
   // ── Syntax highlighting ──
