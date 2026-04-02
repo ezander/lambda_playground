@@ -17,6 +17,21 @@ import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
+function Panel({ label, open, onToggle, children, className, flush = false }: {
+  label: string; open: boolean; onToggle: () => void; children: React.ReactNode;
+  className?: string; flush?: boolean;
+}) {
+  return (
+    <section className={["panel", className].filter(Boolean).join(" ")}>
+      <div className="panel-header" onClick={onToggle}>
+        <span className="panel-label">{label}</span>
+        <span className="panel-toggle">{open ? "▾" : "▸"}</span>
+      </div>
+      {open && <div className={flush ? "panel-body panel-body-flush" : "panel-body"}>{children}</div>}
+    </section>
+  );
+}
+
 function getSavedSlots(): string[] {
   const slots: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -73,6 +88,12 @@ export default function App() {
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
   const [shareLabel, setShareLabel]   = useState("share");
+  const [stepsOpen,  setStepsOpen]  = useState(() => localStorage.getItem("lambda-playground:panel:steps")  !== "0");
+  const [printOpen,  setPrintOpen]  = useState(() => localStorage.getItem("lambda-playground:panel:print")  !== "0");
+  const [outputOpen, setOutputOpen] = useState(() => localStorage.getItem("lambda-playground:panel:output") !== "0");
+  const toggleSteps  = useCallback(() => setStepsOpen(o  => { const n = !o;  localStorage.setItem("lambda-playground:panel:steps",  n ? "1" : "0"); return n; }), []);
+  const togglePrint  = useCallback(() => setPrintOpen(o  => { const n = !o;  localStorage.setItem("lambda-playground:panel:print",  n ? "1" : "0"); return n; }), []);
+  const toggleOutput = useCallback(() => setOutputOpen(o => { const n = !o;  localStorage.setItem("lambda-playground:panel:output", n ? "1" : "0"); return n; }), []);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -456,61 +477,59 @@ export default function App() {
           )}
         </section>
 
-        {/* ── Controls ── */}
-        <div className="eval-controls">
-          <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
-            title="Load and beta-reduce to normal form (F5)">load &amp; run <kbd>F5</kbd></button>
-          <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
-            title="Parse and load the current expression into the history (F6)">
-            load <kbd>F6</kbd>
-          </button>
-          <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
-          <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-          <button onClick={handleRun}     disabled={!canStep}    title="Beta-reduce up to 1000 steps (F9)">run <kbd>F9</kbd></button>
-          {loaded?.done && (
-            <span className="eval-status normal-form">normal form</span>
+        {/* ── Steps panel ── */}
+        <Panel label="steps" open={stepsOpen} onToggle={toggleSteps}>
+          <div className="eval-controls">
+            <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
+              title="Load and beta-reduce to normal form (F5)">load &amp; run <kbd>F5</kbd></button>
+            <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
+              title="Parse and load the current expression into the history (F6)">load <kbd>F6</kbd></button>
+            <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
+            <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
+            <button onClick={handleRun}     disabled={!canStep}    title="Beta-reduce up to 1000 steps (F9)">run <kbd>F9</kbd></button>
+            {loaded?.done && <span className="eval-status normal-form">normal form</span>}
+            <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
+              <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
+              {" "}show substitution
+            </label>
+          </div>
+          {history.length > 0 && (
+            <div className="history-section">
+              {history.map((entry, i) => (
+                <div key={i} className="history-entry">
+                  <code className="history-term">
+                    <span className="history-label">{entry.label}</span>
+                    {" "}{entry.text}
+                  </code>
+                  {entry.match && <span className="history-match">{entry.match}</span>}
+                </div>
+              ))}
+            </div>
           )}
-          <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
-            <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
-            {" "}show substitution
-          </label>
-        </div>
+        </Panel>
 
-        {/* ── π results ── */}
+        {/* ── Print panel ── */}
         {printResults.length > 0 && (
-          <section className="print-section">
-            {printResults.map((r, i) => (
-              <div key={i} className="print-entry">
-                <code className="print-src">π {r.src}</code>
-                <code className="print-result">
-                  {r.result}
-                  {r.normal
-                    ? <span className="eval-status normal-form"> normal form</span>
-                    : <span className="eval-status did-not-terminate"> did not terminate</span>}
-                  {r.match && <span className="history-match">{r.match}</span>}
-                </code>
-              </div>
-            ))}
-          </section>
+          <Panel label="print" open={printOpen} onToggle={togglePrint}>
+            <div className="print-section">
+              {printResults.map((r, i) => (
+                <div key={i} className="print-entry">
+                  <code className="print-src">π {r.src}</code>
+                  <code className="print-result">
+                    {r.result}
+                    {r.normal
+                      ? <span className="eval-status normal-form"> normal form</span>
+                      : <span className="eval-status did-not-terminate"> did not terminate</span>}
+                    {r.match && <span className="history-match">{r.match}</span>}
+                  </code>
+                </div>
+              ))}
+            </div>
+          </Panel>
         )}
 
-        {/* ── History ── */}
-        {history.length > 0 && (
-          <section className="history-section">
-            {history.map((entry, i) => (
-              <div key={i} className="history-entry">
-                <code className="history-term">
-                  <span className="history-label">{entry.label}</span>
-                  {" "}{entry.text}
-                </code>
-                {entry.match && <span className="history-match">{entry.match}</span>}
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* ── Live parse output ── */}
-        <section className="output-section">
+        {/* ── Output panel ── */}
+        <Panel label="output" open={outputOpen} onToggle={toggleOutput} className="panel-output" flush>
           <div className="output-tabs">
             <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
               pretty print
@@ -528,7 +547,7 @@ export default function App() {
               <span className="placeholder">parse result will appear here</span>
             )}
           </div>
-        </section>
+        </Panel>
       </main>
 
       <footer>

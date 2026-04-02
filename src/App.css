@@ -43,7 +43,7 @@ body {
 }
 .app.kino header,
 .app.kino .example-row,
-.app.kino .output-section,
+.app.kino .panel-output,
 .app.kino footer { display: none; }
 
 .app.kino main {
@@ -431,8 +431,46 @@ label {
 }
 .subst-toggle input { accent-color: var(--accent); cursor: pointer; }
 
+/* ── Collapsible panels ── */
+.panel { border: 1px solid var(--border); border-radius: 2px; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.panel-header:hover { background: rgba(255,255,255,0.025); }
+
+.panel-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.panel-toggle {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+.panel-body {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel-body-flush { padding: 0; }
+.panel-body-flush .output { border: none; border-radius: 0; }
+
 /* ── Output ── */
-.output-section { display: flex; flex-direction: column; }
 
 .output-tabs {
   display: flex;
