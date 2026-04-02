@@ -126,6 +126,42 @@ describe("parse", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.term).toEqual(Var("<="));
   });
+
+  it("parses mixed operator+digit identifier: +3", () => {
+    const r = parse("+3");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("+3"));
+  });
+
+  it("+3 is distinct from application: + 3", () => {
+    const r = parse("+ 3");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(App(Var("+"), Var("3")));
+  });
+
+  it("parses mixed operator+alpha identifier: +n", () => {
+    const r = parse("+n");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("+n"));
+  });
+
+  it("parses digit+operator+digit identifier: 3+3", () => {
+    const r = parse("3+3");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("3+3"));
+  });
+
+  it("3+3 is distinct from application: 3 + 3", () => {
+    const r = parse("3 + 3");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(App(App(Var("3"), Var("+")), Var("3")));
+  });
+
+  it("parses alpha+operator+alpha identifier: a+b", () => {
+    const r = parse("a+b");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("a+b"));
+  });
 });
 
 // ── pretty-printer round-trip ─────────────────────────────────────────────────

@@ -27,19 +27,23 @@ export const BacktickIdent = createToken({
   categories: [IdentifierLike],
 });
 
-// Operator identifier: non-empty sequence of operator characters (includes = so <= >= == work)
-// Note: : is excluded so := is never consumed as an operator.
+// Mixed charset: alphanumeric/Greek + operator chars (used as suffix in both token types below)
+// An identifier is either alphanumeric-starting or operator-starting, but both may freely mix
+// alphanumeric and operator chars after the first character — so +3, 3+3, a+b are all one token.
+// Note: : is excluded so := is never consumed as part of an identifier.
+const MIXED = /[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=]/.source;
+
 export const OperatorIdent = createToken({
   name: "OperatorIdent",
-  pattern: /[+\-*\/^~&|<>!?=]+/,
+  pattern: new RegExp(`[+\\-*\\/^~&|<>!?=]${MIXED}*`),
   categories: [IdentifierLike],
 });
 
-// Identifier: letters, digits, underscores, and Greek letters (excluding λ=\u03BB and π=\u03C0
-// so that those chars always lex as Backslash/Pi regardless of context).
+// Identifier: starts with alphanumeric/Greek; may contain operator chars after the first char.
+// Excludes λ=\u03BB and π=\u03C0 so those always lex as Backslash/Pi.
 export const Identifier = createToken({
   name: "Identifier",
-  pattern: /[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF]+/,
+  pattern: new RegExp(`[a-zA-Z0-9_\\u0370-\\u03BA\\u03BC-\\u03BF\\u03C1-\\u03FF]${MIXED}*`),
   categories: [IdentifierLike],
 });
 

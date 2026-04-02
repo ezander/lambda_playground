@@ -32,7 +32,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code># comment</code></td><td>line comment</td></tr>
             <tr><td><code>;</code></td><td>statement separator (same as newline)</td></tr>
             <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code></td><td>identifiers: letters, digits, underscores, and Greek (except λ, π; α/β/η reserved); may start with a digit</td></tr>
-            <tr><td><code>+</code>, <code>-&gt;</code>, <code>&lt;=</code>, <code>==</code></td><td>operator identifiers: sequences of <code>+ - * / ^ ~ &amp; | &lt; &gt; ! ? =</code></td></tr>
+            <tr><td><code>+</code>, <code>+3</code>, <code>3+3</code>, <code>a+b</code></td><td>operator identifiers start with <code>+ - * / ^ ~ &amp; | &lt; &gt; ! ? =</code>; both alphanumeric and operator chars may freely mix (space is the separator)</td></tr>
             <tr><td><code>`any name`</code></td><td>backtick-quoted identifier — allows spaces and special chars</td></tr>
           </tbody>
         </table>
@@ -124,7 +124,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 "primary     ::= identLike | '(' term ')' | function\n" +
 "function    ::= ('\\\\' | 'λ') identLike+ '.' term\n" +
 "identLike   ::= identifier | '`' [^`\\n]+ '`'\n" +
-"identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF]+   (excluding λ, π; α/β/η reserved)"
+"identChar   ::= [a-zA-Z0-9_\\u0370-\\u03FF] | [+\\-*/^~&|<>!?=]\n" +
+"identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF] identChar*   (excluding λ, π; α/β/η reserved)\n" +
+"operatorId  ::= [+\\-*/^~&|<>!?=] identChar*"
 }</pre>
       </div>
     </div>

@@ -7,9 +7,9 @@ export function prettyPrint(term: Term): string {
   return pp(term, "top");
 }
 
-// Names that don't need backtick-quoting: plain identifiers or pure operator sequences.
+// Safe if it starts with alphanumeric/Greek or an operator char, then any mix of both.
 // Excludes λ (\u03BB) and π (\u03C0) since those are keyword tokens.
-const SAFE_IDENT = /^([a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF]+|[+\-*\/^~&|<>!?]+)$/;
+const SAFE_IDENT = /^([a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF]|[+\-*\/^~&|<>!?=])[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=]*$/;
 
 function safeName(name: string): string {
   return SAFE_IDENT.test(name) ? name : `\`${name}\``;
