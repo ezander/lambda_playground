@@ -4,7 +4,7 @@ import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, canonicalForm, normalize, EvalConfig } from "./evaluator/eval";
+import { step, etaStep, normalize, buildNormDefs, findMatch, EvalConfig } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -65,22 +65,8 @@ function getSavedSlots(): string[] {
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
-type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" };
+type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit"; steps?: number };
 
-function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const [name, term] of defs)
-    m.set(name, canonicalForm(normalize(term, cfg).term));
-  return m;
-}
-
-function findMatch(term: Term, nd: Map<string, string>): string | undefined {
-  const key = canonicalForm(term);
-  const matches: string[] = [];
-  for (const [name, canon] of nd)
-    if (key === canon) matches.push(name);
-  return matches.length > 0 ? matches.join(", ") : undefined;
-}
 
 function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry {
   return {
@@ -138,7 +124,7 @@ export default function App() {
     });
   }, []);
 
-  const programResult = parseProgram(source);
+  const programResult = useMemo(() => parseProgram(source, config), [source, config]);
 
   // Push parse result into the CodeMirror StateField for syntax highlighting
   useEffect(() => {
@@ -194,7 +180,7 @@ export default function App() {
       if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
       } else if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
+        entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: stepNum };
       }
     }
     setLoaded({ term: current, done, stepNum, effectiveConfig: loaded.effectiveConfig });
@@ -297,7 +283,7 @@ export default function App() {
       if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
       } else if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, text: last.text + " (paused)", match: undefined, status: "stepLimit" };
+        entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: i };
       }
     }
     const stepNum = entries.length - 1;
@@ -376,21 +362,6 @@ export default function App() {
     setTimeout(() => setShowCopied(false), 1500);
   }, [source]);
 
-  const printResults = useMemo(() => {
-    const evalConfig = { ...config, ...programResult.pragmaConfig };
-    const nd = buildNormDefs(programResult.defs, evalConfig);
-    return programResult.printInfos.map(({ raw, expanded, offset }) => {
-      const { term, kind } = normalize(expanded, evalConfig);
-      return {
-        src:    prettyPrint(raw),
-        result: prettyPrint(term),
-        normal: kind === "normalForm",
-        match:  kind === "normalForm" ? findMatch(term, nd) : undefined,
-        offset,
-        line:   source.slice(0, offset).split("\n").length,
-      };
-    });
-  }, [programResult, source, config]);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
@@ -598,7 +569,7 @@ export default function App() {
                     <span className="history-entry-status">
                       {entry.status === "normalForm"
                         ? <span className="eval-status normal-form">normal form</span>
-                        : <span className="eval-status did-not-terminate">did not terminate</span>}
+                        : <span className="eval-status paused">paused after {entry.steps} steps</span>}
                       {entry.match && <span className="history-match"><span className="print-equiv">≡</span> {entry.match}</span>}
                     </span>
                   )}
@@ -611,9 +582,9 @@ export default function App() {
         {/* ── Print panel ── */}
         <Panel label="output" open={printOpen} onToggle={togglePrint}
           headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
-          {printResults.length > 0 ? (
+          {programResult.printInfos.length > 0 ? (
             <div className="print-section">
-              {(printDesc ? [...printResults].reverse() : printResults).map((r, i) => (
+              {(printDesc ? [...programResult.printInfos].reverse() : programResult.printInfos).map((r, i) => (
                 <div key={i} className="print-entry" onClick={() => jumpTo(r.offset)} title="Go to source">
                   <code className="print-src">
                     <span className="print-index">{r.line}:</span>
@@ -624,7 +595,7 @@ export default function App() {
                     <span className="print-result-status">
                       {r.normal
                         ? <span className="eval-status normal-form">normal form</span>
-                        : <span className="eval-status did-not-terminate">did not terminate</span>}
+                        : <span className="eval-status did-not-terminate">did not terminate in {r.steps} steps</span>}
                       {r.match && <span className="history-match"><span className="print-equiv">≡</span> {r.match}</span>}
                     </span>
                   </code>

@@ -20,7 +20,8 @@ function tokenName(tok: IToken): string {
   return tok.tokenType === BacktickIdent ? tok.image.slice(1, -1) : tok.image;
 }
 import { Term, Var, Abs, App, Pos } from "./ast";
-import { normalize, alphaEq } from "../evaluator/eval";
+import { normalize, alphaEq, buildNormDefs, findMatch, EvalConfig } from "../evaluator/eval";
+import { prettyPrint } from "./pretty";
 
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
 //
@@ -277,18 +278,18 @@ export type ProgramResult = {
   defInfos:   DefInfo[];
   exprInfos:  { term: Term; positions: PositionMap }[];
   // π-marked print statements (expanded, ready to evaluate):
-  printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[];
+  printInfos: { src: string; result: string; normal: boolean; steps: number; match?: string; offset: number; line: number }[];
   pragmaConfig: PragmaConfig;
 };
 
-export function parseProgram(input: string): ProgramResult {
+export function parseProgram(input: string, defaultConfig: EvalConfig = {}): ProgramResult {
   const defs = new Map<string, Term>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
   const defInfos:   DefInfo[] = [];
   const exprInfos:  { term: Term; positions: PositionMap }[] = [];
-  const printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[] = [];
+  const printInfos: ProgramResult["printInfos"] = [];
   const pragmaConfig: PragmaConfig = {};
   let lineOffset = 0;
 
@@ -331,7 +332,19 @@ export function parseProgram(input: string): ProgramResult {
       if (!result.ok) {
         errors.push(...result.errors);
       } else {
-        printInfos.push({ raw: result.term, expanded: expandDefs(result.term, defs), positions: result.positions, offset: lineOffset });
+        const expanded = expandDefs(result.term, defs);
+        const evalConfig: EvalConfig = { ...defaultConfig, ...pragmaConfig };
+        const { term: normalizedTerm, kind, steps } = normalize(expanded, evalConfig);
+        const nd = buildNormDefs(defs, evalConfig);
+        printInfos.push({
+          src:    prettyPrint(result.term),
+          result: prettyPrint(normalizedTerm),
+          normal: kind === "normalForm",
+          steps,
+          match:  kind === "normalForm" ? findMatch(normalizedTerm, nd) : undefined,
+          offset: lineOffset,
+          line:   input.slice(0, lineOffset).split("\n").length,
+        });
         exprInfos.push({ term: result.term, positions: result.positions });
       }
       lineOffset += rawLine.length + 1;

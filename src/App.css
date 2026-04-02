@@ -513,6 +513,7 @@ label {
 }
 .normal-form { color: var(--ok); }
 .did-not-terminate { color: var(--warn); }
+.paused { color: var(--accent); }
 
 .subst-toggle {
   font-family: var(--mono);
