@@ -175,7 +175,7 @@ label {
 
 .editor-meta {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -183,6 +183,7 @@ label {
   font-family: var(--mono);
   font-size: 0.68rem;
   color: var(--muted);
+  margin-top: 5px;
 }
 
 .clear-btn {
@@ -195,6 +196,7 @@ label {
   padding: 0;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  margin-top: 5px;
 }
 .clear-btn:hover { color: var(--warn); }
 .clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
@@ -523,7 +525,22 @@ label {
   cursor: pointer;
   user-select: none;
 }
-.subst-toggle input { accent-color: var(--accent); cursor: pointer; }
+.subst-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+}
+.subst-toggle input[type="checkbox"]:checked {
+  appearance: auto;
+  accent-color: var(--accent);
+}
 
 /* ── Collapsible panels ── */
 .panel { border: 1px solid var(--border); border-radius: 2px; }
