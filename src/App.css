@@ -82,6 +82,41 @@ body {
   justify-content: space-between;
 }
 
+@keyframes float-up {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-1.8rem); }
+}
+
+.share-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+.share-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.share-copied {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ok);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: float-up 1.4s ease-out forwards;
+}
+
 .help-btn {
   font-family: var(--mono);
   font-size: 1rem;

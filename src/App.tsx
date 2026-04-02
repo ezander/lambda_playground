@@ -88,7 +88,8 @@ export default function App() {
   const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
-  const [shareLabel, setShareLabel]   = useState("share");
+  const [showCopied, setShowCopied]   = useState(false);
+  const [copiedKey,  setCopiedKey]    = useState(0);
   const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
   const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
   const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem("lambda-playground:print:desc") === "1");
@@ -310,8 +311,9 @@ export default function App() {
     const encoded = LZString.compressToEncodedURIComponent(source);
     const url = `${location.origin}${location.pathname}?s=${encoded}`;
     await navigator.clipboard.writeText(url);
-    setShareLabel("copied!");
-    setTimeout(() => setShareLabel("share"), 2000);
+    setShowCopied(true);
+    setCopiedKey(k => k + 1);
+    setTimeout(() => setShowCopied(false), 1500);
   }, [source]);
 
   const printResults = useMemo(() => {
@@ -351,7 +353,16 @@ export default function App() {
               <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
               <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
               <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
-              <button className="clear-btn" onClick={handleShare} title="Copy share link to clipboard">{shareLabel}</button>
+              <button className="share-btn" onClick={handleShare} title="Copy share link to clipboard">
+                <svg width="13" height="12" viewBox="0 0 13 12" fill="none">
+                  <circle cx="10" cy="2" r="1.6" fill="currentColor"/>
+                  <circle cx="2"  cy="6" r="1.6" fill="currentColor"/>
+                  <circle cx="10" cy="10" r="1.6" fill="currentColor"/>
+                  <line x1="3.4" y1="5.2" x2="8.6" y2="2.8" stroke="currentColor" strokeWidth="1.3"/>
+                  <line x1="3.4" y1="6.8" x2="8.6" y2="9.2" stroke="currentColor" strokeWidth="1.3"/>
+                </svg>
+                {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
+              </button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
               <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
             </span>
