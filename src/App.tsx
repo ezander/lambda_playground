@@ -537,13 +537,13 @@ export default function App() {
           <pre>{
 "program     ::= statement (('\\n' | ';') statement)*\n" +
 "statement   ::= definition | print | term\n" +
-"definition  ::= identLike+ '=' term\n" +
+"definition  ::= identLike+ ':=' term\n" +
 "print       ::= 'π' term\n" +
 "term        ::= application\n" +
 "application ::= atom+\n" +
 "atom        ::= primary ('[' identLike ':=' term ']')*\n" +
 "primary     ::= identLike | '(' term ')' | function\n" +
-"function    ::= ('\\\\' | 'λ') identLike+ (':=' | '.') term\n" +
+"function    ::= ('\\\\' | 'λ') identLike+ '.' term\n" +
 "identLike   ::= identifier | '`' [^`\\n]+ '`'\n" +
 "identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF]+   (excluding λ, π; α/β/η reserved)"
 }</pre>

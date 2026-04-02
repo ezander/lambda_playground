@@ -35,13 +35,13 @@ user input → lexer.ts → CST parser → AST visitor → ast.ts nodes → eval
 ```
 program     ::= statement (('\n' | ';') statement)*
 statement   ::= definition | print | term
-definition  ::= identLike+ '=' term
+definition  ::= identLike+ ':=' term
 print       ::= 'π' term
 term        ::= application
 application ::= atom+
 atom        ::= primary ('[' identLike ':=' term ']')*
 primary     ::= identLike | '(' term ')' | function
-function    ::= ('\' | 'λ') identLike+ (':=' | '.') term
+function    ::= ('\' | 'λ') identLike+ '.' term
 identLike   ::= identifier | '`' [^`\n]+ '`'
 identifier  ::= [a-zA-Z0-9_\u0370-\u03FF]+  (excluding λ, π; α/β/η reserved)
 ```

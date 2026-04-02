@@ -31,7 +31,7 @@ export const parsedField = StateField.define<ProgramResult | null>({
   },
 });
 
-// ── Structural scan (regex) — comments, ::=, λ, and . / := separators ────────
+// ── Structural scan (regex) — comments, :=, λ, and . separator ───────────────
 // These tokens are skipped by the Chevrotain lexer and absent from the AST.
 
 function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
@@ -41,10 +41,11 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
 
   const code = ci >= 0 ? text.slice(0, ci) : text;
 
-  // = definition operator (standalone, not part of :=)
-  for (let i = 0; i < code.length; i++) {
-    if (code[i] === "=" && (i === 0 || code[i - 1] !== ":"))
-      tks.push({ from: lineFrom + i, to: lineFrom + i + 1, m: mOp });
+  // := definition and substitution operator
+  let q = code.indexOf(":=");
+  while (q >= 0) {
+    tks.push({ from: lineFrom + q, to: lineFrom + q + 2, m: mOp });
+    q = code.indexOf(":=", q + 2);
   }
 
   // π print marker
@@ -53,25 +54,15 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
     tks.push({ from: lineFrom + pi, to: lineFrom + pi + 1, m: mPi });
   }
 
-  // λ/\ keyword + scan ahead for . or := body separator
+  // λ/\ keyword + scan ahead for . body separator
   for (let i = 0; i < code.length; i++) {
     if (code[i] === "λ" || code[i] === "\\") {
       tks.push({ from: lineFrom + i, to: lineFrom + i + 1, m: mLambda });
       let j = i + 1;
       while (j < code.length && /[\w\s]/.test(code[j])) j++;
-      if (code[j] === ".") {
+      if (code[j] === ".")
         tks.push({ from: lineFrom + j, to: lineFrom + j + 1, m: mOp });
-      } else if (code[j] === ":" && code[j + 1] === "=") {
-        tks.push({ from: lineFrom + j, to: lineFrom + j + 2, m: mOp });
-      }
     }
-  }
-
-  // := inside substitution [x:=a]
-  let q = code.indexOf(":=");
-  while (q >= 0) {
-    tks.push({ from: lineFrom + q, to: lineFrom + q + 2, m: mOp });
-    q = code.indexOf(":=", q + 2);
   }
 }
 

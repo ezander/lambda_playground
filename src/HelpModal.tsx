@@ -27,12 +27,12 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <tbody>
             <tr><td><code>λx. body</code></td><td>lambda abstraction (<code>\</code> also accepted)</td></tr>
             <tr><td><code>λx y. body</code></td><td>multi-param (desugars to nested lambdas)</td></tr>
-            <tr><td><code>λx := body</code></td><td><code>:=</code> is an alias for <code>.</code></td></tr>
             <tr><td><code>f x y</code></td><td>application (left-associative)</td></tr>
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment</td></tr>
             <tr><td><code>;</code></td><td>statement separator (same as newline)</td></tr>
-            <tr><td><code>x</code>, <code>x₁</code>, <code>ω</code>, <code>Ω</code></td><td>identifiers: letters, digits, underscores, and Greek (except λ, π; α/β/η reserved)</td></tr>
+            <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code></td><td>identifiers: letters, digits, underscores, and Greek (except λ, π; α/β/η reserved); may start with a digit</td></tr>
+            <tr><td><code>+</code>, <code>-&gt;</code>, <code>&lt;=</code>, <code>==</code></td><td>operator identifiers: sequences of <code>+ - * / ^ ~ &amp; | &lt; &gt; ! ? =</code></td></tr>
             <tr><td><code>`any name`</code></td><td>backtick-quoted identifier — allows spaces and special chars</td></tr>
           </tbody>
         </table>
@@ -41,8 +41,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <p>Each line (or <code>;</code>-separated statement) is either a definition or an expression. Definitions are expanded into subsequent statements.</p>
         <table className="help-table">
           <tbody>
-            <tr><td><code>name = expr</code></td><td>define a name</td></tr>
-            <tr><td><code>f x y = expr</code></td><td>shorthand for <code>f = \x y := expr</code></td></tr>
+            <tr><td><code>name := expr</code></td><td>define a name</td></tr>
+            <tr><td><code>f x y := expr</code></td><td>shorthand for <code>f := \x y. expr</code></td></tr>
             <tr><td><code>π expr</code></td><td>evaluate <code>expr</code> to normal form and show result in the output panel</td></tr>
           </tbody>
         </table>
@@ -56,9 +56,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           The <em>sym</em> button opens a Greek symbol picker; hovering each symbol shows its shorthand.
         </p>
         <p>
-          To insert a Greek letter by keyboard, type a backslash followed by its name and press <kbd>Tab</kbd>:
-          e.g. <code>\omega</code>+Tab → <code>ω</code>, <code>\Omega</code>+Tab → <code>Ω</code>.
-          If the name is not recognised, Tab falls through to normal indentation.
+          To insert a Greek letter by keyboard, type a backslash followed by its name and press <kbd>tab</kbd>:
+          e.g. <code>\omega</code>+<kbd>tab</kbd> → <code>ω</code>, <code>\Omega</code>+<kbd>tab</kbd> → <code>Ω</code>.
+          If the name is not recognised, <kbd>tab</kbd> falls through to normal indentation.
         </p>
 
         <h3>storage</h3>
@@ -102,7 +102,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at cursor</td></tr>
-            <tr><td><code>\name</code> + <code>Tab</code></td><td>insert Greek letter (e.g. <code>\omega</code> → ω)</td></tr>
+            <tr><td><code>\name</code> + <kbd>tab</kbd></td><td>insert Greek letter (e.g. <code>\omega</code> → ω)</td></tr>
           </tbody>
         </table>
 
@@ -116,13 +116,13 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <pre>{
 "program     ::= statement (('\\n' | ';') statement)*\n" +
 "statement   ::= definition | print | term\n" +
-"definition  ::= identLike+ '=' term\n" +
+"definition  ::= identLike+ ':=' term\n" +
 "print       ::= 'π' term\n" +
 "term        ::= application\n" +
 "application ::= atom+\n" +
 "atom        ::= primary ('[' identLike ':=' term ']')*\n" +
 "primary     ::= identLike | '(' term ')' | function\n" +
-"function    ::= ('\\\\' | 'λ') identLike+ (':=' | '.') term\n" +
+"function    ::= ('\\\\' | 'λ') identLike+ '.' term\n" +
 "identLike   ::= identifier | '`' [^`\\n]+ '`'\n" +
 "identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF]+   (excluding λ, π; α/β/η reserved)"
 }</pre>

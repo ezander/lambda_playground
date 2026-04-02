@@ -4,8 +4,8 @@ import {
   LambdaLexer,
   Backslash,
   Pi,
-  Equals,
-  Assign,
+  DefAssign,
+  Dot,
   LParen,
   RParen,
   LBracket,
@@ -70,7 +70,7 @@ class LambdaParser extends CstParser {
   subst = this.RULE("subst", () => {
     this.CONSUME(LBracket);
     this.CONSUME(IdentifierLike);
-    this.CONSUME(Assign);
+    this.CONSUME(DefAssign);
     this.SUBRULE(this.term);
     this.CONSUME(RBracket);
   });
@@ -80,7 +80,7 @@ class LambdaParser extends CstParser {
     this.AT_LEAST_ONE(() => {
       this.CONSUME(IdentifierLike);
     });
-    this.CONSUME(Assign);
+    this.CONSUME(Dot);
     this.SUBRULE(this.term);
   });
 }
@@ -306,7 +306,7 @@ export function parseProgram(input: string): ProgramResult {
       continue;
     }
 
-    const defIdx = tokens.findIndex((t) => t.tokenType === Equals);
+    const defIdx = tokens.findIndex((t) => t.tokenType === DefAssign);
 
     if (defIdx >= 0) {
       // ── Definition ────────────────────────────────────────────────────────
@@ -320,7 +320,7 @@ export function parseProgram(input: string): ProgramResult {
       const name   = tokenName(nameToken);
       const params = paramTokens.map(tokenName);
 
-      const rhsStart = tokens[defIdx].startOffset + 1;
+      const rhsStart = tokens[defIdx].startOffset + 2; // := is 2 chars
       const rhs = rawLine.slice(rhsStart);
       const bodyResult = parse(rhs, lineOffset + rhsStart);
       if (!bodyResult.ok) {

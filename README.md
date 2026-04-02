@@ -8,11 +8,11 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
 - Named definitions with eager expansion into subsequent lines
-- Shorthand `f x y = e` desugars to `f = \x y := e`
+- Shorthand `f x y := e` desugars to `f := \x y. e`
 - `π expr` print statements: evaluate an expression to normal form and show it in the output panel
 - Live parsing on every keystroke with clickable error locations
 - Syntax highlighting: defined names, lambda binders, bound/free variables, comments
-- Greek letters in identifiers (ω, Ω, Θ, …); backtick-quoted identifiers for arbitrary names
+- Greek letters in identifiers (ω, Ω, Θ, …); operator identifiers (`+`, `<=`, `==`, …); backtick-quoted identifiers for arbitrary names
 - Two-phase beta reduction: optionally show `e[x:=a]` substitution as an intermediate step
 - Eta reduction as a separate step
 - Step-by-step or batch evaluation; continue after pausing
@@ -29,9 +29,10 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 ```
 λx. body             # lambda abstraction (\ also accepted)
 λx y z. body         # multi-param (desugars to nested abstractions)
-λx := body           # := is an alias for .
 f x y                # application (left-associative)
 e[x:=a]              # substitution: desugars to (λx. e) a
++ m n := m S n       # operator identifier as definition name
+<= m n := ...        # = is also an operator char: <=, >=, ==, != all valid
 # comment            # rest of line ignored
 ;                    # statement separator (same as newline)
 ```
@@ -43,16 +44,16 @@ Plain identifiers are any non-empty sequence of ASCII letters, digits, underscor
 Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 
 ```
-`church 0` = λf x. x
+`church 0` := λf x. x
 `church 0`              # evaluates the definition
 ```
 
 ### Definitions
 
 ```
-true  = λx y. x          # define a name
-false = λx y. y
-and p q = p q false       # shorthand: f x y = e  means  f = λx y := e
+true  := λx y. x          # define a name
+false := λx y. y
+and p q := p q false      # shorthand: f x y := e  means  f := λx y. e
 
 π and true false          # print to output panel (normalized)
 and true false            # last expression line is what gets evaluated
@@ -88,8 +89,8 @@ Below the editor, a compact toolbar provides three groups:
 | `Ctrl-/` | Toggle `#` comment on current line or all selected lines |
 | `( [ { <` with selection | Wrap selected text in the chosen brackets |
 | `Alt-L` | Insert λ at cursor |
-| `Alt-M` | Insert μ at cursor |
 | `Alt-P` | Insert π at cursor |
+| `\name` + `Tab` | Insert Greek letter (e.g. `\omega` → ω) |
 
 ## Development
 

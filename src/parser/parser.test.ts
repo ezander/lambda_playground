@@ -12,12 +12,6 @@ describe("parse", () => {
     if (r.ok) expect(r.term).toEqual(Var("x"));
   });
 
-  it("parses a lambda with := separator", () => {
-    const r = parse("\\x := x");
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.term).toEqual(Abs("x", Var("x")));
-  });
-
   it("parses a lambda with . separator", () => {
     const r = parse("\\x. x");
     expect(r.ok).toBe(true);
@@ -52,7 +46,7 @@ describe("parse", () => {
     if (r.ok) expect(r.term).toEqual(App(Var("f"), App(Var("g"), Var("x"))));
   });
 
-  it("desugars e[x:=a] to (\\x := e) a", () => {
+  it("desugars e[x:=a] to (\\x. e) a", () => {
     const r = parse("e[x:=a]");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.term).toEqual(App(Abs("x", Var("e")), Var("a")));
@@ -102,6 +96,36 @@ describe("parse", () => {
     const r = parse("@");
     expect(r.ok).toBe(false);
   });
+
+  it("parses a single-char operator identifier", () => {
+    const r = parse("+");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("+"));
+  });
+
+  it("parses a multi-char operator identifier", () => {
+    const r = parse("->");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("->"));
+  });
+
+  it("parses operator application: + m n", () => {
+    const r = parse("+ m n");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(App(App(Var("+"), Var("m")), Var("n")));
+  });
+
+  it("parses == as an operator identifier", () => {
+    const r = parse("==");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("=="));
+  });
+
+  it("parses <= as an operator identifier", () => {
+    const r = parse("<=");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("<="));
+  });
 });
 
 // ── pretty-printer round-trip ─────────────────────────────────────────────────
@@ -120,13 +144,13 @@ describe("prettyPrint round-trip", () => {
   it("simple App", () => { const t = App(Var("f"), Var("x")); expect(roundTrip(t)).toEqual(t); });
   it("left-assoc App", () => { const t = App(App(Var("f"), Var("x")), Var("y")); expect(roundTrip(t)).toEqual(t); });
   it("S combinator", () => {
-    // \x y z := x z (y z)
+    // \x y z. x z (y z)
     const t = Abs("x", Abs("y", Abs("z",
       App(App(Var("x"), Var("z")), App(Var("y"), Var("z"))))));
     expect(roundTrip(t)).toEqual(t);
   });
   it("lambda in argument position", () => {
-    // f (\x := x)  — arg needs parens
+    // f (\x. x)  — arg needs parens
     const t = App(Var("f"), Abs("x", Var("x")));
     expect(roundTrip(t)).toEqual(t);
   });
@@ -188,7 +212,7 @@ describe("expandDefs", () => {
 
   it("lambda param shadows a definition", () => {
     const defs = new Map([["x", Var("replaced")]]);
-    // \x := x  — the x in the body is bound, not the def
+    // \x. x  — the x in the body is bound, not the def
     expect(expandDefs(Abs("x", Var("x")), defs)).toEqual(Abs("x", Var("x")));
   });
 
@@ -209,21 +233,21 @@ describe("parseProgram", () => {
   });
 
   it("parses a definition and expression", () => {
-    const r = parseProgram("I = \\x. x\nI");
+    const r = parseProgram("I := \\x. x\nI");
     expect(r.ok).toBe(true);
     // expr should be the expanded form (the body of I)
     expect(r.expr).toEqual(Abs("x", Var("x")));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
   });
 
-  it("desugars param shorthand  f x = e  →  f = \\x := e", () => {
-    const r = parseProgram("K x y = x\nK");
+  it("desugars param shorthand  f x := e  →  f := \\x. e", () => {
+    const r = parseProgram("K x y := x\nK");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
   });
 
   it("expands definitions eagerly into later lines", () => {
-    const r = parseProgram("I = \\x. x\nf = I\nf");
+    const r = parseProgram("I := \\x. x\nf := I\nf");
     expect(r.ok).toBe(true);
     // f should expand to I's body, not the symbol I
     expect(r.expr).toEqual(Abs("x", Var("x")));
@@ -242,13 +266,13 @@ describe("parseProgram", () => {
   });
 
   it("treats semicolons as statement separators", () => {
-    const r = parseProgram("I = \\x. x; I");
+    const r = parseProgram("I := \\x. x; I");
     expect(r.ok).toBe(true);
     expect(r.expr).toEqual(Abs("x", Var("x")));
   });
 
   it("allows multiple definitions on one line with semicolons", () => {
-    const r = parseProgram("K = \\x y. x; I = \\x. x; K");
+    const r = parseProgram("K := \\x y. x; I := \\x. x; K");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
@@ -262,20 +286,20 @@ describe("parseProgram", () => {
   });
 
   it("reports an error for a bad definition body", () => {
-    const r = parseProgram("f = (");
+    const r = parseProgram("f := (");
     expect(r.ok).toBe(false);
     expect(r.errors.length).toBeGreaterThan(0);
   });
 
   it("warns on redefinition with different normal form", () => {
-    const r = parseProgram("I = \\x. x\nI = \\x. x x");
+    const r = parseProgram("I := \\x. x\nI := \\x. x x");
     expect(r.ok).toBe(true); // warning doesn't block loading
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
   });
 
   it("does not warn on redefinition with the same normal form", () => {
     // \x y. x  and  \a b. a  are alpha-equivalent
-    const r = parseProgram("T = \\x y. x\nT = \\a b. a");
+    const r = parseProgram("T := \\x y. x\nT := \\a b. a");
     expect(r.ok).toBe(true);
     expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
   });
@@ -290,8 +314,8 @@ describe("parseProgram", () => {
   });
 
   it("reports an error for a definition with non-identifier on LHS", () => {
-    // '(x) = y' — LHS contains a non-identifier token
-    const r = parseProgram("(x) = y");
+    // '(x) := y' — LHS contains a non-identifier token
+    const r = parseProgram("(x) := y");
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.includes("left-hand side"))).toBe(true);
   });
@@ -300,5 +324,16 @@ describe("parseProgram", () => {
     const r = parseProgram("@");
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.includes("Lex error"))).toBe(true);
+  });
+
+  it("parses an operator definition: + m n := m S n", () => {
+    const r = parseProgram("+ m n := m S n\n+");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("+")).toBe(true);
+  });
+
+  it("rejects π followed by a definition: π a := b", () => {
+    const r = parseProgram("π a := b");
+    expect(r.ok).toBe(false);
   });
 });
