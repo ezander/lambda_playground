@@ -62,13 +62,12 @@
 * [x] make alt-space select a) in expressions or defs from already defined defs, in pragmas from possible settings
 * [x] maybe different max-step values for "run" and for "print" eval (and maybe also for "normalize check") ← max-steps-print, max-steps-run, max-steps-ident; max-steps pragma sets print+ident
 * [x] separate max-history and visible-history and scroll when more than visible-history is stored ← history panel scrolls, default 200 entries
+* [x] In the editor: the line numbers should match the baseline of the text lines, not the top
 
 ## Up next
 
-* [ ] In the editor: the line numbers should match the baseline of the text lines, not the top
 
-* [ ] Should we directly normalize definitions or make that optional (or prefix a def with a \beta? but it should be the default? only prefix def of Omega?)
-* [ ] could think of more symbols like beta, and eta for reductions
+* [x] Should we directly normalize definitions or make that optional ← normalize by default; #! no-normalize-defs / #! normalize-defs pragma; warns on step limit
 * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 

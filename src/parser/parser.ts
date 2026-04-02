@@ -259,9 +259,10 @@ export type DefInfo = {
 };
 
 export type PragmaConfig = {
-  maxStepsPrint?: number;
-  maxStepsIdent?: number;
-  maxHistory?:    number;
+  maxStepsPrint?:  number;
+  maxStepsIdent?:  number;
+  maxHistory?:     number;
+  normalizeDefs?:  boolean;
 };
 
 // max-steps is a shorthand that sets both maxStepsPrint and maxStepsIdent
@@ -270,7 +271,10 @@ export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
   "max-steps-print": ["maxStepsPrint"],
   "max-steps-ident": ["maxStepsIdent"],
   "max-history":     ["maxHistory"],
+  "normalize-defs":  ["normalizeDefs"],
 };
+
+const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
 
 export type ProgramResult = {
   ok: boolean;
@@ -311,10 +315,13 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
         const props = KNOWN_PRAGMAS[key];
         if (!props) {
           errors.push({ message: `Unknown pragma option: "${key}"`, offset: lineOffset, kind: "warning" });
+        } else if (BOOLEAN_PRAGMAS.has(key)) {
+          if (val && val !== "true" && val !== "false") errors.push({ message: `Pragma "${key}" is boolean, expected no value, true, or false`, offset: lineOffset, kind: "warning" });
+          else { const b = negate ? false : val !== "false"; for (const prop of props) (pragmaConfig as any)[prop] = b; }
         } else {
           if (negate) errors.push({ message: `Pragma "${key}" is numeric, cannot negate`, offset: lineOffset, kind: "warning" });
           else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Pragma "${key}" requires a numeric value`, offset: lineOffset, kind: "warning" });
-          else for (const prop of props) pragmaConfig[prop] = parseInt(val);
+          else for (const prop of props) pragmaConfig[prop] = parseInt(val) as any;
         }
       }
       lineOffset += rawLine.length + 1;
@@ -391,6 +398,15 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
       // Desugar: f x y ::= e  →  f ::= \x y := e
       if (params.length > 0)
         body = params.reduceRight((acc, p) => Abs(p, acc), body);
+
+      // Normalize definition body (default: on)
+      if (pragmaConfig.normalizeDefs ?? true) {
+        const { term: normalized, kind } = normalize(body, { maxSteps: pragmaConfig.maxStepsIdent ?? defaultConfig.maxStepsIdent });
+        if (kind === "stepLimit")
+          errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset: lineOffset, kind: "warning" });
+        else
+          body = normalized;
+      }
 
       if (defs.has(name)) {
         const oldNorm = normalize(defs.get(name)!).term;
