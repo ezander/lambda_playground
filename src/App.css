@@ -459,6 +459,22 @@ label {
   color: var(--muted);
 }
 
+.panel-header-extra { margin-left: auto; margin-right: 0.75rem; }
+
+.panel-sort-btn {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.panel-sort-btn:hover { color: var(--accent); }
+
 .panel-body {
   padding: 0.75rem 1rem;
   display: flex;

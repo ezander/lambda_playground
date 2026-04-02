@@ -17,14 +17,15 @@ import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
-function Panel({ label, open, onToggle, children, className, flush = false }: {
+function Panel({ label, open, onToggle, children, className, flush = false, headerExtra }: {
   label: string; open: boolean; onToggle: () => void; children: React.ReactNode;
-  className?: string; flush?: boolean;
+  className?: string; flush?: boolean; headerExtra?: React.ReactNode;
 }) {
   return (
     <section className={["panel", className].filter(Boolean).join(" ")}>
       <div className="panel-header" onClick={onToggle}>
         <span className="panel-label">{label}</span>
+        {headerExtra && <span className="panel-header-extra" onClick={e => e.stopPropagation()}>{headerExtra}</span>}
         <span className="panel-toggle">{open ? "▾" : "▸"}</span>
       </div>
       {open && <div className={flush ? "panel-body panel-body-flush" : "panel-body"}>{children}</div>}
@@ -88,8 +89,9 @@ export default function App() {
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
   const [shareLabel, setShareLabel]   = useState("share");
-  const [stepsOpen, setStepsOpen] = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
-  const [printOpen, setPrintOpen] = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
+  const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
+  const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
+  const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem("lambda-playground:print:desc") === "1");
   const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:steps", n ? "1" : "0"); return n; }), []);
   const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:print", n ? "1" : "0"); return n; }), []);
 
@@ -525,9 +527,10 @@ export default function App() {
 
         {/* ── Print panel ── */}
         {printResults.length > 0 && (
-          <Panel label="output" open={printOpen} onToggle={togglePrint}>
+          <Panel label="output" open={printOpen} onToggle={togglePrint}
+            headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
             <div className="print-section">
-              {printResults.map((r, i) => (
+              {(printDesc ? [...printResults].reverse() : printResults).map((r, i) => (
                 <div key={i} className="print-entry">
                   <code className="print-src">π {r.src}</code>
                   <code className="print-result">
