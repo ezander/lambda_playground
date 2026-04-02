@@ -565,27 +565,7 @@ export default function App() {
         )}
       </main>
 
-      <footer>
-        <div className="grammar">
-          <h2>grammar</h2>
-          <pre>{
-"program     ::= statement (('\\n' | ';') statement)*\n" +
-"statement   ::= definition | print | term\n" +
-"definition  ::= identLike+ ':=' term\n" +
-"print       ::= 'π' term\n" +
-"term        ::= application\n" +
-"application ::= atom+\n" +
-"atom        ::= primary ('[' identLike ':=' term ']')*\n" +
-"primary     ::= identLike | '(' term ')' | function\n" +
-"function    ::= ('\\\\' | 'λ') identLike+ '.' term\n" +
-"identLike   ::= identifier | '`' [^`\\n]+ '`'\n" +
-"identifier  ::= [a-zA-Z0-9_\\u0370-\\u03FF]+   (excluding λ, π; α/β/η reserved)"
-}</pre>
-        </div>
-        <p className="attribution">
-          inspired by <a href="https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html" target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>
-        </p>
-      </footer>
+      <footer />
     </div>
   );
 }

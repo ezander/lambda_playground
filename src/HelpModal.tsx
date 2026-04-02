@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 
-const INSPIRATION_URL = "https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html";
 
 export function HelpModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
@@ -16,8 +15,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         <h2>λ playground</h2>
         <p>
-          An interactive playground for an untyped lambda dialect, inspired
-          by <a href={INSPIRATION_URL} target="_blank" rel="noreferrer">hbr's Lambda Calculus evaluator</a>.
+          An interactive playground for an untyped lambda dialect.
           Expressions are evaluated using <strong>normal-order</strong> (leftmost-outermost)
           beta reduction with capture-avoiding substitution.
         </p>

@@ -42,8 +42,7 @@ body {
   overflow: hidden;
 }
 .app.kino header,
-.app.kino .example-row,
-.app.kino footer { display: none; }
+.app.kino .example-row { display: none; }
 
 .app.kino main {
   flex: 1;
@@ -784,32 +783,3 @@ label {
 .help-table td:first-child { color: var(--accent); white-space: nowrap; }
 .help-table td:last-child  { color: var(--muted); }
 
-/* ── Footer ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding-top: 1.75rem;
-}
-footer h2 {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-bottom: 0.6rem;
-}
-.attribution {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-top: 1rem;
-}
-.attribution a { color: var(--muted); }
-.attribution a:hover { color: var(--accent); }
-
-footer pre {
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  color: var(--muted);
-  line-height: 1.85;
-}
