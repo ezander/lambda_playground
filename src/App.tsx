@@ -22,7 +22,7 @@ import { snippets as SNIPPETS } from "./data/snippets";
 const SAVE_PREFIX = "lambda-playground:saved:";
 
 type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number };
-const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 10 };
+const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200 };
 
 function loadConfig(): Config {
   try {

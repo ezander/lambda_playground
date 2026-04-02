@@ -73,7 +73,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   value={maxHistory}
                   onChange={e => setMaxHistory(e.target.value)} />
               </td>
-              <td className="settings-hint">reduction steps shown</td>
+              <td className="settings-hint">reduction steps stored (panel scrolls)</td>
             </tr>
           </tbody>
         </table>
