@@ -88,12 +88,10 @@ export default function App() {
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
   const [shareLabel, setShareLabel]   = useState("share");
-  const [stepsOpen,  setStepsOpen]  = useState(() => localStorage.getItem("lambda-playground:panel:steps")  !== "0");
-  const [printOpen,  setPrintOpen]  = useState(() => localStorage.getItem("lambda-playground:panel:print")  !== "0");
-  const [outputOpen, setOutputOpen] = useState(() => localStorage.getItem("lambda-playground:panel:output") !== "0");
-  const toggleSteps  = useCallback(() => setStepsOpen(o  => { const n = !o;  localStorage.setItem("lambda-playground:panel:steps",  n ? "1" : "0"); return n; }), []);
-  const togglePrint  = useCallback(() => setPrintOpen(o  => { const n = !o;  localStorage.setItem("lambda-playground:panel:print",  n ? "1" : "0"); return n; }), []);
-  const toggleOutput = useCallback(() => setOutputOpen(o => { const n = !o;  localStorage.setItem("lambda-playground:panel:output", n ? "1" : "0"); return n; }), []);
+  const [stepsOpen, setStepsOpen] = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
+  const [printOpen, setPrintOpen] = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
+  const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:steps", n ? "1" : "0"); return n; }), []);
+  const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:print", n ? "1" : "0"); return n; }), []);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
@@ -478,7 +476,24 @@ export default function App() {
         </section>
 
         {/* ── Steps panel ── */}
-        <Panel label="steps" open={stepsOpen} onToggle={toggleSteps}>
+        <Panel label="eval" open={stepsOpen} onToggle={toggleSteps}>
+          <div className="output-tabs">
+            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
+              pretty print
+            </button>
+            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
+              AST
+            </button>
+          </div>
+          <div className="output">
+            {currentTerm ? (
+              view === "pretty"
+                ? <pre>{prettyPrint(currentTerm)}</pre>
+                : <AstView term={currentTerm} />
+            ) : (
+              <span className="placeholder">parse result will appear here</span>
+            )}
+          </div>
           <div className="eval-controls">
             <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
               title="Load and beta-reduce to normal form (F5)">load &amp; run <kbd>F5</kbd></button>
@@ -510,7 +525,7 @@ export default function App() {
 
         {/* ── Print panel ── */}
         {printResults.length > 0 && (
-          <Panel label="print" open={printOpen} onToggle={togglePrint}>
+          <Panel label="output" open={printOpen} onToggle={togglePrint}>
             <div className="print-section">
               {printResults.map((r, i) => (
                 <div key={i} className="print-entry">
@@ -527,27 +542,6 @@ export default function App() {
             </div>
           </Panel>
         )}
-
-        {/* ── Output panel ── */}
-        <Panel label="output" open={outputOpen} onToggle={toggleOutput} className="panel-output" flush>
-          <div className="output-tabs">
-            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
-              pretty print
-            </button>
-            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
-              AST
-            </button>
-          </div>
-          <div className="output">
-            {currentTerm ? (
-              view === "pretty"
-                ? <pre>{prettyPrint(currentTerm)}</pre>
-                : <AstView term={currentTerm} />
-            ) : (
-              <span className="placeholder">parse result will appear here</span>
-            )}
-          </div>
-        </Panel>
       </main>
 
       <footer>
