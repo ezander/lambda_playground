@@ -20,7 +20,7 @@ function tokenName(tok: IToken): string {
   return tok.tokenType === BacktickIdent ? tok.image.slice(1, -1) : tok.image;
 }
 import { Term, Var, Abs, App, Pos } from "./ast";
-import { normalize, alphaEq, buildNormDefs, findMatch, EvalConfig } from "../evaluator/eval";
+import { normalize, alphaEq, buildNormDefs, findMatch } from "../evaluator/eval";
 import { prettyPrint } from "./pretty";
 
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
@@ -259,13 +259,17 @@ export type DefInfo = {
 };
 
 export type PragmaConfig = {
-  maxSteps?:   number;
-  maxHistory?: number;
+  maxStepsPrint?: number;
+  maxStepsIdent?: number;
+  maxHistory?:    number;
 };
 
-export const KNOWN_PRAGMAS: Record<string, keyof PragmaConfig> = {
-  "max-steps":   "maxSteps",
-  "max-history": "maxHistory",
+// max-steps is a shorthand that sets both maxStepsPrint and maxStepsIdent
+export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
+  "max-steps":       ["maxStepsPrint", "maxStepsIdent"],
+  "max-steps-print": ["maxStepsPrint"],
+  "max-steps-ident": ["maxStepsIdent"],
+  "max-history":     ["maxHistory"],
 };
 
 export type ProgramResult = {
@@ -282,7 +286,9 @@ export type ProgramResult = {
   pragmaConfig: PragmaConfig;
 };
 
-export function parseProgram(input: string, defaultConfig: EvalConfig = {}): ProgramResult {
+export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number };
+
+export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}): ProgramResult {
   const defs = new Map<string, Term>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
@@ -302,13 +308,13 @@ export function parseProgram(input: string, defaultConfig: EvalConfig = {}): Pro
         errors.push({ message: `Invalid pragma: "${text}"`, offset: lineOffset, kind: "warning" });
       } else {
         const [, negate, key, val] = m;
-        const prop = KNOWN_PRAGMAS[key];
-        if (!prop) {
+        const props = KNOWN_PRAGMAS[key];
+        if (!props) {
           errors.push({ message: `Unknown pragma option: "${key}"`, offset: lineOffset, kind: "warning" });
-        } else if (prop === "maxSteps" || prop === "maxHistory") {
+        } else {
           if (negate) errors.push({ message: `Pragma "${key}" is numeric, cannot negate`, offset: lineOffset, kind: "warning" });
           else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Pragma "${key}" requires a numeric value`, offset: lineOffset, kind: "warning" });
-          else pragmaConfig[prop] = parseInt(val);
+          else for (const prop of props) pragmaConfig[prop] = parseInt(val);
         }
       }
       lineOffset += rawLine.length + 1;
@@ -333,9 +339,9 @@ export function parseProgram(input: string, defaultConfig: EvalConfig = {}): Pro
         errors.push(...result.errors);
       } else {
         const expanded = expandDefs(result.term, defs);
-        const evalConfig: EvalConfig = { ...defaultConfig, ...pragmaConfig };
-        const { term: normalizedTerm, kind, steps } = normalize(expanded, evalConfig);
-        const nd = buildNormDefs(defs, evalConfig);
+        const merged = { ...defaultConfig, ...pragmaConfig };
+        const { term: normalizedTerm, kind, steps } = normalize(expanded, { maxSteps: merged.maxStepsPrint });
+        const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent });
         printInfos.push({
           src:    prettyPrint(result.term),
           result: prettyPrint(normalizedTerm),

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-type Config = { maxSteps: number; maxHistory: number };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number };
 
 function parsePositiveInt(s: string, fallback: number): number {
   const v = parseInt(s, 10);
@@ -12,12 +12,16 @@ export function SettingsModal({ config, onApply, onCancel }: {
   onApply: (c: Config) => void;
   onCancel: () => void;
 }) {
-  const [maxSteps,   setMaxSteps]   = useState(String(config.maxSteps));
-  const [maxHistory, setMaxHistory] = useState(String(config.maxHistory));
+  const [maxStepsPrint, setMaxStepsPrint] = useState(String(config.maxStepsPrint));
+  const [maxStepsRun,   setMaxStepsRun]   = useState(String(config.maxStepsRun));
+  const [maxStepsIdent, setMaxStepsIdent] = useState(String(config.maxStepsIdent));
+  const [maxHistory,    setMaxHistory]    = useState(String(config.maxHistory));
 
   const apply = () => onApply({
-    maxSteps:   parsePositiveInt(maxSteps,   config.maxSteps),
-    maxHistory: parsePositiveInt(maxHistory, config.maxHistory),
+    maxStepsPrint: parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
+    maxStepsRun:   parsePositiveInt(maxStepsRun,   config.maxStepsRun),
+    maxStepsIdent: parsePositiveInt(maxStepsIdent, config.maxStepsIdent),
+    maxHistory:    parsePositiveInt(maxHistory,    config.maxHistory),
   });
 
   useEffect(() => {
@@ -36,13 +40,31 @@ export function SettingsModal({ config, onApply, onCancel }: {
         <table className="settings-table">
           <tbody>
             <tr>
-              <td>max steps</td>
+              <td>max steps (print)</td>
               <td>
                 <input className="config-input" type="number" min={1} max={100000}
-                  value={maxSteps}
-                  onChange={e => setMaxSteps(e.target.value)} />
+                  value={maxStepsPrint}
+                  onChange={e => setMaxStepsPrint(e.target.value)} />
               </td>
-              <td className="settings-hint">beta reductions per run</td>
+              <td className="settings-hint">β steps for π statements</td>
+            </tr>
+            <tr>
+              <td>max steps (run)</td>
+              <td>
+                <input className="config-input" type="number" min={1} max={100000}
+                  value={maxStepsRun}
+                  onChange={e => setMaxStepsRun(e.target.value)} />
+              </td>
+              <td className="settings-hint">β steps per run in eval panel</td>
+            </tr>
+            <tr>
+              <td>max steps (ident)</td>
+              <td>
+                <input className="config-input" type="number" min={1} max={100000}
+                  value={maxStepsIdent}
+                  onChange={e => setMaxStepsIdent(e.target.value)} />
+              </td>
+              <td className="settings-hint">β steps for definition matching</td>
             </tr>
             <tr>
               <td>max history</td>

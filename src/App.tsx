@@ -4,7 +4,7 @@ import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, normalize, buildNormDefs, findMatch, EvalConfig } from "./evaluator/eval";
+import { step, etaStep, buildNormDefs, findMatch } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -21,8 +21,8 @@ import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
-type Config = { maxSteps: number; maxHistory: number };
-const DEFAULT_CONFIG: Config = { maxSteps: 1000, maxHistory: 10 };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number };
+const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 10 };
 
 function loadConfig(): Config {
   try {
@@ -151,7 +151,7 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, effectiveConfig);
+    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent });
     setNormDefs(nd);
     const done = step(term) === null;
     setLoaded({ term, done, stepNum: 0, effectiveConfig });
@@ -243,7 +243,7 @@ export default function App() {
   }, [source, saveName]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
-  const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxSteps ?? config.maxSteps), [advance, loaded, config.maxSteps]);
+  const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, loaded, config.maxStepsRun]);
 
   const handleEtaStep = useCallback(() => {
     if (!loaded) return;
@@ -261,11 +261,11 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, effectiveConfig);
+    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent });
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term
-    const LIMIT = effectiveConfig.maxSteps;
+    const LIMIT = effectiveConfig.maxStepsRun;
     let current = term;
     const entries: HistoryEntry[] = [buildEntry(term, 0, nd)];
     let i = 0;
@@ -551,7 +551,7 @@ export default function App() {
               title="Parse and load the current expression into the history (F6)">load <kbd>F6</kbd></button>
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${loaded?.effectiveConfig.maxSteps ?? config.maxSteps} steps (F9)`}>run <kbd>F9</kbd></button>
+            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun} steps (F9)`}>run <kbd>F9</kbd></button>
             <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
               <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
               {" "}show substitution
