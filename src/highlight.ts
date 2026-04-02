@@ -7,6 +7,7 @@ import { Term, Var, Abs } from "./parser/ast";
 // ── Decoration marks ──────────────────────────────────────────────────────────
 
 const mComment  = Decoration.mark({ class: "cml-comment" });
+const mPragma   = Decoration.mark({ class: "cml-pragma" });
 const mOp       = Decoration.mark({ class: "cml-op" });
 const mLambda   = Decoration.mark({ class: "cml-lambda" });
 const mPi       = Decoration.mark({ class: "cml-pi" });
@@ -36,8 +37,10 @@ export const parsedField = StateField.define<ProgramResult | null>({
 
 function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
   const ci = text.indexOf("#");
-  if (ci >= 0)
-    tks.push({ from: lineFrom + ci, to: lineFrom + text.length, m: mComment });
+  if (ci >= 0) {
+    const isPragma = text.slice(ci).startsWith("#!");
+    tks.push({ from: lineFrom + ci, to: lineFrom + text.length, m: isPragma ? mPragma : mComment });
+  }
 
   const code = ci >= 0 ? text.slice(0, ci) : text;
 

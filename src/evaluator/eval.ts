@@ -212,10 +212,13 @@ export type RunResult =
 
 const DEFAULT_STEP_LIMIT = 1000;
 
+export type EvalConfig = { maxSteps?: number };
+
 export function normalize(
   term: Term,
-  limit = DEFAULT_STEP_LIMIT
+  config: EvalConfig = {}
 ): RunResult {
+  const limit = config.maxSteps ?? DEFAULT_STEP_LIMIT;
   resetCounter();
   let current = term;
   let steps = 0;

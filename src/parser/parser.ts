@@ -257,6 +257,16 @@ export type DefInfo = {
   positions: PositionMap; // positions for identifiers within body
 };
 
+export type PragmaConfig = {
+  maxSteps?:   number;
+  maxHistory?: number;
+};
+
+const KNOWN_PRAGMAS: Record<string, keyof PragmaConfig> = {
+  "max-steps":   "maxSteps",
+  "max-history": "maxHistory",
+};
+
 export type ProgramResult = {
   ok: boolean;
   errors: LambdaError[];
@@ -268,6 +278,7 @@ export type ProgramResult = {
   exprInfos:  { term: Term; positions: PositionMap }[];
   // π-marked print statements (expanded, ready to evaluate):
   printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[];
+  pragmaConfig: PragmaConfig;
 };
 
 export function parseProgram(input: string): ProgramResult {
@@ -278,9 +289,30 @@ export function parseProgram(input: string): ProgramResult {
   const defInfos:   DefInfo[] = [];
   const exprInfos:  { term: Term; positions: PositionMap }[] = [];
   const printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[] = [];
+  const pragmaConfig: PragmaConfig = {};
   let lineOffset = 0;
 
   for (const rawLine of input.split(/[;\n]/)) {
+    // ── #! pragma directive ────────────────────────────────────────────────────
+    if (rawLine.trimStart().startsWith("#!")) {
+      const text = rawLine.trimStart().slice(2).trim();
+      const m = text.match(/^(no-)?([a-z][a-z0-9-]*)(?:=(true|false|\d+))?$/);
+      if (!m) {
+        errors.push({ message: `Invalid pragma: "${text}"`, offset: lineOffset, kind: "warning" });
+      } else {
+        const [, negate, key, val] = m;
+        const prop = KNOWN_PRAGMAS[key];
+        if (!prop) {
+          errors.push({ message: `Unknown pragma option: "${key}"`, offset: lineOffset, kind: "warning" });
+        } else if (prop === "maxSteps" || prop === "maxHistory") {
+          if (negate) errors.push({ message: `Pragma "${key}" is numeric, cannot negate`, offset: lineOffset, kind: "warning" });
+          else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Pragma "${key}" requires a numeric value`, offset: lineOffset, kind: "warning" });
+          else pragmaConfig[prop] = parseInt(val);
+        }
+      }
+      lineOffset += rawLine.length + 1;
+      continue;
+    }
     const { tokens, errors: lexErrors } = LambdaLexer.tokenize(rawLine);
     if (lexErrors.length > 0) {
       errors.push(...lexErrors.map((e) => ({
@@ -384,5 +416,5 @@ export function parseProgram(input: string): ProgramResult {
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos, pragmaConfig };
 }

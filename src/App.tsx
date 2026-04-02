@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram } from "./parser/parser";
+import { parseProgram, PragmaConfig } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, canonicalForm, normalize } from "./evaluator/eval";
+import { step, etaStep, canonicalForm, normalize, EvalConfig } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -63,13 +63,13 @@ function getSavedSlots(): string[] {
 
 
 type View = "pretty" | "ast";
-type Loaded = { term: Term; done: boolean; stepNum: number } | null;
+type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
 type HistoryEntry = { label: string; text: string; match?: string };
 
-function buildNormDefs(defs: Map<string, Term>): Map<string, string> {
+function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
   const m = new Map<string, string>();
   for (const [name, term] of defs)
-    m.set(name, canonicalForm(normalize(term).term));
+    m.set(name, canonicalForm(normalize(term, cfg).term));
   return m;
 }
 
@@ -141,22 +141,26 @@ export default function App() {
     catch (e) { roundTripError = String(e); }
   }
 
-  const makeEntry = useCallback((term: Term, stepNum: number, suffix = ""): HistoryEntry => ({
+  const makeEntry = useCallback((term: Term, stepNum: number, suffix = "", normal = true): HistoryEntry => ({
     label: `${stepNum}:`,
     text: prettyPrint(term) + suffix,
-    match: findMatch(term, normDefs),
+    match: normal ? findMatch(term, normDefs) : undefined,
   }), [normDefs]);
+
+  const mergeConfig = useCallback((pragma: PragmaConfig): Config =>
+    ({ ...config, ...pragma }), [config]);
 
   const handleLoad = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
-    const nd = buildNormDefs(d);
+    const effectiveConfig = mergeConfig(programResult.pragmaConfig);
+    const nd = buildNormDefs(d, effectiveConfig);
     setNormDefs(nd);
-    setLoaded({ term, done: step(term) === null, stepNum: 1 });
+    setLoaded({ term, done: step(term) === null, stepNum: 1, effectiveConfig });
     setLoadedSource(source);
     setHistory([{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }]);
-  }, [programResult, source]);
+  }, [programResult, source, mergeConfig]);
 
   const advance = useCallback((maxSteps: number) => {
     if (!loaded || loaded.done) return;
@@ -171,11 +175,14 @@ export default function App() {
       entries.push(makeEntry(current, ++stepNum));
     }
     const batchLimitHit = i === maxSteps && maxSteps > 1;
-    if (batchLimitHit && entries.length > 0)
+    if (batchLimitHit && entries.length > 0) {
       entries[entries.length - 1].text += " (paused)";
+      entries[entries.length - 1].match = undefined;
+    }
     const done = step(current, showSubst) === null;
-    setLoaded({ term: current, done, stepNum });
-    setHistory(h => [...entries.slice(-config.maxHistory).reverse(), ...h].slice(0, config.maxHistory));
+    setLoaded({ term: current, done, stepNum, effectiveConfig: loaded.effectiveConfig });
+    const maxHistory = loaded.effectiveConfig.maxHistory;
+    setHistory(h => [...entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
   }, [loaded, makeEntry, showSubst]);
 
   const jumpTo = useCallback((offset: number) => {
@@ -233,7 +240,7 @@ export default function App() {
   }, [source, saveName]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
-  const handleRun     = useCallback(() => advance(config.maxSteps), [advance, config.maxSteps]);
+  const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxSteps ?? config.maxSteps), [advance, loaded, config.maxSteps]);
 
   const handleEtaStep = useCallback(() => {
     if (!loaded) return;
@@ -241,18 +248,19 @@ export default function App() {
     if (next === null) return;
     const stepNum = loaded.stepNum + 1;
     const entry = makeEntry(next, stepNum);
-    setLoaded({ term: next, done: step(next, showSubst) === null, stepNum });
-    setHistory(h => [entry, ...h].slice(0, config.maxHistory));
+    setLoaded({ term: next, done: step(next, showSubst) === null, stepNum, effectiveConfig: loaded.effectiveConfig });
+    setHistory(h => [entry, ...h].slice(0, loaded.effectiveConfig.maxHistory));
   }, [loaded, makeEntry, showSubst]);
   const handleLoadRun = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
-    const nd = buildNormDefs(d);
+    const effectiveConfig = mergeConfig(programResult.pragmaConfig);
+    const nd = buildNormDefs(d, effectiveConfig);
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term
-    const LIMIT = config.maxSteps;
+    const LIMIT = effectiveConfig.maxSteps;
     let current = term;
     const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }];
     let i = 0;
@@ -265,9 +273,9 @@ export default function App() {
     const batchLimitHit = i === LIMIT;
     if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
     const stepNum = entries.length;
-    setLoaded({ term: current, done: step(current, showSubst) === null, stepNum });
-    setHistory(entries.slice(-config.maxHistory).reverse());
-  }, [programResult, source, showSubst]);
+    setLoaded({ term: current, done: step(current, showSubst) === null, stepNum, effectiveConfig });
+    setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
+  }, [programResult, source, showSubst, mergeConfig]);
 
   const editorExtensions = useMemo(() => [
     lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
@@ -341,19 +349,20 @@ export default function App() {
   }, [source]);
 
   const printResults = useMemo(() => {
-    const nd = buildNormDefs(programResult.defs);
+    const evalConfig = { ...config, ...programResult.pragmaConfig };
+    const nd = buildNormDefs(programResult.defs, evalConfig);
     return programResult.printInfos.map(({ raw, expanded, offset }) => {
-      const { term, kind } = normalize(expanded);
+      const { term, kind } = normalize(expanded, evalConfig);
       return {
         src:    prettyPrint(raw),
         result: prettyPrint(term),
         normal: kind === "normalForm",
-        match:  findMatch(term, nd),
+        match:  kind === "normalForm" ? findMatch(term, nd) : undefined,
         offset,
         line:   source.slice(0, offset).split("\n").length,
       };
     });
-  }, [programResult, source]);
+  }, [programResult, source, config]);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
@@ -543,7 +552,7 @@ export default function App() {
               title="Parse and load the current expression into the history (F6)">load <kbd>F6</kbd></button>
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${config.maxSteps} steps (F9)`}>run <kbd>F9</kbd></button>
+            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${loaded?.effectiveConfig.maxSteps ?? config.maxSteps} steps (F9)`}>run <kbd>F9</kbd></button>
             {loaded?.done && <span className="eval-status normal-form">normal form</span>}
             <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
               <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
@@ -566,9 +575,9 @@ export default function App() {
         </Panel>
 
         {/* ── Print panel ── */}
-        {printResults.length > 0 && (
-          <Panel label="output" open={printOpen} onToggle={togglePrint}
-            headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
+        <Panel label="output" open={printOpen} onToggle={togglePrint}
+          headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
+          {printResults.length > 0 ? (
             <div className="print-section">
               {(printDesc ? [...printResults].reverse() : printResults).map((r, i) => (
                 <div key={i} className="print-entry" onClick={() => jumpTo(r.offset)} title="Go to source">
@@ -588,8 +597,10 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </Panel>
-        )}
+          ) : (
+            <span className="placeholder">no π statements in current program</span>
+          )}
+        </Panel>
       </main>
 
       <footer />

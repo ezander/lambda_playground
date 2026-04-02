@@ -295,7 +295,7 @@ describe("normalize", () => {
     // omega = (\x := x x) (\x := x x)  — diverges
     const delta = Abs("x", App(Var("x"), Var("x")));
     const omega = App(delta, delta);
-    const r = normalize(omega, 100);
+    const r = normalize(omega, { maxSteps: 100 });
     expect(r.kind).toBe("stepLimit");
   });
 });
