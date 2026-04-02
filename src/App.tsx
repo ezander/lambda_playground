@@ -222,7 +222,7 @@ export default function App() {
   }, [programResult, source, showSubst]);
 
   const editorExtensions = useMemo(() => [
-    lineNumbers({ formatNumber: n => String(n).padStart(3, "\u00a0") }),
+    lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
     lambdaTheme, lambdaKeymap, parsedField, lambdaHighlight,
   ], []);
 
@@ -440,7 +440,7 @@ export default function App() {
                   {r.result}
                   {r.normal
                     ? <span className="eval-status normal-form"> normal form</span>
-                    : <span className="eval-status"> (step limit)</span>}
+                    : <span className="eval-status did-not-terminate"> did not terminate</span>}
                   {r.match && <span className="history-match">{r.match}</span>}
                 </code>
               </div>

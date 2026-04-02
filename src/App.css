@@ -375,6 +375,7 @@ label {
   margin-left: 0.4rem;
 }
 .normal-form { color: var(--ok); }
+.did-not-terminate { color: var(--warn); }
 
 .subst-toggle {
   font-family: var(--mono);
