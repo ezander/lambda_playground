@@ -56,18 +56,25 @@
 * [x] what about horizontal rulers, and boxes where the result will show up?
 * [x] Introduce options (pragma syntax?) `#pragma option(eta-conversion=true)`, `#pragma option(max-beta=10000)`, maybe better than settings box, or use `{max-beta=10000,}`
 * [x] Make limits (steps, display) settable (or smaller?)
+* [x] make a settings box (?), e.g. for this reduction thing, the number of steps, lines to display and so on, save to local storage if wanted
+* [x] remove grammar and link from main page and just leave in help? maybe also remove hrb? diverged too much
+* [x] max-steps seems to be one-off sometimes, you set it to n and get didnotterminate, then to n+1, and it says normal form, but it was normal form already with n
+* [x] make alt-space select a) in expressions or defs from already defined defs, in pragmas from possible settings
+* [x] maybe different max-step values for "run" and for "print" eval (and maybe also for "normalize check") ← max-steps-print, max-steps-run, max-steps-ident; max-steps pragma sets print+ident
+* [x] separate max-history and visible-history and scroll when more than visible-history is stored ← history panel scrolls, default 200 entries
 
 ## Up next
+
+* [ ] In the editor: the line numbers should match the baseline of the text lines, not the top
+
+* [ ] Should we directly normalize definitions or make that optional (or prefix a def with a \beta? but it should be the default? only prefix def of Omega?)
+* [ ] could think of more symbols like beta, and eta for reductions
+* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
+* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 
 ## Consider
 
 * [ ] think about a leetcode-like layout of the ui
-* [ ] Should we directly normalize definitions or make that optional (or prefix a def with a \beta? but it should be the default? only prefix def of Omega?)
-* [ ] could think of more symbols like beta, and eta for reductions
-* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
-* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
- 
-* [x] make a settings box (?), e.g. for this reduction thing, the number of steps, lines to display and so on, save to local storage if wanted
 * [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc.)
 * [ ] examples and snippets are curr essentially the same, make snippets really useful (list gists), examples longer, with explanations, tutorials extra?
@@ -77,7 +84,6 @@
 * [ ] make more demos and connect to a tutorial (basics, booleans, numerals, combinators)
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 * [ ] think about a leetcode-like layout of the ui, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises) 
-* [x] remove grammar and link from main page and just leave in help? maybe also remove hrb? diverged too much
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 * [ ] (Q: for identification: as long as at least one is an abstraction, apply new var to both sides?)
 
