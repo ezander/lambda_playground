@@ -1,4 +1,4 @@
-import { CstParser, CstNode, IToken, tokenMatcher } from "chevrotain";
+import { CstParser, CstNode, IToken, tokenMatcher, EOF } from "chevrotain";
 import {
   allTokens,
   LambdaLexer,
@@ -209,6 +209,11 @@ export function parse(input: string, offset = 0): ParseResult {
     };
   }
 
+  const next = parser.LA(1);
+  if (next.tokenType !== EOF) {
+    return { ok: false, errors: [{ message: `Unexpected '${next.image}'`, offset: offset + next.startOffset }] };
+  }
+
   astBuilder.reset(offset);
   const term = astBuilder.visit(cst);
   return { ok: true, term, positions: astBuilder.positions };
@@ -289,7 +294,9 @@ export function parseProgram(input: string): ProgramResult {
     if (tokens[0]?.tokenType === Pi) {
       const rest = rawLine.slice(tokens[0].endOffset! + 1);
       const result = parse(rest, lineOffset + tokens[0].endOffset! + 1);
-      if (result.ok) {
+      if (!result.ok) {
+        errors.push(...result.errors);
+      } else {
         printInfos.push({ raw: result.term, expanded: expandDefs(result.term, defs), positions: result.positions });
         exprInfos.push({ term: result.term, positions: result.positions });
       }
