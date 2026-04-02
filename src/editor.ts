@@ -103,7 +103,58 @@ function insertAt(view: EditorView, text: string): boolean {
   return true;
 }
 
+// ── Greek symbol table ────────────────────────────────────────────────────────
+// Shared by Tab-expansion and the symbol picker in App.tsx.
+
+export type GreekSymbol = { sym: string; name: string };
+
+export const GREEK_SYMBOLS: GreekSymbol[] = [
+  // lowercase
+  { sym: "α", name: "alpha"   }, { sym: "β", name: "beta"    },
+  { sym: "γ", name: "gamma"   }, { sym: "δ", name: "delta"   },
+  { sym: "ε", name: "epsilon" }, { sym: "ζ", name: "zeta"    },
+  { sym: "η", name: "eta"     }, { sym: "θ", name: "theta"   },
+  { sym: "ι", name: "iota"    }, { sym: "κ", name: "kappa"   },
+  { sym: "λ", name: "lambda"  }, { sym: "μ", name: "mu"      },
+  { sym: "ν", name: "nu"      }, { sym: "ξ", name: "xi"      },
+  { sym: "π", name: "pi"      }, { sym: "ρ", name: "rho"     },
+  { sym: "σ", name: "sigma"   }, { sym: "τ", name: "tau"     },
+  { sym: "υ", name: "upsilon" }, { sym: "φ", name: "phi"     },
+  { sym: "χ", name: "chi"     }, { sym: "ψ", name: "psi"     },
+  { sym: "ω", name: "omega"   },
+  // uppercase (visually distinct from Latin)
+  { sym: "Γ", name: "Gamma"   }, { sym: "Δ", name: "Delta"   },
+  { sym: "Θ", name: "Theta"   }, { sym: "Λ", name: "Lambda"  },
+  { sym: "Ξ", name: "Xi"      }, { sym: "Π", name: "Pi"      },
+  { sym: "Σ", name: "Sigma"   }, { sym: "Υ", name: "Upsilon" },
+  { sym: "Φ", name: "Phi"     }, { sym: "Ψ", name: "Psi"     },
+  { sym: "Ω", name: "Omega"   },
+];
+
+const GREEK_MAP: Record<string, string> = Object.fromEntries(
+  GREEK_SYMBOLS.map(({ sym, name }) => [name, sym])
+);
+
+// Tab-expand \name → Greek letter (e.g. \omega → ω). Returns false if no match,
+// so Tab falls through to normal handling (indentation) from basicSetup.
+function expandGreek(view: EditorView): boolean {
+  const { from } = view.state.selection.main;
+  const line = view.state.doc.lineAt(from);
+  const before = view.state.doc.sliceString(line.from, from);
+  const match = before.match(/\\([a-zA-Z]+)$/);
+  if (!match) return false;
+  const sym = GREEK_MAP[match[1]];
+  if (!sym) return false;
+  const start = from - match[0].length;
+  view.dispatch({
+    changes: { from: start, to: from, insert: sym },
+    selection: { anchor: start + sym.length },
+  });
+  return true;
+}
+
 export const lambdaKeymap: Extension = Prec.highest(keymap.of([
+  { key: "Tab",   run: expandGreek },
   { key: "Ctrl-/", run: toggleLineComment },
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
@@ -111,8 +162,6 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "<", run: v => wrapSelection(v, "<", ">") },
   { key: "Alt-l", run: v => insertAt(v, "λ") },
   { key: "Alt-L", run: v => insertAt(v, "λ") },
-  { key: "Alt-m", run: v => insertAt(v, "μ") },
-  { key: "Alt-M", run: v => insertAt(v, "μ") },
   { key: "Alt-p", run: v => insertAt(v, "π") },
   { key: "Alt-P", run: v => insertAt(v, "π") },
 ]));

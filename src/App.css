@@ -302,6 +302,47 @@ label {
 }
 .slot-picker-item:hover { background: rgba(255,255,255,0.06); color: var(--accent); }
 
+/* ── Symbol picker ── */
+.sym-picker { position: relative; }
+.sym-picker-menu {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 50;
+  width: fit-content;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.sym-section-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  user-select: none;
+}
+.sym-row { display: grid; grid-template-columns: repeat(12, 1.7rem); gap: 2px; }
+.sym-item {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.sym-item:hover { border-color: var(--accent); color: var(--accent); }
+
 .load-btn {
   font-family: var(--mono);
   font-size: 0.78rem;

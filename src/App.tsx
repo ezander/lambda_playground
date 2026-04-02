@@ -8,7 +8,7 @@ import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
-import { lambdaTheme, lambdaKeymap } from "./editor";
+import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS } from "./editor";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
 import LZString from "lz-string";
@@ -50,6 +50,7 @@ function findMatch(term: Term, nd: Map<string, string>): string | undefined {
 export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
+  const symPickerRef    = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]       = useState(false);
   const [source, setSource]           = useState(() => {
     const p = new URLSearchParams(window.location.search).get("s");
@@ -70,6 +71,7 @@ export default function App() {
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
   const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
   const [slotOpen, setSlotOpen]       = useState(false);
+  const [symOpen, setSymOpen]         = useState(false);
   const [shareLabel, setShareLabel]   = useState("share");
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
@@ -265,6 +267,24 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handler);
   }, [slotOpen]);
 
+  // Close symbol picker on outside click
+  useEffect(() => {
+    if (!symOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!symPickerRef.current?.contains(e.target as Node)) setSymOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [symOpen]);
+
+  const handleInsertSym = useCallback((sym: string) => {
+    const view = editorViewRef.current;
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    view.dispatch({ changes: { from, to, insert: sym }, selection: { anchor: from + sym.length } });
+    view.focus();
+  }, []);
+
   const handleShare = useCallback(async () => {
     const encoded = LZString.compressToEncodedURIComponent(source);
     const url = `${location.origin}${location.pathname}?s=${encoded}`;
@@ -351,6 +371,32 @@ export default function App() {
                 }}>
                   {SNIPPETS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                 </select>
+              </div>
+            </div>
+            <span className="toolbar-sep" />
+            <div className="toolbar-group">
+              <span className="row-label">sym</span>
+              <div className="sym-picker" ref={symPickerRef}>
+                <button className="tool-select slot-picker-btn" onClick={() => setSymOpen(o => !o)}
+                  title="Insert Greek symbol (or type \name then Tab)">Ω ▾</button>
+                {symOpen && (
+                  <div className="sym-picker-menu">
+                    <div className="sym-section-label">lowercase</div>
+                    <div className="sym-row">
+                      {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
+                        <button key={g.name} className="sym-item" title={`\\${g.name}`}
+                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
+                      ))}
+                    </div>
+                    <div className="sym-section-label">uppercase</div>
+                    <div className="sym-row">
+                      {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
+                        <button key={g.name} className="sym-item" title={`\\${g.name}`}
+                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <span className="toolbar-sep" />

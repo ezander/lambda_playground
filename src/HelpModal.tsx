@@ -53,6 +53,12 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           The <em>examples</em> dropdown loads a complete standalone program into the editor (replacing its content).
           The <em>insert</em> dropdown inserts a block of definitions at the current cursor line — useful for
           building up programs incrementally from Church booleans, numerals, combinators, pairs, or lists.
+          The <em>sym</em> button opens a Greek symbol picker; hovering each symbol shows its shorthand.
+        </p>
+        <p>
+          To insert a Greek letter by keyboard, type a backslash followed by its name and press <kbd>Tab</kbd>:
+          e.g. <code>\omega</code>+Tab → <code>ω</code>, <code>\Omega</code>+Tab → <code>Ω</code>.
+          If the name is not recognised, Tab falls through to normal indentation.
         </p>
 
         <h3>storage</h3>
@@ -95,8 +101,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>Ctrl-/</code></td><td>toggle <code>#</code> comment on current line or all selected lines</td></tr>
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
-            <tr><td><code>Alt-M</code></td><td>insert μ at cursor</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at cursor</td></tr>
+            <tr><td><code>\name</code> + <code>Tab</code></td><td>insert Greek letter (e.g. <code>\omega</code> → ω)</td></tr>
           </tbody>
         </table>
 

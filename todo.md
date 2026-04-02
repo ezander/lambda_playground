@@ -47,16 +47,17 @@
 * [x] maybe add symbols pi and tau, where (pi expr) reduces and print prints the expression ← π done;
 * [x] where do evaluation/print boxes then land ← π output panel above history
 * [x] I think \pi shall evaluate the expression, print in a list, with two lines, original expr above, and reduced and normalized expr below
+* [x] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)
+* [x] display (did not terminate) instead of (step limit reached) in pi display
 
 ## Up next
  
-* [x] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)
 * [ ] allow + - * / as identifiers (and maybe ^ ~ & | for booleans) so we can write e.g. `+ m n = m S n` and `* m n = m (+ n) 0`
-* [ ] we need a better way of typing greeks (e.g. \alpha [tab], or alpha[alt-space], or alpha[ctrl-g] or something, some select symbol thing, or ctrl-g, combo-select alpha) or as html entity like &alpha; which is auto-replaced
-* [ ] symbol insert box?
-* [x] display (did not terminate) instead of (step limit reached) in pi display
+* [x] we need a better way of typing greeks (e.g. \alpha [tab], or alpha[alt-space], or alpha[ctrl-g] or something, some select symbol thing, or ctrl-g, combo-select alpha) or as html entity like &alpha; which is auto-replaced
+* [x] symbol insert box?
 * [ ] make all three displays (expr, reductions, output) have a name and be collapsible
 * [ ] what about horizontal rulers, and boxes where the result will show up?
+
  
 ## Consider
 
