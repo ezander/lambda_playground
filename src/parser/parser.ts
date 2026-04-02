@@ -267,7 +267,7 @@ export type ProgramResult = {
   defInfos:   DefInfo[];
   exprInfos:  { term: Term; positions: PositionMap }[];
   // π-marked print statements (expanded, ready to evaluate):
-  printInfos: { raw: Term; expanded: Term; positions: PositionMap }[];
+  printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[];
 };
 
 export function parseProgram(input: string): ProgramResult {
@@ -277,7 +277,7 @@ export function parseProgram(input: string): ProgramResult {
   const errors: LambdaError[] = [];
   const defInfos:   DefInfo[] = [];
   const exprInfos:  { term: Term; positions: PositionMap }[] = [];
-  const printInfos: { raw: Term; expanded: Term; positions: PositionMap }[] = [];
+  const printInfos: { raw: Term; expanded: Term; positions: PositionMap; offset: number }[] = [];
   let lineOffset = 0;
 
   for (const rawLine of input.split(/[;\n]/)) {
@@ -299,7 +299,7 @@ export function parseProgram(input: string): ProgramResult {
       if (!result.ok) {
         errors.push(...result.errors);
       } else {
-        printInfos.push({ raw: result.term, expanded: expandDefs(result.term, defs), positions: result.positions });
+        printInfos.push({ raw: result.term, expanded: expandDefs(result.term, defs), positions: result.positions, offset: lineOffset });
         exprInfos.push({ term: result.term, positions: result.positions });
       }
       lineOffset += rawLine.length + 1;

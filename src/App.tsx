@@ -156,7 +156,7 @@ export default function App() {
   const jumpTo = useCallback((offset: number) => {
     const view = editorViewRef.current;
     if (!view) return;
-    view.dispatch({ selection: { anchor: offset } });
+    view.dispatch({ selection: { anchor: offset }, scrollIntoView: true });
     view.focus();
   }, []);
 
@@ -316,16 +316,18 @@ export default function App() {
 
   const printResults = useMemo(() => {
     const nd = buildNormDefs(programResult.defs);
-    return programResult.printInfos.map(({ raw, expanded }) => {
+    return programResult.printInfos.map(({ raw, expanded, offset }) => {
       const { term, kind } = normalize(expanded);
       return {
         src:    prettyPrint(raw),
         result: prettyPrint(term),
         normal: kind === "normalForm",
         match:  findMatch(term, nd),
+        offset,
+        line:   source.slice(0, offset).split("\n").length,
       };
     });
-  }, [programResult]);
+  }, [programResult, source]);
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
@@ -531,14 +533,19 @@ export default function App() {
             headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
             <div className="print-section">
               {(printDesc ? [...printResults].reverse() : printResults).map((r, i) => (
-                <div key={i} className="print-entry">
-                  <code className="print-src">π {r.src}</code>
+                <div key={i} className="print-entry" onClick={() => jumpTo(r.offset)} title="Go to source">
+                  <code className="print-src">
+                    <span className="print-index">{r.line}:</span>
+                    {" π "}{r.src}
+                  </code>
                   <code className="print-result">
-                    {r.result}
-                    {r.normal
-                      ? <span className="eval-status normal-form"> normal form</span>
-                      : <span className="eval-status did-not-terminate"> did not terminate</span>}
-                    {r.match && <span className="history-match">{r.match}</span>}
+                    <span className="print-result-text">{r.result}</span>
+                    <span className="print-result-status">
+                      {r.normal
+                        ? <span className="eval-status normal-form">normal form</span>
+                        : <span className="eval-status did-not-terminate">did not terminate</span>}
+                      {r.match && <span className="history-match"><span className="print-equiv">≡</span> {r.match}</span>}
+                    </span>
                   </code>
                 </div>
               ))}

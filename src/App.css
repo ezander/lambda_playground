@@ -581,6 +581,13 @@ label {
   border-radius: 2px;
   padding: 0.5rem 1rem;
   gap: 0.25rem;
+  cursor: pointer;
+}
+.print-entry:hover { border-color: var(--accent); }
+
+.print-index {
+  color: var(--muted);
+  font-size: 0.75em;
 }
 
 .print-src {
@@ -595,9 +602,21 @@ label {
   color: var(--text);
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
 }
+
+.print-result-text { flex: 1; }
+
+.print-result-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.print-equiv { color: var(--muted); }
 
 /* ── History ── */
 .history-section {
