@@ -36,6 +36,8 @@ class LambdaParser extends CstParser {
     this.performSelfAnalysis();
   }
 
+  nextToken() { return this.LA(1); }
+
   term = this.RULE("term", () => {
     this.SUBRULE(this.application);
   });
@@ -209,7 +211,7 @@ export function parse(input: string, offset = 0): ParseResult {
     };
   }
 
-  const next = parser.LA(1);
+  const next = parser.nextToken();
   if (next.tokenType !== EOF) {
     return { ok: false, errors: [{ message: `Unexpected '${next.image}'`, offset: offset + next.startOffset }] };
   }

@@ -27,6 +27,13 @@ export const BacktickIdent = createToken({
   categories: [IdentifierLike],
 });
 
+// Operator identifier: non-empty sequence of operator characters
+export const OperatorIdent = createToken({
+  name: "OperatorIdent",
+  pattern: /[+\-*\/^~&|<>!?]+/,
+  categories: [IdentifierLike],
+});
+
 // Identifier: letters, digits, underscores, and Greek letters (excluding λ=\u03BB and π=\u03C0
 // so that those chars always lex as Backslash/Pi regardless of context).
 export const Identifier = createToken({
@@ -62,6 +69,7 @@ export const allTokens = [
   LBracket,
   RBracket,
   BacktickIdent,   // before Identifier so backtick pattern takes priority
+  OperatorIdent,   // before Identifier (disjoint charsets, but explicit ordering)
   Identifier,
   IdentifierLike,  // category — Lexer.NA, no actual matching; must be in list for parser
 ];

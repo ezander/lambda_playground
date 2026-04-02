@@ -49,21 +49,21 @@
 * [x] I think \pi shall evaluate the expression, print in a list, with two lines, original expr above, and reduced and normalized expr below
 * [x] what about making the line numbers a bit smaller (and maybe then 4 digits, we'll never get over this)
 * [x] display (did not terminate) instead of (step limit reached) in pi display
+* [x] we need a better way of typing greeks (e.g. \alpha [tab], or alpha[alt-space], or alpha[ctrl-g] or something, some select symbol thing, or ctrl-g, combo-select alpha) or as html entity like &alpha; which is auto-replaced
+* [x] symbol insert box?
 
 ## Up next
  
-* [ ] allow + - * / as identifiers (and maybe ^ ~ & | for booleans) so we can write e.g. `+ m n = m S n` and `* m n = m (+ n) 0`
-* [x] we need a better way of typing greeks (e.g. \alpha [tab], or alpha[alt-space], or alpha[ctrl-g] or something, some select symbol thing, or ctrl-g, combo-select alpha) or as html entity like &alpha; which is auto-replaced
-* [x] symbol insert box?
+* [x] allow + - * / as identifiers (and maybe ^ ~ & | for booleans) so we can write e.g. `+ m n = m S n` and `* m n = m (+ n) 0`
 * [ ] make all three displays (expr, reductions, output) have a name and be collapsible
 * [ ] what about horizontal rulers, and boxes where the result will show up?
+* [ ] Introduce options (pragma syntax?) `#pragma option(eta-conversion=true)`, `#pragma option(max-beta=10000)`, maybe better than settings box, or use `{max-beta=10000,}`
+* [ ] Make limits (steps, display) settable (or smaller?)
 
  
 ## Consider
 
-* [ ] Introduce options (pragma syntax?) `#pragma option(eta-conversion=true)`, `#pragma option(max-beta=10000)`, maybe better than settings box, or use `{max-beta=10000,}`
 * [ ] make a settings box (?), e.g. for this reduction thing, the number of steps, lines to display and so on, save to local storage if wanted
-* [ ] Make limits (steps, display) settable (or smaller?)
 * [ ] Should we directly normalize definitions or make that optional (or prefix a def with a \beta? but it should be the default? only prefix def of Omega?)
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
