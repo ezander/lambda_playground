@@ -3,12 +3,15 @@ import { parseProgram } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
+import { SettingsModal } from "./SettingsModal";
 import { step, etaStep, canonicalForm, normalize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
+import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS } from "./editor";
+import { Settings, Share2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
 import LZString from "lz-string";
@@ -16,6 +19,21 @@ import { examples as EXAMPLES } from "./data/examples";
 import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
+
+type Config = { maxSteps: number; maxHistory: number };
+const DEFAULT_CONFIG: Config = { maxSteps: 1000, maxHistory: 10 };
+
+function loadConfig(): Config {
+  try {
+    const s = localStorage.getItem("lambda-playground:config");
+    if (s) return { ...DEFAULT_CONFIG, ...JSON.parse(s) };
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
+function saveConfig(c: Config) {
+  localStorage.setItem("lambda-playground:config", JSON.stringify(c));
+}
 
 function Panel({ label, open, onToggle, children, className, flush = false, headerExtra }: {
   label: string; open: boolean; onToggle: () => void; children: React.ReactNode;
@@ -67,7 +85,8 @@ export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
   const symPickerRef    = useRef<HTMLDivElement | null>(null);
-  const [showHelp, setShowHelp]       = useState(false);
+  const [showHelp, setShowHelp]         = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [source, setSource]           = useState(() => {
     const p = new URLSearchParams(window.location.search).get("s");
     if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
@@ -90,9 +109,14 @@ export default function App() {
   const [symOpen, setSymOpen]         = useState(false);
   const [showCopied, setShowCopied]   = useState(false);
   const [copiedKey,  setCopiedKey]    = useState(0);
+  const [config, setConfig]         = useState<Config>(loadConfig);
   const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
   const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
   const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem("lambda-playground:print:desc") === "1");
+  const updateConfig = useCallback((patch: Partial<Config>) => {
+    setConfig(c => { const next = { ...c, ...patch }; saveConfig(next); return next; });
+  }, []);
+
   const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:steps", n ? "1" : "0"); return n; }), []);
   const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:print", n ? "1" : "0"); return n; }), []);
 
@@ -151,7 +175,7 @@ export default function App() {
       entries[entries.length - 1].text += " (paused)";
     const done = step(current, showSubst) === null;
     setLoaded({ term: current, done, stepNum });
-    setHistory(h => [...entries.slice(-10).reverse(), ...h].slice(0, 10));
+    setHistory(h => [...entries.slice(-config.maxHistory).reverse(), ...h].slice(0, config.maxHistory));
   }, [loaded, makeEntry, showSubst]);
 
   const jumpTo = useCallback((offset: number) => {
@@ -209,7 +233,7 @@ export default function App() {
   }, [source, saveName]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
-  const handleRun     = useCallback(() => advance(1000), [advance]);
+  const handleRun     = useCallback(() => advance(config.maxSteps), [advance, config.maxSteps]);
 
   const handleEtaStep = useCallback(() => {
     if (!loaded) return;
@@ -218,7 +242,7 @@ export default function App() {
     const stepNum = loaded.stepNum + 1;
     const entry = makeEntry(next, stepNum);
     setLoaded({ term: next, done: step(next, showSubst) === null, stepNum });
-    setHistory(h => [entry, ...h].slice(0, 10));
+    setHistory(h => [entry, ...h].slice(0, config.maxHistory));
   }, [loaded, makeEntry, showSubst]);
   const handleLoadRun = useCallback(() => {
     if (!programResult.ok || !programResult.expr) return;
@@ -228,7 +252,7 @@ export default function App() {
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term
-    const LIMIT = 1000;
+    const LIMIT = config.maxSteps;
     let current = term;
     const entries: HistoryEntry[] = [{ label: "1:", text: prettyPrint(term), match: findMatch(term, nd) }];
     let i = 0;
@@ -242,7 +266,7 @@ export default function App() {
     if (batchLimitHit) entries[entries.length - 1].text += " (paused)";
     const stepNum = entries.length;
     setLoaded({ term: current, done: step(current, showSubst) === null, stepNum });
-    setHistory(entries.slice(-10).reverse());
+    setHistory(entries.slice(-config.maxHistory).reverse());
   }, [programResult, source, showSubst]);
 
   const editorExtensions = useMemo(() => [
@@ -338,6 +362,13 @@ export default function App() {
   return (
     <div className={kinoMode ? "app kino" : "app"}>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showSettings && (
+        <SettingsModal
+          config={config}
+          onApply={c => { updateConfig(c); setShowSettings(false); }}
+          onCancel={() => setShowSettings(false)}
+        />
+      )}
       <header>
         <h1>λ playground</h1>
         <p className="subtitle">an untyped lambda dialect</p>
@@ -352,17 +383,13 @@ export default function App() {
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
               <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
               <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
+              <button className="clear-btn" onClick={() => editorViewRef.current && openSearchPanel(editorViewRef.current)} title="Find and replace (Ctrl-F)">find</button>
               <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
               <button className="share-btn" onClick={handleShare} title="Copy share link to clipboard">
-                <svg width="13" height="12" viewBox="0 0 13 12" fill="none">
-                  <circle cx="10" cy="2" r="1.6" fill="currentColor"/>
-                  <circle cx="2"  cy="6" r="1.6" fill="currentColor"/>
-                  <circle cx="10" cy="10" r="1.6" fill="currentColor"/>
-                  <line x1="3.4" y1="5.2" x2="8.6" y2="2.8" stroke="currentColor" strokeWidth="1.3"/>
-                  <line x1="3.4" y1="6.8" x2="8.6" y2="9.2" stroke="currentColor" strokeWidth="1.3"/>
-                </svg>
+                <Share2 size={16} />
                 {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
               </button>
+              <button className="help-btn" onClick={() => setShowSettings(true)} title="Settings"><Settings size={16} /></button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
               <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
             </span>
@@ -516,7 +543,7 @@ export default function App() {
               title="Parse and load the current expression into the history (F6)">load <kbd>F6</kbd></button>
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-            <button onClick={handleRun}     disabled={!canStep}    title="Beta-reduce up to 1000 steps (F9)">run <kbd>F9</kbd></button>
+            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${config.maxSteps} steps (F9)`}>run <kbd>F9</kbd></button>
             {loaded?.done && <span className="eval-status normal-form">normal form</span>}
             <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
               <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />

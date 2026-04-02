@@ -103,6 +103,7 @@ body {
   align-self: center;
 }
 .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+.share-btn svg { transform: translateX(-1px); }
 
 .share-copied {
   position: absolute;
@@ -129,6 +130,9 @@ body {
   border-radius: 50%;
   transition: border-color 0.15s, color 0.15s;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .help-btn:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -261,6 +265,64 @@ label {
 }
 .tool-select:hover { border-color: var(--accent); color: var(--accent); }
 .tool-select option { background: var(--surface); color: var(--text); }
+
+.config-input {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.2rem 0.4rem;
+  border-radius: 2px;
+  width: 7rem;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: textfield;
+}
+.config-input:focus { border-color: var(--accent); }
+.config-input::-webkit-inner-spin-button,
+.config-input::-webkit-outer-spin-button { opacity: 0.4; }
+
+/* ── Settings modal ── */
+.settings-modal { max-width: 380px; }
+
+.settings-table {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+.settings-table td { padding: 0.35rem 0.75rem 0.35rem 0; vertical-align: middle; }
+.settings-table td:first-child { color: var(--text); white-space: nowrap; }
+.settings-hint { font-size: 0.75rem; color: var(--muted); }
+
+.settings-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.settings-ok, .settings-cancel {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.3rem 1.1rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+.settings-ok {
+  background: var(--accent);
+  border: none;
+  color: #0f0f0f;
+  font-weight: 600;
+}
+.settings-ok:hover { opacity: 0.85; }
+.settings-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.settings-cancel:hover { border-color: var(--accent); color: var(--accent); }
 
 .ex-btn {
   font-family: var(--mono);
