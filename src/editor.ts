@@ -130,10 +130,10 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
   // lowercase
-  { sym: "α", name: "alpha"   }, { sym: "β", name: "beta"    },
+  { sym: "α", name: "alpha",   reserved: true }, { sym: "β", name: "beta",  reserved: true },
   { sym: "γ", name: "gamma"   }, { sym: "δ", name: "delta"   },
   { sym: "ε", name: "epsilon" }, { sym: "ζ", name: "zeta"    },
-  { sym: "η", name: "eta"     }, { sym: "θ", name: "theta"   },
+  { sym: "η", name: "eta",     reserved: true }, { sym: "θ", name: "theta"  },
   { sym: "ι", name: "iota"    }, { sym: "κ", name: "kappa"   },
   { sym: "λ", name: "lambda"  }, { sym: "μ", name: "mu"      },
   { sym: "ν", name: "nu"      }, { sym: "ξ", name: "xi"      },

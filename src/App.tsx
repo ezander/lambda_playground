@@ -475,14 +475,16 @@ export default function App() {
                     <div className="sym-section-label">lowercase</div>
                     <div className="sym-row">
                       {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
-                        <button key={g.name} className="sym-item" title={`\\${g.name}`}
+                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
                           onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
                       ))}
                     </div>
                     <div className="sym-section-label">uppercase</div>
                     <div className="sym-row">
                       {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
-                        <button key={g.name} className="sym-item" title={`\\${g.name}`}
+                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
                           onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
                       ))}
                     </div>
