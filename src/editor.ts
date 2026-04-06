@@ -184,4 +184,6 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-L", run: v => insertAt(v, "λ") },
   { key: "Alt-p", run: v => insertAt(v, "π") },
   { key: "Alt-P", run: v => insertAt(v, "π") },
+  { key: "Alt-e", run: v => insertAt(v, "≡") },
+  { key: "Alt-E", run: v => insertAt(v, "≡") },
 ]));

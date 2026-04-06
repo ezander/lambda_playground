@@ -116,9 +116,39 @@ function buildDecorations(view: EditorView): DecorationSet {
   const parsed = view.state.field(parsedField);
   const tks: Tk[] = [];
 
+  // Block comment ranges (#* ... *#) — mark before per-line scan
+  const fullText = doc.toString();
+  const blockCommentRanges: { from: number; to: number }[] = [];
+  const bcRe = /#\*[\s\S]*?\*#/g;
+  let bcm: RegExpExecArray | null;
+  while ((bcm = bcRe.exec(fullText)) !== null)
+    blockCommentRanges.push({ from: bcm.index, to: bcm.index + bcm[0].length });
+
+  function inBlock(pos: number) {
+    return blockCommentRanges.some(r => pos >= r.from && pos < r.to);
+  }
+
   // Structural tokens (comments, operators, λ) — scan full document
   for (let n = 1; n <= doc.lines; n++) {
     const line = doc.line(n);
+    // Check if entire line is within a block comment
+    if (line.from < line.to && inBlock(line.from)) {
+      // Find the extent of this block comment on this line
+      const r = blockCommentRanges.find(r => line.from >= r.from && line.from < r.to)!;
+      tks.push({ from: line.from, to: Math.min(r.to, line.to), m: mComment });
+      continue;
+    }
+    // Check if a block comment starts on this line
+    const bcOnLine = blockCommentRanges.find(r => r.from >= line.from && r.from < line.to);
+    if (bcOnLine) {
+      scanStructural(line.text.slice(0, bcOnLine.from - line.from), line.from, tks);
+      tks.push({ from: bcOnLine.from, to: Math.min(bcOnLine.to, line.to), m: mComment });
+      // content after *# on the same line (if any) is handled by next iteration or scanStructural
+      const afterClose = bcOnLine.to;
+      if (afterClose < line.to)
+        scanStructural(line.text.slice(afterClose - line.from), afterClose, tks);
+      continue;
+    }
     scanStructural(line.text, line.from, tks);
   }
 

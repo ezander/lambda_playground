@@ -104,6 +104,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in the chosen brackets</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at cursor</td></tr>
+            <tr><td><code>Alt-E</code></td><td>insert ≡ at cursor</td></tr>
             <tr><td><code>\name</code> + <kbd>space</kbd></td><td>insert symbol (e.g. <code>\omega</code> → ω, <code>\and</code> → ∧)</td></tr>
           </tbody>
         </table>

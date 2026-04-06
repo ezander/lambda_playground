@@ -283,6 +283,7 @@ export type EquivInfo = {
   src1: string; src2: string;   // pretty-printed originals
   norm1: string; norm2: string; // pretty-printed normal forms
   equivalent: boolean;
+  terminated: boolean;          // false if either side hit step/size limit
   offset: number; line: number;
 };
 
@@ -314,6 +315,9 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
   const printInfos: ProgramResult["printInfos"] = [];
   const equivInfos: EquivInfo[] = [];
   const pragmaConfig: PragmaConfig = {};
+  // Strip block comments (#* ... *#), preserving newlines so offsets stay correct
+  input = input.replace(/#\*[\s\S]*?\*#/g, m => m.replace(/[^\n]/g, " "));
+
   let lineOffset = 0;
   let equivFailed = false;
 
@@ -399,13 +403,15 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
         const t2 = expandDefs(result.term.arg,  defs);
         const r1 = normalize(t1, cfg);
         const r2 = normalize(t2, cfg);
-        const equivalent = alphaEq(r1.term, r2.term);
+        const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
+        const equivalent = terminated && alphaEq(r1.term, r2.term);
         equivInfos.push({
           src1: prettyPrint(result.term.func),
           src2: prettyPrint(result.term.arg),
           norm1: prettyPrint(r1.term),
           norm2: prettyPrint(r2.term),
           equivalent,
+          terminated,
           offset: lineOffset,
           line: input.slice(0, lineOffset).split("\n").length,
         });

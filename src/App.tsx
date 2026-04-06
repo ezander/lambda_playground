@@ -653,7 +653,9 @@ export default function App() {
                       <span className="print-result-status">
                         {item.data.equivalent
                           ? <span className="eval-status normal-form">equivalent</span>
-                          : <span className="eval-status did-not-terminate">not equivalent</span>}
+                          : item.data.terminated
+                            ? <span className="eval-status did-not-terminate">not equivalent</span>
+                            : <span className="eval-status did-not-terminate">no normal form</span>}
                       </span>
                     </code>
                   </div>

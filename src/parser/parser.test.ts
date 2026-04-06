@@ -374,6 +374,42 @@ describe("parseProgram", () => {
   });
 });
 
+// ── Block comments (#* ... *#) ────────────────────────────────────────────────
+
+describe("block comments", () => {
+  it("ignores a single-line block comment", () => {
+    const r = parseProgram("#* this is a comment *#\nf := \\x. x");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+  });
+
+  it("ignores a multi-line block comment", () => {
+    const r = parseProgram("f := \\x. x\n#* start\nstill comment\nend *#\ng := \\x. x x");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+    expect(r.defs.has("g")).toBe(true);
+  });
+
+  it("does not process defs inside a block comment", () => {
+    const r = parseProgram("#*\nfake := \\x. x\n*#\nreal := \\x. x x");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("fake")).toBe(false);
+    expect(r.defs.has("real")).toBe(true);
+  });
+
+  it("does not process pragmas inside a block comment", () => {
+    const r = parseProgram("#*\n#! max-steps = 1\n*#\nf := \\x. x");
+    expect(r.ok).toBe(true);
+    expect(r.errors).toHaveLength(0);
+  });
+
+  it("block comment extending to end of file is valid", () => {
+    const r = parseProgram("f := \\x. x\n#* unclosed comment");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+  });
+});
+
 // ── Error clickability: every error must carry an offset ─────────────────────
 // Errors without an offset cannot be made clickable in the UI.
 
