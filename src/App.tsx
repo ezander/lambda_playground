@@ -461,7 +461,7 @@ export default function App() {
               <span className="row-label">sym</span>
               <div className="sym-picker" ref={symPickerRef}>
                 <button className="tool-select slot-picker-btn" onClick={() => setSymOpen(o => !o)}
-                  title="Insert Greek symbol (or type \name then Tab)">Ω ▾</button>
+                  title="Insert symbol (or type \name then Space)">Ω ▾</button>
                 {symOpen && (
                   <div className="sym-picker-menu">
                     <div className="sym-section-label">logic</div>

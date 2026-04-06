@@ -155,9 +155,9 @@ const GREEK_MAP: Record<string, string> = Object.fromEntries(
   [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS].map(({ sym, name }) => [name, sym])
 );
 
-// Tab-expand \name → Greek letter (e.g. \omega → ω). Returns false if no match,
-// so Tab falls through to normal handling (indentation) from basicSetup.
-function expandGreek(view: EditorView): boolean {
+// Space-expand \name → symbol + space (e.g. \omega → ω ). Returns false if no match,
+// so Space falls through to normal insertion.
+function expandSymbol(view: EditorView): boolean {
   const { from } = view.state.selection.main;
   const line = view.state.doc.lineAt(from);
   const before = view.state.doc.sliceString(line.from, from);
@@ -167,14 +167,14 @@ function expandGreek(view: EditorView): boolean {
   if (!sym) return false;
   const start = from - match[0].length;
   view.dispatch({
-    changes: { from: start, to: from, insert: sym },
-    selection: { anchor: start + sym.length },
+    changes: { from: start, to: from, insert: sym + " " },
+    selection: { anchor: start + sym.length + 1 },
   });
   return true;
 }
 
 export const lambdaKeymap: Extension = Prec.highest(keymap.of([
-  { key: "Tab",   run: expandGreek },
+  { key: " ",     run: expandSymbol },
   { key: "Ctrl-/", run: toggleLineComment },
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
