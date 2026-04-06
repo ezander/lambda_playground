@@ -139,9 +139,11 @@ function buildDecorations(view: EditorView): DecorationSet {
 
   tks.sort((a, b) => a.from - b.from || a.to - b.to);
 
+  const docLen = doc.length;
   const builder = new RangeSetBuilder<Decoration>();
   for (const { from, to, m } of tks)
-    builder.add(from, to, m);
+    if (from >= 0 && to <= docLen && from < to)
+      builder.add(from, to, m);
 
   return builder.finish();
 }
