@@ -48,30 +48,34 @@ body {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 0.75rem;
+}
+.panels-right { display: contents; } /* transparent in normal mode */
+.app.kino .panels-right {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
   gap: 0.75rem;
 }
 .app.kino .editor-section {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  /* no overflow:hidden here — children clip themselves, so the cm-editor border stays visible */
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto; /* label | editor | toolbar | parse-errors */
 }
-.app.kino .editor-label-row { flex-shrink: 0; }
-.app.kino .cm-editor { flex: 1; min-height: 0; max-height: none; }
-.app.kino .cm-scroller { flex: 1; min-height: 0 !important; }
-.app.kino .cm-content { min-height: 0 !important; height: 100%; }
+.app.kino .cm-theme-light { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.app.kino .cm-editor { flex: 1; min-height: 0; max-height: none; overflow: hidden; }
+.app.kino .cm-scroller { min-height: 0 !important; overflow: auto !important; }
+.app.kino .cm-content { min-height: 0 !important; }
 .app.kino .parse-errors {
-  flex-shrink: 0;
   max-height: 7rem;
   overflow-y: auto;
 }
 .app.kino .history-section {
-  flex-shrink: 0;
-  max-height: 30vh;
-  overflow-y: auto;
+  max-height: none; /* right panel scrolls as a whole */
 }
 
 /* ── Header ── */

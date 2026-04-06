@@ -549,6 +549,7 @@ export default function App() {
           )}
         </section>
 
+        <div className="panels-right">
         {/* ── Steps panel ── */}
         <Panel label="eval" open={stepsOpen} onToggle={toggleSteps}>
           <div className="output-tabs">
@@ -663,6 +664,7 @@ export default function App() {
             <span className="placeholder">no π or ≡ statements in current program</span>
           )}
         </Panel>
+        </div>
       </main>
 
       <footer />
