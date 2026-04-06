@@ -225,25 +225,39 @@ export function findMatch(term: Term, nd: Map<string, string>): string | undefin
 
 export type RunResult =
   | { kind: "normalForm"; term: Term; steps: number }
-  | { kind: "stepLimit"; term: Term; steps: number };
+  | { kind: "stepLimit"; term: Term; steps: number }
+  | { kind: "sizeLimit"; term: Term; steps: number; size: number };
 
 const DEFAULT_STEP_LIMIT = 1000;
+const DEFAULT_SIZE_LIMIT = 10_000;
 
-export type EvalConfig = { maxSteps?: number };
+export type EvalConfig = { maxSteps?: number; maxSize?: number };
+
+export function termSize(term: Term): number {
+  switch (term.kind) {
+    case "Var":   return 1;
+    case "Abs":   return 1 + termSize(term.body);
+    case "App":   return 1 + termSize(term.func) + termSize(term.arg);
+    case "Subst": return 1 + termSize(term.body) + termSize(term.arg);
+  }
+}
 
 export function normalize(
   term: Term,
   config: EvalConfig = {}
 ): RunResult {
-  const limit = config.maxSteps ?? DEFAULT_STEP_LIMIT;
+  const stepLimit = config.maxSteps ?? DEFAULT_STEP_LIMIT;
+  const sizeLimit = config.maxSize  ?? DEFAULT_SIZE_LIMIT;
   resetCounter();
   let current = term;
   let steps = 0;
-  while (steps < limit) {
+  while (steps < stepLimit) {
     const next = step(current);
     if (next === null) return { kind: "normalForm", term: current, steps };
     current = next;
     steps++;
+    const sz = termSize(current);
+    if (sz > sizeLimit) return { kind: "sizeLimit", term: current, steps, size: sz };
   }
   // The last step may have produced a normal form — check before declaring step limit
   if (step(current) === null) return { kind: "normalForm", term: current, steps };

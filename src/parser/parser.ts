@@ -263,6 +263,7 @@ export type PragmaConfig = {
   maxStepsIdent?:  number;
   maxHistory?:     number;
   normalizeDefs?:  boolean;
+  maxSize?:        number;
 };
 
 // max-steps is a shorthand that sets both maxStepsPrint and maxStepsIdent
@@ -272,6 +273,7 @@ export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
   "max-steps-ident": ["maxStepsIdent"],
   "max-history":     ["maxHistory"],
   "normalize-defs":  ["normalizeDefs"],
+  "max-size":        ["maxSize"],
 };
 
 export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
@@ -286,11 +288,11 @@ export type ProgramResult = {
   defInfos:   DefInfo[];
   exprInfos:  { term: Term; positions: PositionMap }[];
   // π-marked print statements (expanded, ready to evaluate):
-  printInfos: { src: string; result: string; normal: boolean; steps: number; match?: string; offset: number; line: number }[];
+  printInfos: { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
   pragmaConfig: PragmaConfig;
 };
 
-export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number };
+export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number; maxSize?: number };
 
 export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}): ProgramResult {
   const defs = new Map<string, Term>();
@@ -347,13 +349,15 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
       } else {
         const expanded = expandDefs(result.term, defs);
         const merged = { ...defaultConfig, ...pragmaConfig };
-        const { term: normalizedTerm, kind, steps } = normalize(expanded, { maxSteps: merged.maxStepsPrint });
-        const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent });
+        const runResult = normalize(expanded, { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize });
+        const { term: normalizedTerm, kind, steps } = runResult;
+        const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize });
         printInfos.push({
           src:    prettyPrint(result.term),
           result: prettyPrint(normalizedTerm),
           normal: kind === "normalForm",
           steps,
+          size:   kind === "sizeLimit" ? runResult.size : undefined,
           match:  kind === "normalForm" ? findMatch(normalizedTerm, nd) : undefined,
           offset: lineOffset,
           line:   input.slice(0, lineOffset).split("\n").length,
@@ -401,9 +405,11 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
 
       // Normalize definition body (default: on)
       if (pragmaConfig.normalizeDefs ?? true) {
-        const { term: normalized, kind } = normalize(body, { maxSteps: pragmaConfig.maxStepsIdent ?? defaultConfig.maxStepsIdent });
+        const { term: normalized, kind } = normalize(body, { maxSteps: pragmaConfig.maxStepsIdent ?? defaultConfig.maxStepsIdent, maxSize: pragmaConfig.maxSize ?? defaultConfig.maxSize });
         if (kind === "stepLimit")
           errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset: lineOffset, kind: "warning" });
+        else if (kind === "sizeLimit")
+          errors.push({ message: `Warning: definition '${name}' exceeded size limit during normalization — storing as-is`, offset: lineOffset, kind: "warning" });
         else
           body = normalized;
       }

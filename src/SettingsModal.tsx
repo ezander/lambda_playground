@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number };
 
 function parsePositiveInt(s: string, fallback: number): number {
   const v = parseInt(s, 10);
@@ -16,12 +16,14 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxStepsRun,   setMaxStepsRun]   = useState(String(config.maxStepsRun));
   const [maxStepsIdent, setMaxStepsIdent] = useState(String(config.maxStepsIdent));
   const [maxHistory,    setMaxHistory]    = useState(String(config.maxHistory));
+  const [maxSize,       setMaxSize]       = useState(String(config.maxSize));
 
   const apply = () => onApply({
     maxStepsPrint: parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
     maxStepsRun:   parsePositiveInt(maxStepsRun,   config.maxStepsRun),
     maxStepsIdent: parsePositiveInt(maxStepsIdent, config.maxStepsIdent),
     maxHistory:    parsePositiveInt(maxHistory,    config.maxHistory),
+    maxSize:       parsePositiveInt(maxSize,       config.maxSize),
   });
 
   useEffect(() => {
@@ -74,6 +76,15 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setMaxHistory(e.target.value)} />
               </td>
               <td className="settings-hint">reduction steps stored (panel scrolls)</td>
+            </tr>
+            <tr>
+              <td>max term size</td>
+              <td>
+                <input className="config-input" type="number" min={100} max={1000000}
+                  value={maxSize}
+                  onChange={e => setMaxSize(e.target.value)} />
+              </td>
+              <td className="settings-hint">AST nodes before reduction halts (prevents memory overflow)</td>
             </tr>
           </tbody>
         </table>

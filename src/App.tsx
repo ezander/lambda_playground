@@ -4,7 +4,7 @@ import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, buildNormDefs, findMatch } from "./evaluator/eval";
+import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -21,8 +21,8 @@ import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number };
-const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200 };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number };
+const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200, maxSize: 10000 };
 
 function loadConfig(): Config {
   try {
@@ -65,7 +65,7 @@ function getSavedSlots(): string[] {
 
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
-type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit"; steps?: number };
+type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
 
 
 function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry {
@@ -151,7 +151,7 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent });
+    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);
     const done = step(term) === null;
     setLoaded({ term, done, stepNum: 0, effectiveConfig });
@@ -164,20 +164,27 @@ export default function App() {
     let current = loaded.term;
     let stepNum = loaded.stepNum;
     const entries: HistoryEntry[] = [];
+    const maxSize = loaded.effectiveConfig.maxSize;
     let i = 0;
     let lastNext: Term | null = null;
+    let sizeLimitHit = false;
+    let hitSize = 0;
     for (; i < maxSteps; i++) {
       lastNext = step(current, showSubst);
       if (lastNext === null) break;
       current = lastNext;
       entries.push(makeEntry(current, ++stepNum));
+      const sz = termSize(current);
+      if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
     }
-    const done = lastNext === null || step(current, showSubst) === null;
+    const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
     const batchLimitHit = !done && i === maxSteps && maxSteps > 1;
     // Tag the last entry with its terminal status
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
-      if (done) {
+      if (sizeLimitHit) {
+        entries[entries.length - 1] = { ...last, match: undefined, status: "sizeLimit", steps: stepNum, size: hitSize };
+      } else if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
       } else if (batchLimitHit) {
         entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: stepNum };
@@ -261,26 +268,33 @@ export default function App() {
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent });
+    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term
     const LIMIT = effectiveConfig.maxStepsRun;
+    const maxSize = effectiveConfig.maxSize;
     let current = term;
     const entries: HistoryEntry[] = [buildEntry(term, 0, nd)];
     let i = 0;
     let lastNext: Term | null = null;
+    let sizeLimitHit = false;
+    let hitSize = 0;
     for (; i < LIMIT; i++) {
       lastNext = step(current, showSubst);
       if (lastNext === null) break;
       current = lastNext;
       entries.push(buildEntry(current, i + 1, nd));
+      const sz = termSize(current);
+      if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
     }
-    const done = lastNext === null || step(current, showSubst) === null;
+    const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
     const batchLimitHit = !done && i === LIMIT;
     if (entries.length > 0) {
       const last = entries[entries.length - 1];
-      if (done) {
+      if (sizeLimitHit) {
+        entries[entries.length - 1] = { ...last, match: undefined, status: "sizeLimit", steps: i + 1, size: hitSize };
+      } else if (done) {
         entries[entries.length - 1] = { ...last, status: "normalForm" };
       } else if (batchLimitHit) {
         entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: i };
@@ -569,7 +583,9 @@ export default function App() {
                     <span className="history-entry-status">
                       {entry.status === "normalForm"
                         ? <span className="eval-status normal-form">normal form</span>
-                        : <span className="eval-status paused">paused after {entry.steps} steps</span>}
+                        : entry.status === "sizeLimit"
+                          ? <span className="eval-status did-not-terminate">exceeded {entry.size} nodes after {entry.steps} steps</span>
+                          : <span className="eval-status paused">paused after {entry.steps} steps</span>}
                       {entry.match && <span className="history-match"><span className="print-equiv">≡</span> {entry.match}</span>}
                     </span>
                   )}
@@ -595,7 +611,9 @@ export default function App() {
                     <span className="print-result-status">
                       {r.normal
                         ? <span className="eval-status normal-form">normal form</span>
-                        : <span className="eval-status did-not-terminate">did not terminate in {r.steps} steps</span>}
+                        : r.size !== undefined
+                          ? <span className="eval-status did-not-terminate">exceeded {r.size} nodes after {r.steps} steps</span>
+                          : <span className="eval-status did-not-terminate">did not terminate in {r.steps} steps</span>}
                       {r.match && <span className="history-match"><span className="print-equiv">≡</span> {r.match}</span>}
                     </span>
                   </code>
