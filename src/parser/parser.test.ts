@@ -373,3 +373,30 @@ describe("parseProgram", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+// ── Error clickability: every error must carry an offset ─────────────────────
+// Errors without an offset cannot be made clickable in the UI.
+
+describe("error offsets", () => {
+  const cases: [string, string][] = [
+    ["incomplete lambda (EOF error)",      "foo \\lambda"],
+    ["unmatched paren",                    "(x"],
+    ["bad definition body",                "f := ("],
+    ["lex error",                          "@"],
+    ["bad π body (unmatched paren)",       "π (x"],
+    ["bad ≡ body (unmatched paren)",       "≡ (x (y"],
+    ["stray token on second line",         "a\n)"],
+    ["definition with paren on LHS",       "(x) := y"],
+    ["incomplete lambda in definition",    "f := \\x"],
+  ];
+
+  for (const [label, src] of cases) {
+    it(`all errors have an offset: ${label}`, () => {
+      const r = parseProgram(src);
+      expect(r.errors.length).toBeGreaterThan(0);
+      for (const e of r.errors) {
+        expect(e.offset, `error "${e.message}" has no offset`).not.toBeUndefined();
+      }
+    });
+  }
+});

@@ -208,7 +208,7 @@ export function parse(input: string, offset = 0): ParseResult {
         message: e.token.image
           ? `Parse error at '${e.token.image}': ${e.message}`
           : `Parse error: ${e.message}`,
-        offset: e.token.image ? e.token.startOffset : undefined,
+        offset: isFinite(e.token.startOffset ?? NaN) ? e.token.startOffset : input.length,
       })),
     };
   }
