@@ -4,6 +4,7 @@ import {
   LambdaLexer,
   Backslash,
   Pi,
+  Equiv,
   DefAssign,
   Dot,
   LParen,
@@ -278,6 +279,13 @@ export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
 
 export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
 
+export type EquivInfo = {
+  src1: string; src2: string;   // pretty-printed originals
+  norm1: string; norm2: string; // pretty-printed normal forms
+  equivalent: boolean;
+  offset: number; line: number;
+};
+
 export type ProgramResult = {
   ok: boolean;
   errors: LambdaError[];
@@ -289,6 +297,8 @@ export type ProgramResult = {
   exprInfos:  { term: Term; positions: PositionMap }[];
   // π-marked print statements (expanded, ready to evaluate):
   printInfos: { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
+  // ≡ equivalence assertions:
+  equivInfos: EquivInfo[];
   pragmaConfig: PragmaConfig;
 };
 
@@ -302,10 +312,13 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
   const defInfos:   DefInfo[] = [];
   const exprInfos:  { term: Term; positions: PositionMap }[] = [];
   const printInfos: ProgramResult["printInfos"] = [];
+  const equivInfos: EquivInfo[] = [];
   const pragmaConfig: PragmaConfig = {};
   let lineOffset = 0;
+  let equivFailed = false;
 
   for (const rawLine of input.split(/[;\n]/)) {
+    if (equivFailed) { lineOffset += rawLine.length + 1; continue; }
     // ── #! pragma directive ────────────────────────────────────────────────────
     if (rawLine.trimStart().startsWith("#!")) {
       const text = rawLine.trimStart().slice(2).trim();
@@ -363,6 +376,37 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
           line:   input.slice(0, lineOffset).split("\n").length,
         });
         exprInfos.push({ term: result.term, positions: result.positions });
+      }
+      lineOffset += rawLine.length + 1;
+      continue;
+    }
+
+    // ── ≡ equivalence assertion ────────────────────────────────────────────────
+    if (tokens[0]?.tokenType === Equiv) {
+      const rest = rawLine.slice(tokens[0].endOffset! + 1);
+      const result = parse(rest, lineOffset + tokens[0].endOffset! + 1);
+      if (!result.ok) {
+        errors.push(...result.errors);
+      } else if (result.term.kind !== "App") {
+        errors.push({ message: `≡ requires two terms, e.g. ≡ (f x) (g y)`, offset: lineOffset });
+      } else {
+        const merged = { ...defaultConfig, ...pragmaConfig };
+        const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize };
+        const t1 = expandDefs(result.term.func, defs);
+        const t2 = expandDefs(result.term.arg,  defs);
+        const r1 = normalize(t1, cfg);
+        const r2 = normalize(t2, cfg);
+        const equivalent = alphaEq(r1.term, r2.term);
+        equivInfos.push({
+          src1: prettyPrint(result.term.func),
+          src2: prettyPrint(result.term.arg),
+          norm1: prettyPrint(r1.term),
+          norm2: prettyPrint(r2.term),
+          equivalent,
+          offset: lineOffset,
+          line: input.slice(0, lineOffset).split("\n").length,
+        });
+        if (!equivalent) equivFailed = true;
       }
       lineOffset += rawLine.length + 1;
       continue;
@@ -457,5 +501,5 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos, pragmaConfig };
+  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos, equivInfos, pragmaConfig };
 }

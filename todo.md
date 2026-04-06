@@ -68,6 +68,12 @@
 
 ## Up next
 
+* [ ] fullscreen is not correct (editor extends below screen, F11 not working, eval&output are gone)
+* [ ] maybe use a different layout for fullscreen like editor on the left, output/eval on the right, draggable slider in between
+
+* [ ] if a def is redefined but was not in normal we should change the message, or generally say they are not beta-equiv
+* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened)
+
 * [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc.)
 * [ ] examples and snippets are curr essentially the same, make snippets really useful (list gists), examples longer, with explanations, tutorials extra?
@@ -79,10 +85,25 @@
 
 ## Consider
 
+* [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
+* [ ] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from 
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
-* [ ] (Q: for identification: as long as at least one is an abstraction, apply new var to both sides?) / switched on/off via a flag
+* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
+* [x] add more symbols and expansions, like forall, exists, equiv, and, or, not, implies, oplus, otimes, compose ← logic section in picker; ∀∃≡⊢ reserved (greyed); free ones valid as operator identifiers; \name[Space] expansion
+* [ ] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
+* [ ] maybe make the default editor just a scratchpad, open other files/stores in tabs? like an ide
+* [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
+* [ ] print somewhere how many steps the reduction took
+* [ ] probably also for later: remember when a term is copied, when it is then reduced apply the reduction to all copies
+* [x] limit the number of terms in an expansion to prevent mem overflow for "expanding" terms ← maxSize (AST node count); sizeLimit result; shown red/definitive; #! max-size pragma + settings
+* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
+* [ ] "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
+* [x] we need an equiv operator (3 bars), that can only go first in a line and is an equivalence assertion like "equiv term1 term2", needs to take exactly two terms, and passes, when both are alpha-beta-equivalent, and does terminates reduction of the script if not ← ≡ token; uses maxStepsIdent; shown in output panel interleaved with π; green/red ≡ sign; halts further processing on failure
+* [ ] how to call a "virtual" file in local storage
+* [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
+* [ ] we need multiline comments (at least of we have no markdown, what about a markdown export?) and a text rewrap with ctrl+r
 
 ## For later
 
@@ -103,3 +124,4 @@
 * [~] hbr uses 'where' clauses. shall we? dunno
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [~] test also the UI?
+

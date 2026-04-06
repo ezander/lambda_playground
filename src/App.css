@@ -733,6 +733,10 @@ label {
 
 .print-equiv { color: var(--muted); }
 
+.equiv-op { font-weight: bold; }
+.equiv-pass { color: var(--ok); }
+.equiv-fail { color: var(--warn); }
+
 /* ── History ── */
 .history-section {
   display: flex;

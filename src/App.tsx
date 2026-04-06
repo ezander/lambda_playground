@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig } from "./parser/parser";
+import { parseProgram, PragmaConfig, EquivInfo } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
@@ -608,30 +608,59 @@ export default function App() {
         {/* ── Print panel ── */}
         <Panel label="output" open={printOpen} onToggle={togglePrint}
           headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
-          {programResult.printInfos.length > 0 ? (
-            <div className="print-section">
-              {(printDesc ? [...programResult.printInfos].reverse() : programResult.printInfos).map((r, i) => (
-                <div key={i} className="print-entry" onClick={() => jumpTo(r.offset)} title="Go to source">
-                  <code className="print-src">
-                    <span className="print-index">{r.line}:</span>
-                    {" π "}{r.src}
-                  </code>
-                  <code className="print-result">
-                    <span className="print-result-text">{r.result}</span>
-                    <span className="print-result-status">
-                      {r.normal
-                        ? <span className="eval-status normal-form">normal form</span>
-                        : r.size !== undefined
-                          ? <span className="eval-status did-not-terminate">exceeded {r.size} nodes after {r.steps} steps</span>
-                          : <span className="eval-status did-not-terminate">did not terminate in {r.steps} steps</span>}
-                      {r.match && <span className="history-match"><span className="print-equiv">≡</span> {r.match}</span>}
-                    </span>
-                  </code>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <span className="placeholder">no π statements in current program</span>
+          {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0) ? (() => {
+            type PrintItem = { kind: "print"; data: typeof programResult.printInfos[number] };
+            type EquivItem = { kind: "equiv"; data: EquivInfo };
+            const items: (PrintItem | EquivItem)[] = [
+              ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
+              ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d })),
+            ].sort((a, b) => (printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset));
+            return (
+              <div className="print-section">
+                {items.map((item, i) => item.kind === "print" ? (
+                  <div key={i} className="print-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
+                    <code className="print-src">
+                      <span className="print-index">{item.data.line}:</span>
+                      {" π "}{item.data.src}
+                    </code>
+                    <code className="print-result">
+                      <span className="print-result-text">{item.data.result}</span>
+                      <span className="print-result-status">
+                        {item.data.normal
+                          ? <span className="eval-status normal-form">normal form</span>
+                          : item.data.size !== undefined
+                            ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
+                            : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
+                        {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
+                      </span>
+                    </code>
+                  </div>
+                ) : (
+                  <div key={i} className="print-entry equiv-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
+                    <code className="print-src">
+                      <span className="print-index">{item.data.line}:</span>
+                      {" "}{item.data.src1}
+                      <span className={`equiv-op ${item.data.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                      {item.data.src2}
+                    </code>
+                    <code className="print-result">
+                      <span className="print-result-text">
+                        {item.data.norm1}
+                        <span className={`equiv-op ${item.data.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                        {item.data.norm2}
+                      </span>
+                      <span className="print-result-status">
+                        {item.data.equivalent
+                          ? <span className="eval-status normal-form">equivalent</span>
+                          : <span className="eval-status did-not-terminate">not equivalent</span>}
+                      </span>
+                    </code>
+                  </div>
+                ))}
+              </div>
+            );
+          })() : (
+            <span className="placeholder">no π or ≡ statements in current program</span>
           )}
         </Panel>
       </main>
