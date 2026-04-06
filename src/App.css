@@ -709,6 +709,12 @@ label {
   font-size: 0.75em;
 }
 
+.step-count {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .print-src {
   font-family: var(--mono);
   font-size: 0.85rem;

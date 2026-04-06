@@ -627,12 +627,12 @@ export default function App() {
                     <code className="print-result">
                       <span className="print-result-text">{item.data.result}</span>
                       <span className="print-result-status">
+                        {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
                         {item.data.normal
-                          ? <span className="eval-status normal-form">normal form</span>
+                          ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
                           : item.data.size !== undefined
                             ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
                             : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
-                        {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
                       </span>
                     </code>
                   </div>
