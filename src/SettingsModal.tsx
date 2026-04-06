@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number; showPassingEquiv: boolean };
 
 function parsePositiveInt(s: string, fallback: number): number {
   const v = parseInt(s, 10);
@@ -16,14 +16,16 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxStepsRun,   setMaxStepsRun]   = useState(String(config.maxStepsRun));
   const [maxStepsIdent, setMaxStepsIdent] = useState(String(config.maxStepsIdent));
   const [maxHistory,    setMaxHistory]    = useState(String(config.maxHistory));
-  const [maxSize,       setMaxSize]       = useState(String(config.maxSize));
+  const [maxSize,           setMaxSize]           = useState(String(config.maxSize));
+  const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
 
   const apply = () => onApply({
-    maxStepsPrint: parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
-    maxStepsRun:   parsePositiveInt(maxStepsRun,   config.maxStepsRun),
-    maxStepsIdent: parsePositiveInt(maxStepsIdent, config.maxStepsIdent),
-    maxHistory:    parsePositiveInt(maxHistory,    config.maxHistory),
-    maxSize:       parsePositiveInt(maxSize,       config.maxSize),
+    maxStepsPrint:    parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
+    maxStepsRun:      parsePositiveInt(maxStepsRun,   config.maxStepsRun),
+    maxStepsIdent:    parsePositiveInt(maxStepsIdent, config.maxStepsIdent),
+    maxHistory:       parsePositiveInt(maxHistory,    config.maxHistory),
+    maxSize:          parsePositiveInt(maxSize,       config.maxSize),
+    showPassingEquiv,
   });
 
   useEffect(() => {
@@ -85,6 +87,14 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setMaxSize(e.target.value)} />
               </td>
               <td className="settings-hint">AST nodes before reduction halts (prevents memory overflow)</td>
+            </tr>
+            <tr>
+              <td>show passing ≡</td>
+              <td>
+                <input type="checkbox" checked={showPassingEquiv}
+                  onChange={e => setShowPassingEquiv(e.target.checked)} />
+              </td>
+              <td className="settings-hint">show passing assertions in output (default: only failures)</td>
             </tr>
           </tbody>
         </table>

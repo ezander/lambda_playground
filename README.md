@@ -10,9 +10,10 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Named definitions with eager expansion into subsequent lines
 - Shorthand `f x y := e` desugars to `f := \x y. e`
 - `π expr` print statements: evaluate an expression to normal form and show it in the output panel
+- `≡ expr1 expr2` equivalence assertions: checks alpha-beta equivalence; green/red ≡ in output; halts further output on failure
 - Live parsing on every keystroke with clickable error locations
 - Syntax highlighting: defined names, lambda binders, bound/free variables, comments
-- Greek letters in identifiers (ω, Ω, Θ, …); operator identifiers (`+`, `<=`, `==`, …); backtick-quoted identifiers for arbitrary names
+- Greek letters in identifiers (ω, Ω, Θ, …); logic symbols as operator identifiers (∧, ∨, ¬, →, ↔, ⊤, ⊥, ⊕, ⊗, ∘, ≠, ∅); backtick-quoted identifiers for arbitrary names
 - Two-phase beta reduction: optionally show `e[x:=a]` substitution as an intermediate step
 - Eta reduction as a separate step
 - Step-by-step or batch evaluation; continue after pausing
@@ -39,7 +40,7 @@ e[x:=a]              # substitution: desugars to (λx. e) a
 
 ### Identifiers
 
-Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η are reserved). This lets you write combinators like `ω`, `Ω`, `Θ` directly.
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η, ∀, ∃, ≡, ⊢ are reserved). Operator identifiers may also start with free logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅), enabling definitions like `∧ p q := p q false`.
 
 Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 
@@ -53,8 +54,12 @@ Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 Lines starting with `#!` set runtime options for that program run (override the settings dialog; reset when the run ends):
 
 ```
-#! max-steps=500      # beta steps per "run" press
-#! max-history=20     # max history entries shown
+#! max-steps=500         # set both max-steps-print and max-steps-ident
+#! max-steps-print=500   # beta step limit for π statements
+#! max-steps-ident=500   # beta step limit for definition matching/normalization
+#! max-history=20        # max history entries stored (panel scrolls)
+#! max-size=5000         # max AST nodes before reduction halts
+#! no-normalize-defs     # disable definition body normalization at load time
 ```
 
 ### Definitions
@@ -65,10 +70,11 @@ false := λx y. y
 and p q := p q false      # shorthand: f x y := e  means  f := λx y. e
 
 π and true false          # print to output panel (normalized)
+≡ and true false false    # assert  and true false ≡ false  (left-assoc: last term is rhs)
 and true false            # last expression line is what gets evaluated
 ```
 
-Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression.
+Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π` and `≡` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression. A failing `≡` assertion halts further output.
 
 ## Toolbar
 
@@ -89,7 +95,7 @@ Below the editor, a compact toolbar provides three groups:
 | run | F9 | Up to N beta steps (default 1000); press again to continue |
 | show substitution | | Show `e[x:=a]` as an intermediate step before beta-reducing |
 | find | Ctrl-F | Open the editor's find/replace bar |
-| ⚙ | | Settings dialog: max steps per run, max history entries |
+| ⚙ | | Settings dialog: max steps (print/run/ident), max history, max term size |
 | share | | Encode editor content as a URL and copy to clipboard |
 | clear | | Clear the editor |
 
@@ -101,7 +107,7 @@ Below the editor, a compact toolbar provides three groups:
 | `( [ { <` with selection | Wrap selected text in the chosen brackets |
 | `Alt-L` | Insert λ at cursor |
 | `Alt-P` | Insert π at cursor |
-| `\name` + `Tab` | Insert Greek letter (e.g. `\omega` → ω) |
+| `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧); reserved symbols greyed out in picker |
 
 ## Development
 

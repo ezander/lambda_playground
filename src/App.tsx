@@ -21,8 +21,8 @@ import { snippets as SNIPPETS } from "./data/snippets";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number };
-const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200, maxSize: 10000 };
+type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number; showPassingEquiv: boolean };
+const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200, maxSize: 10000, showPassingEquiv: false };
 
 function loadConfig(): Config {
   try {
@@ -613,7 +613,7 @@ export default function App() {
             type EquivItem = { kind: "equiv"; data: EquivInfo };
             const items: (PrintItem | EquivItem)[] = [
               ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
-              ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d })),
+              ...programResult.equivInfos.filter(d => config.showPassingEquiv || !d.equivalent).map(d => ({ kind: "equiv" as const, data: d })),
             ].sort((a, b) => (printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset));
             return (
               <div className="print-section">
