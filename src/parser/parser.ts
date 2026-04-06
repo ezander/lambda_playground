@@ -318,7 +318,13 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
   let equivFailed = false;
 
   for (const rawLine of input.split(/[;\n]/)) {
-    if (equivFailed) { lineOffset += rawLine.length + 1; continue; }
+    if (equivFailed) {
+      // Parse for highlighting only — no evaluation, no def expansion
+      const result = parse(rawLine.trimStart(), lineOffset + (rawLine.length - rawLine.trimStart().length));
+      if (result.ok) exprInfos.push({ term: result.term, positions: result.positions });
+      lineOffset += rawLine.length + 1;
+      continue;
+    }
     // ── #! pragma directive ────────────────────────────────────────────────────
     if (rawLine.trimStart().startsWith("#!")) {
       const text = rawLine.trimStart().slice(2).trim();
@@ -407,6 +413,7 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
           line: input.slice(0, lineOffset).split("\n").length,
         });
         if (!equivalent) equivFailed = true;
+        exprInfos.push({ term: result.term, positions: result.positions });
       }
       lineOffset += rawLine.length + 1;
       continue;

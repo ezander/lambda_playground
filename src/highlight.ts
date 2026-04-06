@@ -51,10 +51,14 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
     q = code.indexOf(":=", q + 2);
   }
 
-  // π print marker
+  // π print marker and ≡ equiv marker
   if (code.trimStart().startsWith("π")) {
     const pi = code.indexOf("π");
     tks.push({ from: lineFrom + pi, to: lineFrom + pi + 1, m: mPi });
+  }
+  if (code.trimStart().startsWith("≡")) {
+    const eq = code.indexOf("≡");
+    tks.push({ from: lineFrom + eq, to: lineFrom + eq + 1, m: mPi });
   }
 
   // λ/\ keyword + scan ahead for . body separator
