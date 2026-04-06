@@ -78,6 +78,13 @@ body {
   max-height: none; /* right panel scrolls as a whole */
 }
 
+/* In kino mode the toolbar is at the bottom — open pickers upward */
+.app.kino .slot-picker-menu,
+.app.kino .sym-picker-menu {
+  top: auto;
+  bottom: calc(100% + 3px);
+}
+
 /* ── Header ── */
 .header-row {
   display: flex;
