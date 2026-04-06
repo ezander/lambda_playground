@@ -119,10 +119,20 @@ function buildDecorations(view: EditorView): DecorationSet {
   // Block comment ranges (#* ... *#) — mark before per-line scan
   const fullText = doc.toString();
   const blockCommentRanges: { from: number; to: number }[] = [];
+  // Terminated block comments
   const bcRe = /#\*[\s\S]*?\*#/g;
   let bcm: RegExpExecArray | null;
   while ((bcm = bcRe.exec(fullText)) !== null)
     blockCommentRanges.push({ from: bcm.index, to: bcm.index + bcm[0].length });
+  // Unterminated block comment: first #* not already inside a terminated range
+  const utRe = /#\*/g;
+  while ((bcm = utRe.exec(fullText)) !== null) {
+    const pos = bcm.index;
+    if (!blockCommentRanges.some(r => pos >= r.from && pos < r.to)) {
+      blockCommentRanges.push({ from: pos, to: fullText.length });
+      break;
+    }
+  }
 
   function inBlock(pos: number) {
     return blockCommentRanges.some(r => pos >= r.from && pos < r.to);

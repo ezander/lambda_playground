@@ -403,10 +403,11 @@ describe("block comments", () => {
     expect(r.errors).toHaveLength(0);
   });
 
-  it("block comment extending to end of file is valid", () => {
-    const r = parseProgram("f := \\x. x\n#* unclosed comment");
+  it("block comment extending to end of file ignores remaining content", () => {
+    const r = parseProgram("f := \\x. x\n#* unclosed\ng := \\x. x x");
     expect(r.ok).toBe(true);
     expect(r.defs.has("f")).toBe(true);
+    expect(r.defs.has("g")).toBe(false); // swallowed by unterminated comment
   });
 });
 

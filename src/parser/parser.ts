@@ -315,8 +315,10 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
   const printInfos: ProgramResult["printInfos"] = [];
   const equivInfos: EquivInfo[] = [];
   const pragmaConfig: PragmaConfig = {};
-  // Strip block comments (#* ... *#), preserving newlines so offsets stay correct
+  // Strip block comments (#* ... *#), preserving newlines so offsets stay correct.
+  // First pass: terminated comments; second pass: unterminated comment to end of file.
   input = input.replace(/#\*[\s\S]*?\*#/g, m => m.replace(/[^\n]/g, " "));
+  input = input.replace(/#\*[\s\S]*$/,     m => m.replace(/[^\n]/g, " "));
 
   let lineOffset = 0;
   let equivFailed = false;
