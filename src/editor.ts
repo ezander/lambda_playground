@@ -107,7 +107,26 @@ function insertAt(view: EditorView, text: string): boolean {
 // ── Greek symbol table ────────────────────────────────────────────────────────
 // Shared by Tab-expansion and the symbol picker in App.tsx.
 
-export type GreekSymbol = { sym: string; name: string };
+export type GreekSymbol = { sym: string; name: string; reserved?: boolean };
+
+export const LOGIC_SYMBOLS: GreekSymbol[] = [
+  { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
+  { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
+  { sym: "≡", name: "equiv",    reserved: true  },  // reserved for equivalence assertion
+  { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
+  { sym: "∧", name: "and"      },
+  { sym: "∨", name: "or"       },
+  { sym: "¬", name: "not"      },
+  { sym: "→", name: "implies"  },
+  { sym: "↔", name: "iff"      },
+  { sym: "⊤", name: "top"      },
+  { sym: "⊥", name: "bot"      },
+  { sym: "⊕", name: "oplus"    },
+  { sym: "⊗", name: "otimes"   },
+  { sym: "∘", name: "compose"  },
+  { sym: "≠", name: "neq"      },
+  { sym: "∅", name: "emptyset" },
+];
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
   // lowercase
@@ -133,7 +152,7 @@ export const GREEK_SYMBOLS: GreekSymbol[] = [
 ];
 
 const GREEK_MAP: Record<string, string> = Object.fromEntries(
-  GREEK_SYMBOLS.map(({ sym, name }) => [name, sym])
+  [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS].map(({ sym, name }) => [name, sym])
 );
 
 // Tab-expand \name → Greek letter (e.g. \omega → ω). Returns false if no match,

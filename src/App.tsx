@@ -10,7 +10,7 @@ import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
-import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS } from "./editor";
+import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
 import { Settings, Share2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
@@ -464,6 +464,14 @@ export default function App() {
                   title="Insert Greek symbol (or type \name then Tab)">Ω ▾</button>
                 {symOpen && (
                   <div className="sym-picker-menu">
+                    <div className="sym-section-label">logic</div>
+                    <div className="sym-row">
+                      {LOGIC_SYMBOLS.map(g => (
+                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
+                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
+                      ))}
+                    </div>
                     <div className="sym-section-label">lowercase</div>
                     <div className="sym-row">
                       {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (

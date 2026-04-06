@@ -439,6 +439,8 @@ label {
   padding: 0;
 }
 .sym-item:hover { border-color: var(--accent); color: var(--accent); }
+.sym-item-reserved { opacity: 0.35; cursor: default; }
+.sym-item-reserved:hover { border-color: inherit; color: inherit; }
 
 .load-btn {
   font-family: var(--mono);
