@@ -1,5 +1,6 @@
 import { Term } from "./ast";
 import { parse } from "./parser";
+import { LambdaLexer, PlainIdent } from "./lexer";
 
 // Pretty-print a Term back to surface syntax.
 // Multi-param lambdas are re-compressed: \x := \y := body  →  \x y := body
@@ -7,12 +8,11 @@ export function prettyPrint(term: Term): string {
   return pp(term, "top");
 }
 
-// Safe if it starts with alphanumeric/Greek or an operator char, then any mix of both.
-// Excludes λ (\u03BB) and π (\u03C0) since those are keyword tokens.
-const SAFE_IDENT = /^([a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF]|[+\-*\/^~&|<>!?=])[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=]*$/;
-
+// A name needs backticks iff it does not lex as a single PlainIdent token.
 function safeName(name: string): string {
-  return SAFE_IDENT.test(name) ? name : `\`${name}\``;
+  const { tokens, errors } = LambdaLexer.tokenize(name);
+  const isPlain = errors.length === 0 && tokens.length === 1 && tokens[0].tokenType === PlainIdent && tokens[0].image === name;
+  return isPlain ? name : `\`${name}\``;
 }
 
 type Context = "top" | "appFunc" | "appArg";
