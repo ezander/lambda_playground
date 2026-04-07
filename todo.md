@@ -80,7 +80,7 @@
 
 ## Up next
 
-* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function)
+* [x] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function) ← scratch buffer auto-saved, named buffers with ● dirty indicator, save/save-as/new/delete, buffer switcher in dropdown
 * [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
 * [ ] export/import facility via zip-file of all user programs (selective import?)
 

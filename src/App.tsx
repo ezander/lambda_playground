@@ -6,7 +6,7 @@ import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
 import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
-import CodeMirror, { EditorView } from "@uiw/react-codemirror";
+import CodeMirror, { EditorView, EditorState } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
@@ -103,6 +103,7 @@ function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix
 
 export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
+  const editorExtRef    = useRef<import("@codemirror/state").Extension[]>([]);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
   const symPickerRef    = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]         = useState(false);
@@ -125,6 +126,9 @@ export default function App() {
   const [saveName, setSaveName]       = useState("");
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
   const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
+  const loadedSlotRef = useRef<string | null>(null); // ref copy for use in setSourceAndSave closure
+  const isDirty = loadedSlotName !== null &&
+    source !== (localStorage.getItem(SAVE_PREFIX + loadedSlotName) ?? "");
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
   const [showCopied, setShowCopied]   = useState(false);
@@ -143,7 +147,8 @@ export default function App() {
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
       const next = typeof s === "function" ? s(prev) : s;
-      localStorage.setItem("lambda-playground:source", next);
+      if (loadedSlotRef.current === null)
+        localStorage.setItem("lambda-playground:source", next); // only auto-save scratch
       return next;
     });
   }, []);
@@ -241,33 +246,92 @@ export default function App() {
     view.focus();
   }, []);
 
-  const handleSaveSlot = useCallback(() => {
+  const resetEditorContent = useCallback((content: string) => {
+    const view = editorViewRef.current;
+    if (!view) return;
+    view.setState(EditorState.create({ doc: content, extensions: editorExtRef.current }));
+    view.dispatch({ effects: EditorView.scrollIntoView(0) });
+    view.focus();
+  }, []);
+
+  const switchToSlot = useCallback((name: string) => {
+    if (loadedSlotRef.current !== null && isDirty) {
+      if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
+    }
+    const saved = localStorage.getItem(SAVE_PREFIX + name);
+    if (saved !== null) {
+      loadedSlotRef.current = name;
+      setLoadedSlotName(name);
+      setSaveName(name);
+      setSource(saved);
+      resetEditorContent(saved);
+    }
+  }, [isDirty, resetEditorContent]);
+
+  const switchToScratch = useCallback(() => {
+    if (loadedSlotRef.current !== null && isDirty) {
+      if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
+    }
+    const scratch = localStorage.getItem("lambda-playground:source") ?? "";
+    loadedSlotRef.current = null;
+    setLoadedSlotName(null);
+    setSaveName("");
+    setSource(scratch);
+    resetEditorContent(scratch);
+  }, [isDirty, resetEditorContent]);
+
+  const handleSaveSlot = useCallback(() => {  // "save as"
     const name = saveName.trim();
     if (!name) return;
-    if (savedSlots.includes(name) && name !== loadedSlotName) {
-      if (!window.confirm(`Overwrite saved entry "${name}"?`)) return;
+    if (savedSlots.includes(name) && name !== loadedSlotRef.current) {
+      if (!window.confirm(`Overwrite buffer "${name}"?`)) return;
     }
     localStorage.setItem(SAVE_PREFIX + name, source);
     setSavedSlots(getSavedSlots());
+    loadedSlotRef.current = name;
     setLoadedSlotName(name);
-  }, [saveName, source, savedSlots, loadedSlotName]);
+    setSaveName(name);
+  }, [saveName, source, savedSlots]);
 
-  const handleLoadSlot = useCallback(() => {
+  const handleSaveOverwrite = useCallback(() => {  // "save" — overwrite current named buffer
+    if (!loadedSlotName) return;
+    localStorage.setItem(SAVE_PREFIX + loadedSlotName, source);
+    setSavedSlots(getSavedSlots());
+  }, [loadedSlotName, source]);
+
+  const handleNewBuffer = useCallback(() => {  // "new" — create empty buffer under typed name
     const name = saveName.trim();
     if (!name) return;
-    const saved = localStorage.getItem(SAVE_PREFIX + name);
-    if (saved !== null) { setSourceAndSave(saved); setLoadedSlotName(name); }
-  }, [saveName, setSourceAndSave]);
+    if (loadedSlotRef.current !== null && isDirty) {
+      if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
+    }
+    if (savedSlots.includes(name)) {
+      if (!window.confirm(`Overwrite buffer "${name}"?`)) return;
+    }
+    localStorage.setItem(SAVE_PREFIX + name, "");
+    setSavedSlots(getSavedSlots());
+    loadedSlotRef.current = name;
+    setLoadedSlotName(name);
+    setSource("");
+    resetEditorContent("");
+  }, [saveName, isDirty, savedSlots, resetEditorContent]);
+
 
   const handleDeleteSlot = useCallback(() => {
     const name = saveName.trim();
     if (!name) return;
-    if (!window.confirm(`Delete saved entry "${name}"?`)) return;
+    if (!window.confirm(`Delete buffer "${name}"?`)) return;
     localStorage.removeItem(SAVE_PREFIX + name);
     setSavedSlots(getSavedSlots());
     setSaveName("");
-    setLoadedSlotName(null);
-  }, [saveName]);
+    if (loadedSlotRef.current === name) {
+      const scratch = localStorage.getItem("lambda-playground:source") ?? "";
+      loadedSlotRef.current = null;
+      setLoadedSlotName(null);
+      setSource(scratch);
+      resetEditorContent(scratch);
+    }
+  }, [saveName, resetEditorContent]);
 
   const handleDownload = useCallback(() => {
     const blob = new Blob([source], { type: "text/plain" });
@@ -335,10 +399,14 @@ export default function App() {
     setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
   }, [programResult, source, showSubst, mergeConfig]);
 
-  const editorExtensions = useMemo(() => [
-    lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
-    lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
-  ], []);
+  const editorExtensions = useMemo(() => {
+    const exts = [
+      lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
+      lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
+    ];
+    editorExtRef.current = exts;
+    return exts;
+  }, []);
 
   const toggleKino = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -436,7 +504,6 @@ export default function App() {
               <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
               <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
               <button className="clear-btn" onClick={() => editorViewRef.current && openSearchPanel(editorViewRef.current)} title="Find and replace (Ctrl-F)">find</button>
-              <button className="clear-btn" onClick={() => setSourceAndSave("")} title="Clear the editor">clear</button>
               <button className="share-btn" onClick={handleShare} title="Copy share link to clipboard">
                 <Share2 size={16} />
                 {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
@@ -524,7 +591,18 @@ export default function App() {
             </div>
             <span className="toolbar-sep" />
             <div className="toolbar-group">
-              <span className="row-label">storage</span>
+              <span className="row-label">buffers</span>
+              <span className="current-buffer" title={
+                loadedSlotName
+                  ? (isDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
+                  : "Scratch buffer (auto-saved)"
+              }>
+                {loadedSlotName ?? "*scratch*"}{isDirty ? <span className="dirty-indicator"> ●</span> : ""}
+              </span>
+              <button className="ex-btn" onClick={handleSaveOverwrite}
+                disabled={!loadedSlotName || !isDirty}
+                title="Save changes to current buffer">save</button>
+              <span className="toolbar-sep" />
               <div className="storage-combo">
                 <input
                   className="save-name-input"
@@ -536,12 +614,16 @@ export default function App() {
                 />
                 <div className="slot-picker" ref={slotPickerRef}>
                   <button className="tool-select slot-picker-btn" onClick={() => setSlotOpen(o => !o)}
-                    disabled={savedSlots.length === 0} title="Select a saved slot">▾</button>
+                    title="Select a buffer">▾</button>
                   {slotOpen && (
                     <div className="slot-picker-menu">
+                      <button className={`slot-picker-item${loadedSlotName === null ? " slot-picker-item-active" : ""}`}
+                        onClick={() => { switchToScratch(); setSlotOpen(false); }}>
+                        *scratch*
+                      </button>
                       {savedSlots.map(name => (
-                        <button key={name} className="slot-picker-item"
-                          onClick={() => { setSaveName(name); setSlotOpen(false); }}>
+                        <button key={name} className={`slot-picker-item${name === loadedSlotName ? " slot-picker-item-active" : ""}`}
+                          onClick={() => { switchToSlot(name); setSlotOpen(false); }}>
                           {name}
                         </button>
                       ))}
@@ -549,14 +631,15 @@ export default function App() {
                   )}
                 </div>
               </div>
-              <button className="ex-btn" onClick={handleLoadSlot}
-                disabled={!savedSlots.includes(saveName.trim())}
-                title="Load saved content into editor">load</button>
-              <button className="ex-btn" onClick={handleSaveSlot} disabled={!saveName.trim()}
-                title="Save current editor content under this name">save</button>
+              <button className="ex-btn" onClick={handleSaveSlot}
+                disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
+                title="Save current content as a named buffer">save as</button>
+              <button className="ex-btn" onClick={handleNewBuffer}
+                disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
+                title="Create a new empty buffer with this name">new</button>
               <button className="ex-btn" onClick={handleDeleteSlot}
                 disabled={!savedSlots.includes(saveName.trim())}
-                title="Delete this saved slot">delete</button>
+                title="Delete this buffer">delete</button>
               <span className="toolbar-sep" />
               <button className="ex-btn" onClick={handleDownload}
                 title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>

@@ -409,6 +409,17 @@ label {
   white-space: nowrap;
 }
 .slot-picker-item:hover { background: rgba(255,255,255,0.06); color: var(--accent); }
+.slot-picker-item-active { color: var(--accent); font-weight: 600; }
+
+.current-buffer {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  white-space: nowrap;
+  padding: 0 0.2rem;
+  font-weight: 600;
+}
+.dirty-indicator { color: var(--accent); }
 
 /* ── Symbol picker ── */
 .sym-picker { position: relative; }
