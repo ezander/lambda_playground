@@ -6,7 +6,7 @@ import { ProgramResult, PositionMap } from "./parser/parser";
 import { Term, Var, Abs } from "./parser/ast";
 import {
   LambdaLexer,
-  PragmaLine,
+  Pragma,
   LineComment,
   BlockComment,
   UnterminatedBlockComment,
@@ -64,7 +64,7 @@ function applyTokenDecorations(
   for (const tok of lexResult.tokens) {
     const from = tok.startOffset;
     const to = (tok.endOffset ?? tok.startOffset) + 1;
-    if (tok.tokenType === PragmaLine)
+    if (tok.tokenType === Pragma)
       tks.push({ from, to, m: mPragma });
     else if (tokenMatcher(tok, DefAssign) || tokenMatcher(tok, Dot))
       tks.push({ from, to, m: mOp });

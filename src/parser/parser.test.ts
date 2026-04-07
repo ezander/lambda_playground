@@ -415,27 +415,27 @@ describe("block comments", () => {
 
 describe("pragma value syntax", () => {
   it("accepts = syntax: #! max-steps = 42", () => {
-    const r = parseProgram("#! max-steps = 42");
+    const r = parseProgram("#! max-steps = 42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
   it("accepts space syntax: #! max-steps 42", () => {
-    const r = parseProgram("#! max-steps 42");
+    const r = parseProgram("#! max-steps 42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
   it("accepts no-space =: #! max-steps=42", () => {
-    const r = parseProgram("#! max-steps=42");
+    const r = parseProgram("#! max-steps=42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
   it("accepts boolean pragma without value", () => {
-    const r = parseProgram("#! normalize-defs");
+    const r = parseProgram("#! normalize-defs\n");
     expect(r.pragmaConfig.normalizeDefs).toBe(true);
   });
 
   it("accepts boolean pragma with space value: #! normalize-defs true", () => {
-    const r = parseProgram("#! normalize-defs true");
+    const r = parseProgram("#! normalize-defs true\n");
     expect(r.pragmaConfig.normalizeDefs).toBe(true);
   });
 });
@@ -481,41 +481,41 @@ describe("include system", () => {
   };
 
   it("imports defs from included file", () => {
-    const r = parseProgram("#! include \"sys/Booleans\"\nπ true", {}, resolver);
+    const r = parseProgram("#! include \"sys/Booleans\"\nπ true\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("false")).toBe(true);
   });
 
   it("included file's own includes are resolved (nested)", () => {
-    const r = parseProgram("#! include \"sys/WithInclude\"", {}, resolver);
+    const r = parseProgram("#! include \"sys/WithInclude\"\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("not")).toBe(true);
   });
 
   it("reports error for unknown include path", () => {
-    const r = parseProgram("#! include \"sys/Unknown\"", {}, resolver);
+    const r = parseProgram("#! include \"sys/Unknown\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toMatch(/not found/i);
   });
 
   it("detects circular includes", () => {
-    const r = parseProgram("#! include \"sys/Circular1\"", {}, resolver);
+    const r = parseProgram("#! include \"sys/Circular1\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.match(/circular/i))).toBe(true);
   });
 
   it("annotates errors from included file with source", () => {
     const badResolver = (path: string) => path === "sys/Bad" ? "f := (" : null;
-    const r = parseProgram("#! include \"sys/Bad\"", {}, badResolver);
+    const r = parseProgram("#! include \"sys/Bad\"\n", {}, badResolver);
     expect(r.ok).toBe(false);
     expect(r.errors[0].source).toBe("sys/Bad");
   });
 
   it("π statements in included file are silenced", () => {
     const piResolver = (path: string) => path === "sys/WithPi" ? "x := λa. a\nπ x" : null;
-    const r = parseProgram("#! include \"sys/WithPi\"", {}, piResolver);
+    const r = parseProgram("#! include \"sys/WithPi\"\n", {}, piResolver);
     expect(r.printInfos).toHaveLength(0);
     expect(r.defs.has("x")).toBe(true);
   });

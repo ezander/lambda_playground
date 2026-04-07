@@ -7,7 +7,7 @@ import { parser } from "./parser/parser";
 type Gast = { type: string; name?: string; definition?: Gast[] };
 
 const TOKEN_LABELS: Record<string, string> = {
-  PragmaLine:   "'#!…'",
+  Pragma:       "'#!…'",
   NewLine:      "'\\n'",
   Semi:         "';'",
   Pi:           "'π'",
@@ -22,17 +22,17 @@ const TOKEN_LABELS: Record<string, string> = {
   LBrace:       "'{'",
   RBrace:       "'}'",
   Comma:        "','",
-  IdentifierLike: "identLike",
   Identifier:     "identifier",
+  PlainIdent:     "plainIdent",
   BacktickIdent:  "backtickIdent",
-  OperatorIdent:  "operatorIdent",
 };
 
 function fmtAtom(g: Gast): string {
   switch (g.type) {
-    case "Terminal":   return TOKEN_LABELS[g.name!] ?? g.name!;
+    case "Terminal":    return TOKEN_LABELS[g.name!] ?? g.name!;
     case "NonTerminal": return g.name!;
-    default: return fmtGroup(g);
+    case "Alternation": return `(${fmtGroup(g)})`;
+    default:            return fmtGroup(g);
   }
 }
 
@@ -52,7 +52,7 @@ function fmtGroup(g: Gast): string {
     case "Repetition":            return wrap(d, "*");
     case "RepetitionMandatory":   return wrap(d, "+");
     case "Alternation":
-      return d.map(alt => fmtSeq(alt.definition ?? [])).join(" | ");
+      return d.map(alt => fmtSeq(alt.definition ?? []) || "EOF").join(" | ");
     case "Alternative":           return fmtSeq(d);
     default:                      return `[${g.type}]`;
   }
@@ -64,10 +64,15 @@ function fmtSeq(defs: Gast[]): string {
 
 function generateEBNF(): string {
   const rules = parser.getSerializedGastProductions() as Gast[];
-  const maxLen = Math.max(...rules.map(r => r.name!.length));
-  return rules
-    .map(r => `${r.name!.padEnd(maxLen)}  ::=  ${fmtSeq(r.definition ?? [])}`)
+  const maxLen = Math.max(...rules.map(r => r.name!.length), "backtickIdent".length);
+  const pad = (s: string) => s.padEnd(maxLen);
+  const body = rules
+    .map(r => `${pad(r.name!)}  ::=  ${fmtSeq(r.definition ?? [])}`)
     .join("\n");
+  return body
+    + `\n${pad("identifier")}  ::=  plainIdent | backtickIdent`
+    + `\n${pad("plainIdent")}  ::=  (alnum | '_' | "'" | greek | op-sym)+`
+    + `\n${pad("backtickIdent")}  ::=  '\`' [^\`\\n]+ '\`'`;
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────

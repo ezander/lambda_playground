@@ -1,10 +1,10 @@
 import { createToken, Lexer } from "chevrotain";
 
-// Category token for any identifier-like token (plain or backtick-quoted)
-export const IdentifierLike = createToken({ name: "IdentifierLike", pattern: Lexer.NA });
+// Category token for any identifier (plain or backtick-quoted)
+export const Identifier = createToken({ name: "Identifier", pattern: Lexer.NA });
 
 // Block comments: #* ... *# (terminated) and #* ... EOF (unterminated).
-// Must come before PragmaLine and LineComment so #* wins over #! and #.
+// Must come before Pragma and LineComment so #* wins over #! and #.
 export const BlockComment = createToken({
   name: "BlockComment",
   pattern: /#\*[\s\S]*?\*#/,
@@ -21,12 +21,12 @@ export const UnterminatedBlockComment = createToken({
 
 // Pragma directive (#! ...) — before LineComment so #! wins over #.
 // No group: pragmas are language constructs that appear in the main token stream.
-export const PragmaLine = createToken({
-  name: "PragmaLine",
+export const Pragma = createToken({
+  name: "Pragma",
   pattern: /#![^\n]*/,
 });
 
-// Line comment: # until end of line — after PragmaLine so #! does not fall here.
+// Line comment: # until end of line — after Pragma so #! does not fall here.
 // group: "comment" keeps comments accessible for syntax highlighting but out of the parser stream.
 export const LineComment = createToken({
   name: "LineComment",
@@ -73,34 +73,27 @@ export const Turnstile = createToken({ name: "Turnstile", pattern: /⊢/ });
 export const BacktickIdent = createToken({
   name: "BacktickIdent",
   pattern: /`[^`\n]+`/,
-  categories: [IdentifierLike],
+  categories: [Identifier],
 });
-
-// Free logic/math symbols usable as identifier characters.
-const LOGIC_FREE = /[\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 // Mixed charset: alphanumeric/Greek + operator chars + free logic symbols.
+// Excludes λ (\u03BB) and π (\u03C0) so those always lex as Backslash/Pi.
 const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
-export const OperatorIdent = createToken({
-  name: "OperatorIdent",
-  pattern: new RegExp(`(?:[+\\-*\\/^~&|<>!?=']|${LOGIC_FREE})${MIXED}*`),
-  categories: [IdentifierLike],
-});
-
-// Identifier: starts with alphanumeric/Greek; may contain operator chars after the first char.
-// Excludes λ=\u03BB and π=\u03C0 so those always lex as Backslash/Pi.
-export const Identifier = createToken({
-  name: "Identifier",
-  pattern: new RegExp(`[a-zA-Z0-9_\\u0370-\\u03BA\\u03BC-\\u03BF\\u03C1-\\u03FF]${MIXED}*`),
-  categories: [IdentifierLike],
+// Plain identifier: one or more characters from the mixed charset.
+// Operator and alphanumeric chars may be freely mixed (e.g. "+3", "5-", "x+y" are all valid).
+// Reserved tokens (α, β, η, π, λ, ≡, ∀, ∃, ⊢) take priority via allTokens ordering.
+export const PlainIdent = createToken({
+  name: "PlainIdent",
+  pattern: new RegExp(`${MIXED}+`),
+  categories: [Identifier],
 });
 
 export const allTokens = [
-  BlockComment,             // before PragmaLine, LineComment (so #* wins over #! and #)
+  BlockComment,             // before Pragma, LineComment (so #* wins over #! and #)
   UnterminatedBlockComment, // before LineComment (so unterminated #* wins over #)
-  PragmaLine,               // before LineComment (#! wins over #)
-  LineComment,              // after pragma
+  Pragma,                   // before LineComment (#! wins over #)
+  LineComment,              // after Pragma
   WhiteSpace,               // skip spaces/tabs (not newlines)
   NewLine,                  // significant statement separator
   Semi,                     // significant statement separator
@@ -108,7 +101,7 @@ export const allTokens = [
   Dot,
   Backslash,
   Pi,
-  Alpha, Beta, Eta,                       // reserved Greek — before Identifier (same-length tie → first wins)
+  Alpha, Beta, Eta,                       // reserved Greek — before PlainIdent (same-length tie → first wins)
   ForAll, Exists, Equiv, Turnstile,       // reserved logic — same strategy
   LParen,
   RParen,
@@ -117,10 +110,9 @@ export const allTokens = [
   LBrace,
   RBrace,
   Comma,
-  BacktickIdent,    // before Identifier so backtick pattern takes priority
-  OperatorIdent,    // before Identifier (disjoint charsets, but explicit ordering)
-  Identifier,
-  IdentifierLike,   // category — Lexer.NA, no actual matching; must be in list for parser
+  BacktickIdent,    // before PlainIdent so backtick pattern takes priority
+  PlainIdent,
+  Identifier,       // category — Lexer.NA, no actual matching; must be in list for parser
 ];
 
 export const LambdaLexer = new Lexer(allTokens);

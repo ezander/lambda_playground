@@ -2,7 +2,7 @@ import { CstParser, CstNode, IToken, tokenMatcher, EOF } from "chevrotain";
 import {
   allTokens,
   LambdaLexer,
-  PragmaLine,
+  Pragma,
   Backslash,
   Pi,
   Equiv,
@@ -18,7 +18,6 @@ import {
   NewLine,
   Semi,
   Identifier,
-  IdentifierLike,
   BacktickIdent,
 } from "./lexer";
 
@@ -34,15 +33,15 @@ import { prettyPrint } from "./pretty";
 //
 // Program grammar:
 //   program            ::= programItem*
-//   programItem        ::= NewLine | Semi | nonEmpty (NewLine | Semi)?
-//   nonEmpty           ::= pragmaStmt | printStmt | equivStmt | definition | expressionStmt
-//   pragmaStmt         ::= PragmaLine
+//   programItem        ::= statementSep | statement (statementSep | EOF) | pragmaLine
+//   statementSep       ::= NewLine | Semi
+//   pragmaLine         ::= Pragma NewLine
+//   statement          ::= printStmt | equivStmt | definition | term
 //   printStmt          ::= π comprehensionSpec? term
 //   equivStmt          ::= ≡ comprehensionSpec? atom atom
-//   definition         ::= identLike+ ':=' term          (gated: next := after identLike+)
-//   expressionStmt     ::= term
-//   comprehensionSpec  ::= '[' comprehensionBinding (',' comprehensionBinding)* ']'
-//   comprehensionBinding ::= identLike ':=' '{' term (',' term)* '}'
+//   definition         ::= identifier+ ':=' term         (gated: next := after identifier+)
+//   comprehensionSpec  ::= '[' compBinding (',' compBinding)* ']'
+//   compBinding ::= identLike ':=' '{' term (',' term)* '}'
 //
 // Term grammar:
 //   term        ::= application
@@ -51,7 +50,7 @@ import { prettyPrint } from "./pretty";
 //   primary     ::= identLike | '(' term ')' | function
 //   function    ::= '\' identLike+ '.' term
 //   subst       ::= '[' identLike ':=' term ']'
-//   identLike   ::= Identifier | BacktickIdent | OperatorIdent
+//   identifier  ::= plainIdent | backtickIdent
 
 class LambdaParser extends CstParser {
   constructor() {
@@ -69,43 +68,54 @@ class LambdaParser extends CstParser {
 
   programItem = this.RULE("programItem", () => {
     this.OR([
-      { ALT: () => this.CONSUME(NewLine) },
-      { ALT: () => this.CONSUME(Semi) },
+      { ALT: () => this.SUBRULE(this.statementSep) },
       {
         ALT: () => {
-          this.SUBRULE(this.nonEmpty);
-          this.OPTION(() => {
-            this.OR2([
-              { ALT: () => this.CONSUME2(NewLine) },
-              { ALT: () => this.CONSUME2(Semi) },
-            ]);
-          });
+          this.SUBRULE(this.statement);
+          this.OR2([
+            { ALT: () => this.SUBRULE2(this.statementSep) },
+            { GATE: () => tokenMatcher(this.LA(1), EOF), ALT: () => {} },
+          ]);
+        },
+      },
+      {
+        ALT: () => {
+          this.SUBRULE(this.pragmaLine);
         },
       },
     ]);
   });
 
-  nonEmpty = this.RULE("nonEmpty", () => {
+  statementSep = this.RULE("statementSep", () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.pragmaStmt) },
-      { ALT: () => this.SUBRULE(this.printStmt) },
-      { ALT: () => this.SUBRULE(this.equivStmt) },
-      { GATE: () => this.isDefinition(), ALT: () => this.SUBRULE(this.definition) },
-      { ALT: () => this.SUBRULE(this.expressionStmt) },
+      { ALT: () => this.CONSUME(NewLine) },
+      { ALT: () => this.CONSUME(Semi) },
     ]);
   });
 
-  // Look ahead: skip IdentifierLike* and check if the next token is DefAssign.
+  statement = this.RULE("statement", () => {
+    this.OR([
+      { ALT: () => this.SUBRULE(this.printStmt) },
+      { ALT: () => this.SUBRULE(this.equivStmt) },
+      { GATE: () => this.isDefinition(), ALT: () => this.SUBRULE(this.definition) },
+      { ALT: () => this.SUBRULE(this.term) },
+    ]);
+  });
+
+  pragmaLine = this.RULE("pragmaLine", () => {
+    this.CONSUME(Pragma);
+    this.CONSUME(NewLine);
+  });
+
+  // Look ahead: skip Identifier* and check if the next token is DefAssign.
   // If so, we're looking at a definition. This disambiguates `f x := body` from `f x y`.
   private isDefinition(): boolean {
     let i = 1;
-    while (tokenMatcher(this.LA(i), IdentifierLike)) i++;
+    while (tokenMatcher(this.LA(i), Identifier)) i++;
     return tokenMatcher(this.LA(i), DefAssign);
   }
 
-  pragmaStmt = this.RULE("pragmaStmt", () => {
-    this.CONSUME(PragmaLine);
-  });
+
 
   printStmt = this.RULE("printStmt", () => {
     this.CONSUME(Pi);
@@ -122,28 +132,26 @@ class LambdaParser extends CstParser {
   });
 
   definition = this.RULE("definition", () => {
-    // Consume IdentifierLike tokens until DefAssign — stops naturally when next is not IdentifierLike
-    this.AT_LEAST_ONE(() => this.CONSUME(IdentifierLike));
+    // Consume Identifier tokens until DefAssign — stops naturally when next is not Identifier
+    this.AT_LEAST_ONE(() => this.CONSUME(Identifier));
     this.CONSUME(DefAssign);
     this.SUBRULE(this.term);
   });
 
-  expressionStmt = this.RULE("expressionStmt", () => {
-    this.SUBRULE(this.term);
-  });
+
 
   comprehensionSpec = this.RULE("comprehensionSpec", () => {
     this.CONSUME(LBracket);
-    this.SUBRULE(this.comprehensionBinding);
+    this.SUBRULE(this.compBinding);
     this.MANY(() => {
       this.CONSUME(Comma);
-      this.SUBRULE2(this.comprehensionBinding);
+      this.SUBRULE2(this.compBinding);
     });
     this.CONSUME(RBracket);
   });
 
-  comprehensionBinding = this.RULE("comprehensionBinding", () => {
-    this.CONSUME(IdentifierLike);
+  compBinding = this.RULE("compBinding", () => {
+    this.CONSUME(Identifier);
     this.CONSUME(DefAssign);
     this.CONSUME(LBrace);
     this.SUBRULE(this.term);
@@ -174,7 +182,7 @@ class LambdaParser extends CstParser {
   primary = this.RULE("primary", () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.func) },
-      { ALT: () => this.CONSUME(IdentifierLike) },
+      { ALT: () => this.CONSUME(Identifier) },
       {
         ALT: () => {
           this.CONSUME(LParen);
@@ -187,7 +195,7 @@ class LambdaParser extends CstParser {
 
   subst = this.RULE("subst", () => {
     this.CONSUME(LBracket);
-    this.CONSUME(IdentifierLike);
+    this.CONSUME(Identifier);
     this.CONSUME(DefAssign);
     this.SUBRULE(this.term);
     this.CONSUME(RBracket);
@@ -196,7 +204,7 @@ class LambdaParser extends CstParser {
   func = this.RULE("func", () => {
     this.CONSUME(Backslash);
     this.AT_LEAST_ONE(() => {
-      this.CONSUME(IdentifierLike);
+      this.CONSUME(Identifier);
     });
     this.CONSUME(Dot);
     this.SUBRULE(this.term);
@@ -257,22 +265,23 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   programItem(ctx: any): RawStmt {
-    // ctx.NewLine/Semi may be set from the optional terminator even when nonEmpty is present
-    if (!ctx.nonEmpty) return { kind: "empty" };
-    return this.visit(ctx.nonEmpty[0]) as RawStmt;
-  }
-
-  nonEmpty(ctx: any): RawStmt {
-    if (ctx.pragmaStmt)     return this.visit(ctx.pragmaStmt[0])     as RawStmt;
-    if (ctx.printStmt)      return this.visit(ctx.printStmt[0])      as RawStmt;
-    if (ctx.equivStmt)      return this.visit(ctx.equivStmt[0])      as RawStmt;
-    if (ctx.definition)     return this.visit(ctx.definition[0])     as RawStmt;
-    if (ctx.expressionStmt) return this.visit(ctx.expressionStmt[0]) as RawStmt;
+    if (ctx.pragmaLine)  return this.visit(ctx.pragmaLine[0]) as RawStmt;
+    if (ctx.statement)   return this.visit(ctx.statement[0])  as RawStmt;
     return { kind: "empty" };
   }
 
-  pragmaStmt(ctx: any): RawPragma {
-    const tok = ctx.PragmaLine[0] as IToken;
+  statementSep(_ctx: any): void { /* separator only — no AST contribution */ }
+
+  statement(ctx: any): RawStmt {
+    if (ctx.printStmt)      return this.visit(ctx.printStmt[0])      as RawStmt;
+    if (ctx.equivStmt)      return this.visit(ctx.equivStmt[0])      as RawStmt;
+    if (ctx.definition)     return this.visit(ctx.definition[0])     as RawStmt;
+    if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: 0 }; }
+    return { kind: "empty" };
+  }
+
+  pragmaLine(ctx: any): RawPragma {
+    const tok = ctx.Pragma[0] as IToken;
     return { kind: "pragma", text: tok.image.slice(2).trim(), offset: tok.startOffset };
   }
 
@@ -294,8 +303,8 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   definition(ctx: any): RawDef | RawEmpty {
-    if (!ctx.IdentifierLike || !ctx.term) return { kind: "empty" };
-    const toks = ctx.IdentifierLike as IToken[];
+    if (!ctx.Identifier || !ctx.term) return { kind: "empty" };
+    const toks = ctx.Identifier as IToken[];
     const nameTok = toks[0];
     const params = toks.slice(1);
     const bodyTerm = this.visit(ctx.term[0]) as Term;
@@ -310,18 +319,12 @@ class AstBuilder extends BaseCstVisitor {
     return { kind: "def", name: tokenName(nameTok), nameTok, params, rawBody, bodyTerm, offset: nameTok.startOffset };
   }
 
-  expressionStmt(ctx: any): RawExpr | RawEmpty {
-    if (!ctx.term) return { kind: "empty" };
-    const term = this.visit(ctx.term[0]) as Term;
-    return { kind: "expr", term, offset: 0 };
-  }
-
   comprehensionSpec(ctx: any): RawBinding[] {
-    return (ctx.comprehensionBinding ?? []).map((bn: CstNode) => this.visit(bn) as RawBinding);
+    return (ctx.compBinding ?? []).map((bn: CstNode) => this.visit(bn) as RawBinding);
   }
 
-  comprehensionBinding(ctx: any): RawBinding {
-    const nameTok = (ctx.IdentifierLike as IToken[])[0];
+  compBinding(ctx: any): RawBinding {
+    const nameTok = (ctx.Identifier as IToken[])[0];
     const termValues = (ctx.term ?? []).map((t: CstNode) => this.visit(t) as Term);
     return { name: tokenName(nameTok), termValues };
   }
@@ -350,8 +353,8 @@ class AstBuilder extends BaseCstVisitor {
 
   primary(ctx: any): Term {
     if (ctx.func) return this.visit(ctx.func);
-    if (ctx.IdentifierLike) {
-      const tok = ctx.IdentifierLike[0] as IToken;
+    if (ctx.Identifier) {
+      const tok = ctx.Identifier[0] as IToken;
       const v = Var(tokenName(tok));
       this.positions.vars.set(v, this.pos(tok));
       return v;
@@ -360,7 +363,7 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   subst(ctx: any): { param: string; paramTok: IToken; arg: Term } {
-    const tok = ctx.IdentifierLike[0] as IToken;
+    const tok = ctx.Identifier[0] as IToken;
     return {
       param:    tokenName(tok),
       paramTok: tok,
@@ -369,7 +372,7 @@ class AstBuilder extends BaseCstVisitor {
   }
 
   func(ctx: any): Term {
-    const toks: IToken[] = ctx.IdentifierLike;
+    const toks: IToken[] = ctx.Identifier;
     const body: Term = this.visit(ctx.term);
     let result = body;
     for (let i = toks.length - 1; i >= 0; i--) {
