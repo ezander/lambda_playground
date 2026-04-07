@@ -65,62 +65,72 @@
 * [x] separate max-history and visible-history and scroll when more than visible-history is stored ← history panel scrolls, default 200 entries
 * [x] In the editor: the line numbers should match the baseline of the text lines, not the top
 * [x] Should we directly normalize definitions or make that optional ← normalize by default; #! no-normalize-defs / #! normalize-defs pragma; warns on step limit
+* [x] fullscreen layout: editor 1/3 left, eval+output 2/3 right stacked; editor fills space with toolbar pinned at bottom
+* [x] add more symbols and expansions, like forall, exists, equiv, and, or, not, implies, oplus, otimes, compose ← logic section in picker; ∀∃≡⊢ reserved (greyed); free ones valid as operator identifiers; \name[Space] expansion
+* [x] limit the number of terms in an expansion to prevent mem overflow for "expanding" terms ← maxSize (AST node count); sizeLimit result; shown red/definitive; #! max-size pragma + settings
+* [x] we need an equiv operator (3 bars), that can only go first in a line and is an equivalence assertion like "equiv term1 term2", needs to take exactly two terms, and passes, when both are alpha-beta-equivalent, and does terminates reduction of the script if not ← ≡ token; uses maxStepsIdent; shown in output panel interleaved with π; green/red ≡ sign; halts further processing on failure
+* [x] print somewhere how many steps the reduction took
+* [x] we need multiline comments
 
 ## Up next
 
-* [ ] fullscreen is not correct (editor extends below screen, F11 not working, eval&output are gone)
-* [ ] maybe use a different layout for fullscreen like editor on the left, output/eval on the right, draggable slider in between
+* [x] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
+* [ ] allow e.g. max-steps 10 instead of max-steps=10? or auto-insert? we have this simplified form for truth values
+* [ ] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from 
+* [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
+* [ ] export/import facility via zip-file of all user programs (selective import?)
 
-* [ ] if a def is redefined but was not in normal we should change the message, or generally say they are not beta-equiv
 * [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened)
+
+
+
+## Consider
+
+* [ ] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
+* [ ] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs
+* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
+* [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
+* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
+* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
+* [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
+* [ ] maybe make the default editor just a scratchpad, open other files/stores in tabs? like an ide
+* [ ] maybe add a draggable slider between editor and right panels in kino mode
+
+
+## For later
+
+* [ ] what about a markdown export?
+* [ ] I want to have a text rewrap with ctrl+r in multiline comments
+* [ ] remember when a term is copied, when it is then reduced apply the reduction to all copies, i.e. "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
+* [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
+* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
+* [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
+* [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
+* [ ] make identified forms clickable and go to line
+* [ ] introduce typed lambda calculus (τ for type inf?)
+* [ ] should we have line continuation with e.g. \ or next line starts with tab?
+
+## Questionable
+* 
+* [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
+* [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
+
+## For me todo
 
 * [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
 * [ ] improve inserts (numerals, lists, natural recursion, etc.)
 * [ ] examples and snippets are curr essentially the same, make snippets really useful (list gists), examples longer, with explanations, tutorials extra?
-* [ ] think about how to specify longer examples or tutorials, no fun in ts file 
+* [ ] think about how to specify longer examples or tutorials, no fun in ts file
 * [ ] make a small lisp demo
 * [ ] make a demo with church numerals, and scott numerals
 * [ ] make more demos and connect to a tutorial (basics, booleans, numerals, combinators)
 * [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
 
-## Consider
-
-* [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
-* [ ] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from 
-* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
-* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
-* [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
-* [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
-* [x] add more symbols and expansions, like forall, exists, equiv, and, or, not, implies, oplus, otimes, compose ← logic section in picker; ∀∃≡⊢ reserved (greyed); free ones valid as operator identifiers; \name[Space] expansion
-* [ ] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
-* [ ] maybe make the default editor just a scratchpad, open other files/stores in tabs? like an ide
-* [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
-* [ ] print somewhere how many steps the reduction took
-* [ ] probably also for later: remember when a term is copied, when it is then reduced apply the reduction to all copies
-* [x] limit the number of terms in an expansion to prevent mem overflow for "expanding" terms ← maxSize (AST node count); sizeLimit result; shown red/definitive; #! max-size pragma + settings
-* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
-* [ ] "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
-* [x] we need an equiv operator (3 bars), that can only go first in a line and is an equivalence assertion like "equiv term1 term2", needs to take exactly two terms, and passes, when both are alpha-beta-equivalent, and does terminates reduction of the script if not ← ≡ token; uses maxStepsIdent; shown in output panel interleaved with π; green/red ≡ sign; halts further processing on failure
-* [ ] how to call a "virtual" file in local storage
-* [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
-* [ ] we need multiline comments (at least of we have no markdown, what about a markdown export?) and a text rewrap with ctrl+r
-
-## For later
-
-* [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
-* [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
-* [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
-* [ ] make identified forms clickable and go to line
-* [ ] introduce typed lambda calculus (τ for type inf?)
-
-## Questionable
  
-* [ ] *if* \pi can appear inside exprs (what's then the result? the result itself? or I? or does it take two and returns the latter?). does that make sense? when it's in the expression, all subst and redex have been applied already, so the source expr does not say much
-* [ ] should we have line continuation with e.g. \ or next line starts with tab?
-* [ ] why still abs, app and only rename later??
-
 ## Don't do
 
+* [~] why still abs, app and only rename later??
+* [~] *if* \pi can appear inside exprs (what's then the result? the result itself? or I? or does it take two and returns the latter?). does that make sense? when it's in the expression, all subst and redex have been applied already, so the source expr does not say much
 * [~] hbr uses 'where' clauses. shall we? dunno
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [~] test also the UI?

@@ -45,11 +45,11 @@ const LOGIC_FREE = /[\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2
 // An identifier is either alphanumeric-starting or operator-starting, but both may freely mix
 // alphanumeric and operator chars after the first character — so +3, 3+3, a+b are all one token.
 // Note: : is excluded so := is never consumed as part of an identifier.
-const MIXED = /[a-zA-Z0-9_\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
+const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 export const OperatorIdent = createToken({
   name: "OperatorIdent",
-  pattern: new RegExp(`(?:[+\\-*\\/^~&|<>!?=]|${LOGIC_FREE})${MIXED}*`),
+  pattern: new RegExp(`(?:[+\\-*\\/^~&|<>!?=']|${LOGIC_FREE})${MIXED}*`),
   categories: [IdentifierLike],
 });
 

@@ -66,7 +66,7 @@ function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
     if (code[i] === "λ" || code[i] === "\\") {
       tks.push({ from: lineFrom + i, to: lineFrom + i + 1, m: mLambda });
       let j = i + 1;
-      while (j < code.length && /[\w\s]/.test(code[j])) j++;
+      while (j < code.length && /[\w'\s]/.test(code[j])) j++;
       if (code[j] === ".")
         tks.push({ from: lineFrom + j, to: lineFrom + j + 1, m: mOp });
     }
