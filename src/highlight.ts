@@ -126,11 +126,9 @@ function buildDecorations(view: EditorView): DecorationSet {
   if (parsed) {
     const allDefNames = new Set(parsed.defs.keys());
 
-    const knownDefs = new Set<string>();
     for (const { name, namePos, body, positions } of parsed.defInfos) {
       tks.push({ from: namePos.from, to: namePos.to, m: mDefName });
-      walkTerm(body, positions, knownDefs, new Set(), tks); // only names defined before this one
-      knownDefs.add(name);
+      walkTerm(body, positions, allDefNames, new Set(), tks);
     }
 
     for (const { term, positions, boundNames, paramPositions } of parsed.exprInfos) {
