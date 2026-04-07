@@ -1,0 +1,3 @@
+pair  a b f := f a b
+fst   p     := p (λa b. a)
+snd   p     := p (λa b. b)

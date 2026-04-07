@@ -71,12 +71,12 @@
 * [x] we need an equiv operator (3 bars), that can only go first in a line and is an equivalence assertion like "equiv term1 term2", needs to take exactly two terms, and passes, when both are alpha-beta-equivalent, and does terminates reduction of the script if not ← ≡ token; uses maxStepsIdent; shown in output panel interleaved with π; green/red ≡ sign; halts further processing on failure
 * [x] print somewhere how many steps the reduction took
 * [x] we need multiline comments
+* [x] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
+* [x] allow e.g. max-steps 10 instead of max-steps=10? or auto-insert? we have this simplified form for truth values
 
 ## Up next
 
-* [x] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
-* [x] allow e.g. max-steps 10 instead of max-steps=10? or auto-insert? we have this simplified form for truth values
-* [ ] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from 
+* [x] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from ← `#! include "sys/..."` / `"user/..."` syntax; isolated; ≡ checked, π silenced; circular detection; errors annotated with source
 * [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
 * [ ] export/import facility via zip-file of all user programs (selective import?)
 

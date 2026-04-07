@@ -18,6 +18,7 @@ import "./App.css";
 import LZString from "lz-string";
 import { examples as EXAMPLES } from "./data/examples";
 import { snippets as SNIPPETS } from "./data/snippets";
+import { SYS_INCLUDES } from "./includes/index";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
@@ -124,7 +125,13 @@ export default function App() {
     });
   }, []);
 
-  const programResult = useMemo(() => parseProgram(source, config), [source, config]);
+  const includeResolver = useCallback((path: string): string | null => {
+    if (path.startsWith("sys/"))  return SYS_INCLUDES[path] ?? null;
+    if (path.startsWith("user/")) return localStorage.getItem(SAVE_PREFIX + path.slice("user/".length)) ?? null;
+    return null;
+  }, []);
+
+  const programResult = useMemo(() => parseProgram(source, config, includeResolver), [source, config, includeResolver]);
 
   // Push parse result into the CodeMirror StateField for syntax highlighting
   useEffect(() => {
@@ -542,7 +549,7 @@ export default function App() {
                     e.offset !== undefined ? "parse-error-link" : "",
                   ].join(" ").trim()}
                   onClick={() => e.offset !== undefined && jumpTo(e.offset)}
-                >{e.message}</li>
+                >{e.source ? `In "${e.source}": ${e.message}` : e.message}</li>
               ))}
               {roundTripError && <li>{roundTripError}</li>}
             </ul>

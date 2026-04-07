@@ -1,0 +1,6 @@
+true    := λx y. x
+false   := λx y. y
+not p   := p false true
+and p q := p q false
+or  p q := p true q
+if  p t f := p t f

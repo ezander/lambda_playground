@@ -182,7 +182,7 @@ const astBuilder = new AstBuilder();
 
 // ── 3. Public parse function ───────────────────────────────────────────────────
 
-export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning" };
+export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning"; source?: string };
 
 export type ParseResult =
   | { ok: true;  term: Term; positions: PositionMap }
@@ -305,7 +305,15 @@ export type ProgramResult = {
 
 export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number; maxSize?: number };
 
-export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}): ProgramResult {
+// Resolves an include path (e.g. "sys/Church Booleans") to its source text, or null if not found.
+export type IncludeResolver = (path: string) => string | null;
+
+export function parseProgram(
+  input: string,
+  defaultConfig: ProgramRunConfig = {},
+  resolver: IncludeResolver = () => null,
+  _includeStack: string[] = [],
+): ProgramResult {
   const defs = new Map<string, Term>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
@@ -331,6 +339,40 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
     // ── #! pragma directive ────────────────────────────────────────────────────
     if (rawLine.trimStart().startsWith("#!")) {
       const text = rawLine.trimStart().slice(2).trim();
+
+      // #! include "path" — special handling
+      const incMatch = text.match(/^include\s+"([^"]+)"\s*$/);
+      if (incMatch) {
+        const path = incMatch[1];
+        if (_includeStack.includes(path)) {
+          errors.push({ message: `Circular include: "${path}"`, offset: lineOffset });
+        } else {
+          const content = resolver(path);
+          if (content === null) {
+            errors.push({ message: `Include not found: "${path}"`, offset: lineOffset });
+          } else {
+            const included = parseProgram(content, defaultConfig, resolver, [..._includeStack, path]);
+            // Propagate errors with source annotation; a failing ≡ in an include halts the parent too
+            for (const e of included.errors)
+              errors.push({ ...e, source: e.source ?? path });
+            if (!included.ok) equivFailed = true;
+            // Merge defs (redefinition warning if normal forms differ)
+            for (const [name, term] of included.defs) {
+              if (defs.has(name)) {
+                const oldNorm = normalize(defs.get(name)!).term;
+                const newNorm = normalize(term).term;
+                if (!alphaEq(oldNorm, newNorm))
+                  errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset: lineOffset, kind: "warning" });
+              } else {
+                defs.set(name, term);
+              }
+            }
+          }
+        }
+        lineOffset += rawLine.length + 1;
+        continue;
+      }
+
       const m = text.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
       if (!m) {
         errors.push({ message: `Invalid pragma: "${text}"`, offset: lineOffset, kind: "warning" });

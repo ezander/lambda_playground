@@ -466,3 +466,57 @@ describe("error offsets", () => {
     });
   }
 });
+
+// ── Include system ────────────────────────────────────────────────────────────
+
+describe("include system", () => {
+  const resolver = (path: string) => {
+    const files: Record<string, string> = {
+      "sys/Booleans": "true := λx y. x\nfalse := λx y. y",
+      "sys/WithInclude": "#! include \"sys/Booleans\"\nnot p := p false true",
+      "sys/Circular1": "#! include \"sys/Circular2\"\nx := λa. a",
+      "sys/Circular2": "#! include \"sys/Circular1\"\ny := λa. a",
+    };
+    return files[path] ?? null;
+  };
+
+  it("imports defs from included file", () => {
+    const r = parseProgram("#! include \"sys/Booleans\"\nπ true", {}, resolver);
+    expect(r.errors).toHaveLength(0);
+    expect(r.defs.has("true")).toBe(true);
+    expect(r.defs.has("false")).toBe(true);
+  });
+
+  it("included file's own includes are resolved (nested)", () => {
+    const r = parseProgram("#! include \"sys/WithInclude\"", {}, resolver);
+    expect(r.errors).toHaveLength(0);
+    expect(r.defs.has("true")).toBe(true);
+    expect(r.defs.has("not")).toBe(true);
+  });
+
+  it("reports error for unknown include path", () => {
+    const r = parseProgram("#! include \"sys/Unknown\"", {}, resolver);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/not found/i);
+  });
+
+  it("detects circular includes", () => {
+    const r = parseProgram("#! include \"sys/Circular1\"", {}, resolver);
+    expect(r.ok).toBe(false);
+    expect(r.errors.some(e => e.message.match(/circular/i))).toBe(true);
+  });
+
+  it("annotates errors from included file with source", () => {
+    const badResolver = (path: string) => path === "sys/Bad" ? "f := (" : null;
+    const r = parseProgram("#! include \"sys/Bad\"", {}, badResolver);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].source).toBe("sys/Bad");
+  });
+
+  it("π statements in included file are silenced", () => {
+    const piResolver = (path: string) => path === "sys/WithPi" ? "x := λa. a\nπ x" : null;
+    const r = parseProgram("#! include \"sys/WithPi\"", {}, piResolver);
+    expect(r.printInfos).toHaveLength(0);
+    expect(r.defs.has("x")).toBe(true);
+  });
+});

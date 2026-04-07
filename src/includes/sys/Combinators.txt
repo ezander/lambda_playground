@@ -1,0 +1,5 @@
+I     := λx. x
+K     := λx y. x
+S f g x := f x (g x)
+B f g x := f (g x)
+C f x y := f y x
