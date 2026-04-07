@@ -3,16 +3,29 @@ import { keymap, Extension } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
+import { SYS_INCLUDES } from "./includes/index";
+
+const SAVE_PREFIX = "lambda-playground:saved:";
 
 // Matches any identifier-like token (alphanumeric/Greek/operator chars)
-const IDENT_RE = /[a-zA-Z0-9_\u0370-\u03FF+\-*/^~&|<>!?=]+/;
+const IDENT_RE = /[a-zA-Z0-9_'\u0370-\u03FF+\-*/^~&|<>!?=]+/;
 // Pragma keys are lowercase with hyphens, optional no- prefix
 const PRAGMA_KEY_RE = /[a-z-]+/;
 
 const PRAGMA_OPTIONS = [
   ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
   ...([...BOOLEAN_PRAGMAS]).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
+  { label: "include", type: "keyword" as const },
 ];
+
+function getUserIncludePaths(): string[] {
+  const paths: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(SAVE_PREFIX)) paths.push("user/" + key.slice(SAVE_PREFIX.length));
+  }
+  return paths.sort();
+}
 
 function completionSource(context: CompletionContext): CompletionResult | null {
   const parsed = context.state.field(parsedField);
@@ -22,6 +35,22 @@ function completionSource(context: CompletionContext): CompletionResult | null {
 
   // ── Pragma context: #! line ──────────────────────────────────────────────────
   if (line.text.trimStart().startsWith("#!")) {
+    // Inside include string: #! include "...
+    const incMatch = line.text.match(/^\s*#!\s*include\s*"([^"]*)/);
+    if (incMatch) {
+      const quotePos = line.from + line.text.indexOf('"') + 1;
+      if (context.pos >= quotePos) {
+        const allPaths = [
+          ...Object.keys(SYS_INCLUDES),
+          ...getUserIncludePaths(),
+        ];
+        return {
+          from: quotePos,
+          options: allPaths.map(p => ({ label: p, type: "text" as const })),
+          filter: true,
+        };
+      }
+    }
     const word = context.matchBefore(PRAGMA_KEY_RE);
     if (!word && !context.explicit) return null;
     return { from: word ? word.from : context.pos, options: PRAGMA_OPTIONS, filter: true };
@@ -36,6 +65,11 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     .filter(({ namePos }) => namePos.from < context.pos)
     .filter(({ name }) => !seen.has(name) && !!seen.add(name))
     .map(({ name }) => ({ label: name, type: "variable" as const }));
+
+  // Also include defs from includes (not in defInfos, always in scope)
+  for (const name of parsed.defs.keys()) {
+    if (!seen.has(name)) options.push({ label: name, type: "variable" as const });
+  }
 
   if (options.length === 0) return null;
 
