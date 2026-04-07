@@ -64,6 +64,29 @@ function getSavedSlots(): string[] {
 
 
 
+const TRUNCATE_LEN = 200;
+
+function TruncatedText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (text.length <= TRUNCATE_LEN) return <>{text}</>;
+  if (expanded) return (
+    <>
+      {text}
+      <span className="truncated-more" onClick={e => { e.stopPropagation(); setExpanded(false); }}> (less)</span>
+    </>
+  );
+  return (
+    <>
+      {text.slice(0, TRUNCATE_LEN)}
+      <span className="truncated-more" onClick={e => { e.stopPropagation(); setExpanded(true); }}>… (more)</span>
+    </>
+  );
+}
+
+function Truncated({ text }: { text: string }) {
+  return <TruncatedText key={text} text={text} />;
+}
+
 type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
 type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
@@ -632,7 +655,7 @@ export default function App() {
                       {" π "}{item.data.src}
                     </code>
                     <code className="print-result">
-                      <span className="print-result-text">{item.data.result}</span>
+                      <span className="print-result-text"><Truncated text={item.data.result} /></span>
                       <span className="print-result-status">
                         {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
                         {item.data.normal
@@ -653,9 +676,9 @@ export default function App() {
                     </code>
                     <code className="print-result">
                       <span className="print-result-text">
-                        {item.data.norm1}
+                        <Truncated text={item.data.norm1} />
                         <span className={`equiv-op ${item.data.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
-                        {item.data.norm2}
+                        <Truncated text={item.data.norm2} />
                       </span>
                       <span className="print-result-status">
                         {item.data.equivalent

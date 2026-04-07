@@ -74,17 +74,17 @@
 * [x] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
 * [x] allow e.g. max-steps 10 instead of max-steps=10? or auto-insert? we have this simplified form for truth values
 * [x] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from ← `#! include "sys/..."` / `"user/..."` syntax; isolated; ≡ checked, π silenced; circular detection; errors annotated with source
+* [x] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
+* [x] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs ← truncate at 200 chars with expandable (more)/(less)
+* [x] storing parsed/evaluated includes including errors (?) ← module-level cache keyed by path, content-compared on each lookup
 
 ## Up next
 
-* [x] storing parsed/evaluated includes including errors (?) ← module-level cache keyed by path, content-compared on each lookup
+* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function)
 * [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
 * [ ] export/import facility via zip-file of all user programs (selective import?)
 
-* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function)
 
-* [x] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
-* [ ] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs
 
 
 ## Consider
