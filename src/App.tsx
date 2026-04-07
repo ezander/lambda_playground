@@ -16,6 +16,7 @@ import { Settings, Share2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
 import LZString from "lz-string";
+import JSZip from "jszip";
 import { examples as EXAMPLES } from "./data/examples";
 import { snippets as SNIPPETS } from "./data/snippets";
 import { SYS_INCLUDES } from "./includes/index";
@@ -343,6 +344,55 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [source, saveName]);
 
+  const handleExport = useCallback(async () => {
+    if (savedSlots.length === 0) { alert("No named buffers to export."); return; }
+    if (!window.confirm(`Export ${savedSlots.length} named buffer${savedSlots.length === 1 ? "" : "s"} to lambda-buffers.zip?`)) return;
+    const zip = new JSZip();
+    for (const name of savedSlots) {
+      const content = localStorage.getItem(SAVE_PREFIX + name) ?? "";
+      zip.file(name + ".txt", content);
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "lambda-buffers.zip"; a.click();
+    URL.revokeObjectURL(url);
+  }, [savedSlots]);
+
+  const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; checked: boolean }[]>([]);
+  const [showImport, setShowImport]   = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportPick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const items: typeof importItems = [];
+      for (const [path, entry] of Object.entries(zip.files)) {
+        if (entry.dir || path.includes("/") || !path.endsWith(".txt")) continue;
+        const content = await entry.async("string");
+        const name = path.slice(0, -4);
+        const conflict = savedSlots.includes(name);
+        items.push({ name, content, conflict, checked: !conflict });
+      }
+      if (items.length === 0) { alert("No .txt files found in zip root."); return; }
+      items.sort((a, b) => a.name.localeCompare(b.name));
+      setImportItems(items);
+      setShowImport(true);
+    } catch { alert("Could not read zip file."); }
+  }, [savedSlots]);
+
+  const handleImportConfirm = useCallback(() => {
+    for (const item of importItems) {
+      if (!item.checked) continue;
+      localStorage.setItem(SAVE_PREFIX + item.name, item.content);
+    }
+    setSavedSlots(getSavedSlots());
+    setShowImport(false);
+  }, [importItems]);
+
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, loaded, config.maxStepsRun]);
 
@@ -420,6 +470,7 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setShowImport(false); return; }
       if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
@@ -482,6 +533,34 @@ export default function App() {
   return (
     <div className={kinoMode ? "app kino" : "app"}>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showImport && (
+        <div className="modal-backdrop" onClick={() => setShowImport(false)}>
+          <div className="modal import-modal" onClick={e => e.stopPropagation()}>
+            <h2>IMPORT BUFFERS</h2>
+            <div className="import-actions">
+              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: true })))}>check all</button>
+              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: false })))}>uncheck all</button>
+            </div>
+            <ul className="import-list">
+              {importItems.map((item, i) => (
+                <li key={item.name} className={item.conflict ? "import-conflict" : ""}>
+                  <label>
+                    <input type="checkbox" checked={item.checked}
+                      onChange={e => setImportItems(items => items.map((it, j) => j === i ? { ...it, checked: e.target.checked } : it))} />
+                    {" "}{item.name}{item.conflict ? <span className="import-conflict-tag"> (exists — overwrite?)</span> : ""}
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div className="modal-buttons">
+              <button className="ex-btn" onClick={handleImportConfirm}
+                disabled={importItems.every(i => !i.checked)}>import selected</button>
+              <button className="ex-btn" onClick={() => setShowImport(false)}>cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSettings && (
         <SettingsModal
           config={config}
@@ -643,6 +722,12 @@ export default function App() {
               <span className="toolbar-sep" />
               <button className="ex-btn" onClick={handleDownload}
                 title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
+              <button className="ex-btn" onClick={handleExport}
+                disabled={savedSlots.length === 0}
+                title="Export all named buffers to a zip file">export</button>
+              <button className="ex-btn" onClick={() => importInputRef.current?.click()}
+                title="Import buffers from a zip file">import</button>
+              <input ref={importInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={handleImportPick} />
             </div>
           </div>
           {(programResult.errors.length > 0 || roundTripError) && (

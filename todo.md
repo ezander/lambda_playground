@@ -77,12 +77,12 @@
 * [x] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
 * [x] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs ← truncate at 200 chars with expandable (more)/(less)
 * [x] storing parsed/evaluated includes including errors (?) ← module-level cache keyed by path, content-compared on each lookup
+* [x] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function) ← scratch buffer auto-saved, named buffers with ● dirty indicator, save/save-as/new/delete, buffer switcher in dropdown
 
 ## Up next
 
-* [x] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function) ← scratch buffer auto-saved, named buffers with ● dirty indicator, save/save-as/new/delete, buffer switcher in dropdown
+* [x] export/import facility via zip-file of all user programs (selective import?) ← export all named buffers to zip, import with selective checkbox dialog, conflict highlighting
 * [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
-* [ ] export/import facility via zip-file of all user programs (selective import?)
 
 
 
@@ -91,10 +91,8 @@
 
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
-* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 * [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
-* [ ] maybe make the default editor just a scratchpad, open other files/stores in tabs? like an ide
 * [ ] maybe add a draggable slider between editor and right panels in kino mode
 * [ ] output expressions: highlighting, inline output, manual reductions
 
@@ -112,7 +110,9 @@
 * [ ] should we have line continuation with e.g. \ or next line starts with tab?
 
 ## Questionable
-* 
+ 
+* [ ] Shall we have editor tabs like an ide
+* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 * [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
 * [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
 
