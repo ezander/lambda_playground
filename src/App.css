@@ -164,6 +164,25 @@ header .subtitle {
 /* ── Main ── */
 main { display: flex; flex-direction: column; gap: 1.25rem; }
 
+/* ── Checkboxes ── */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  vertical-align: middle;
+}
+input[type="checkbox"]:checked {
+  appearance: auto;
+  accent-color: var(--accent);
+}
+
 /* ── Labels ── */
 label {
   font-family: var(--mono);
@@ -559,22 +578,7 @@ label {
   cursor: pointer;
   user-select: none;
 }
-.subst-toggle input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 0.85rem;
-  height: 0.85rem;
-  background: var(--bg);
-  border: 1px solid var(--accent);
-  border-radius: 2px;
-  cursor: pointer;
-  flex-shrink: 0;
-  position: relative;
-}
-.subst-toggle input[type="checkbox"]:checked {
-  appearance: auto;
-  accent-color: var(--accent);
-}
+
 
 /* ── Collapsible panels ── */
 .panel { border: 1px solid var(--border); border-radius: 2px; }
