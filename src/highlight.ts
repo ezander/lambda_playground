@@ -1,8 +1,21 @@
 import { ViewPlugin, ViewUpdate, Decoration, DecorationSet } from "@codemirror/view";
 import { EditorView } from "@codemirror/view";
 import { RangeSetBuilder, StateField, StateEffect } from "@codemirror/state";
+import { IToken, tokenMatcher } from "chevrotain";
 import { ProgramResult, PositionMap } from "./parser/parser";
 import { Term, Var, Abs } from "./parser/ast";
+import {
+  LambdaLexer,
+  PragmaLine,
+  LineComment,
+  BlockComment,
+  UnterminatedBlockComment,
+  Backslash,
+  Pi,
+  Equiv,
+  DefAssign,
+  Dot,
+} from "./parser/lexer";
 
 // ── Decoration marks ──────────────────────────────────────────────────────────
 
@@ -32,44 +45,33 @@ export const parsedField = StateField.define<ProgramResult | null>({
   },
 });
 
-// ── Structural scan (regex) — comments, :=, λ, and . separator ───────────────
-// These tokens are skipped by the Chevrotain lexer and absent from the AST.
+// ── Token-based structural highlighting ───────────────────────────────────────
+// Re-tokenises the document and applies decorations for comments, operators, λ, π, ≡.
+// All structural tokens are now proper lexer tokens — no regex scanning needed.
 
-function scanStructural(text: string, lineFrom: number, tks: Tk[]): void {
-  const ci = text.indexOf("#");
-  if (ci >= 0) {
-    const isPragma = text.slice(ci).startsWith("#!");
-    tks.push({ from: lineFrom + ci, to: lineFrom + text.length, m: isPragma ? mPragma : mComment });
+function applyTokenDecorations(
+  lexResult: { tokens: IToken[]; groups: Record<string, IToken[]> },
+  tks: Tk[],
+): void {
+  // Comments are in the "comment" group (LineComment, BlockComment, UnterminatedBlockComment)
+  for (const tok of lexResult.groups["comment"] ?? []) {
+    const from = tok.startOffset;
+    const to = (tok.endOffset ?? tok.startOffset) + 1;
+    tks.push({ from, to, m: mComment });
   }
 
-  const code = ci >= 0 ? text.slice(0, ci) : text;
-
-  // := definition and substitution operator
-  let q = code.indexOf(":=");
-  while (q >= 0) {
-    tks.push({ from: lineFrom + q, to: lineFrom + q + 2, m: mOp });
-    q = code.indexOf(":=", q + 2);
-  }
-
-  // π print marker and ≡ equiv marker
-  if (code.trimStart().startsWith("π")) {
-    const pi = code.indexOf("π");
-    tks.push({ from: lineFrom + pi, to: lineFrom + pi + 1, m: mPi });
-  }
-  if (code.trimStart().startsWith("≡")) {
-    const eq = code.indexOf("≡");
-    tks.push({ from: lineFrom + eq, to: lineFrom + eq + 1, m: mPi });
-  }
-
-  // λ/\ keyword + scan ahead for . body separator
-  for (let i = 0; i < code.length; i++) {
-    if (code[i] === "λ" || code[i] === "\\") {
-      tks.push({ from: lineFrom + i, to: lineFrom + i + 1, m: mLambda });
-      let j = i + 1;
-      while (j < code.length && /[\w'\s]/.test(code[j])) j++;
-      if (code[j] === ".")
-        tks.push({ from: lineFrom + j, to: lineFrom + j + 1, m: mOp });
-    }
+  // Structural tokens from the main token stream
+  for (const tok of lexResult.tokens) {
+    const from = tok.startOffset;
+    const to = (tok.endOffset ?? tok.startOffset) + 1;
+    if (tok.tokenType === PragmaLine)
+      tks.push({ from, to, m: mPragma });
+    else if (tokenMatcher(tok, DefAssign) || tokenMatcher(tok, Dot))
+      tks.push({ from, to, m: mOp });
+    else if (tokenMatcher(tok, Backslash))
+      tks.push({ from, to, m: mLambda });
+    else if (tok.tokenType === Pi || tok.tokenType === Equiv)
+      tks.push({ from, to, m: mPi });
   }
 }
 
@@ -116,51 +118,9 @@ function buildDecorations(view: EditorView): DecorationSet {
   const parsed = view.state.field(parsedField);
   const tks: Tk[] = [];
 
-  // Block comment ranges (#* ... *#) — mark before per-line scan
   const fullText = doc.toString();
-  const blockCommentRanges: { from: number; to: number }[] = [];
-  // Terminated block comments
-  const bcRe = /#\*[\s\S]*?\*#/g;
-  let bcm: RegExpExecArray | null;
-  while ((bcm = bcRe.exec(fullText)) !== null)
-    blockCommentRanges.push({ from: bcm.index, to: bcm.index + bcm[0].length });
-  // Unterminated block comment: first #* not already inside a terminated range
-  const utRe = /#\*/g;
-  while ((bcm = utRe.exec(fullText)) !== null) {
-    const pos = bcm.index;
-    if (!blockCommentRanges.some(r => pos >= r.from && pos < r.to)) {
-      blockCommentRanges.push({ from: pos, to: fullText.length });
-      break;
-    }
-  }
-
-  function inBlock(pos: number) {
-    return blockCommentRanges.some(r => pos >= r.from && pos < r.to);
-  }
-
-  // Structural tokens (comments, operators, λ) — scan full document
-  for (let n = 1; n <= doc.lines; n++) {
-    const line = doc.line(n);
-    // Check if entire line is within a block comment
-    if (line.from < line.to && inBlock(line.from)) {
-      // Find the extent of this block comment on this line
-      const r = blockCommentRanges.find(r => line.from >= r.from && line.from < r.to)!;
-      tks.push({ from: line.from, to: Math.min(r.to, line.to), m: mComment });
-      continue;
-    }
-    // Check if a block comment starts on this line
-    const bcOnLine = blockCommentRanges.find(r => r.from >= line.from && r.from < line.to);
-    if (bcOnLine) {
-      scanStructural(line.text.slice(0, bcOnLine.from - line.from), line.from, tks);
-      tks.push({ from: bcOnLine.from, to: Math.min(bcOnLine.to, line.to), m: mComment });
-      // content after *# on the same line (if any) is handled by next iteration or scanStructural
-      const afterClose = bcOnLine.to;
-      if (afterClose < line.to)
-        scanStructural(line.text.slice(afterClose - line.from), afterClose, tks);
-      continue;
-    }
-    scanStructural(line.text, line.from, tks);
-  }
+  const lexResult = LambdaLexer.tokenize(fullText);
+  applyTokenDecorations(lexResult, tks);
 
   // AST-based identifier highlighting
   if (parsed) {

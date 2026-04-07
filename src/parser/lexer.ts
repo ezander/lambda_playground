@@ -3,6 +3,48 @@ import { createToken, Lexer } from "chevrotain";
 // Category token for any identifier-like token (plain or backtick-quoted)
 export const IdentifierLike = createToken({ name: "IdentifierLike", pattern: Lexer.NA });
 
+// Block comments: #* ... *# (terminated) and #* ... EOF (unterminated).
+// Must come before PragmaLine and LineComment so #* wins over #! and #.
+export const BlockComment = createToken({
+  name: "BlockComment",
+  pattern: /#\*[\s\S]*?\*#/,
+  line_breaks: true,
+  group: "comment",
+});
+
+export const UnterminatedBlockComment = createToken({
+  name: "UnterminatedBlockComment",
+  pattern: /#\*[\s\S]*/,
+  line_breaks: true,
+  group: "comment",
+});
+
+// Pragma directive (#! ...) — before LineComment so #! wins over #.
+// No group: pragmas are language constructs that appear in the main token stream.
+export const PragmaLine = createToken({
+  name: "PragmaLine",
+  pattern: /#![^\n]*/,
+});
+
+// Line comment: # until end of line — after PragmaLine so #! does not fall here.
+// group: "comment" keeps comments accessible for syntax highlighting but out of the parser stream.
+export const LineComment = createToken({
+  name: "LineComment",
+  pattern: /#[^\n]*/,
+  group: "comment",
+});
+
+// Whitespace: spaces and tabs only — newlines are significant statement separators.
+export const WhiteSpace = createToken({
+  name: "WhiteSpace",
+  pattern: /[^\S\n]+/,
+  group: Lexer.SKIPPED,
+});
+
+// Statement separators
+export const NewLine = createToken({ name: "NewLine", pattern: /\r?\n/ });
+export const Semi    = createToken({ name: "Semi",    pattern: /;/    });
+
 // Tokens — order matters: more specific / longer patterns first
 export const Backslash  = createToken({ name: "Backslash",  pattern: /\\|λ/ });
 export const Pi         = createToken({ name: "Pi",         pattern: /π/ });
@@ -12,19 +54,19 @@ export const LParen     = createToken({ name: "LParen",     pattern: /\(/ });
 export const RParen     = createToken({ name: "RParen",     pattern: /\)/ });
 export const LBracket   = createToken({ name: "LBracket",   pattern: /\[/ });
 export const RBracket   = createToken({ name: "RBracket",   pattern: /\]/ });
+export const LBrace     = createToken({ name: "LBrace",     pattern: /\{/ });
+export const RBrace     = createToken({ name: "RBrace",     pattern: /\}/ });
+export const Comma      = createToken({ name: "Comma",      pattern: /,/  });
 
 // Reserved Greek letters — not valid as standalone identifiers.
-// Put before Identifier so that bare α/β/η lex as these tokens (same-length tie goes to first
-// in allTokens). Longer sequences like αx still lex as Identifier (longer match always wins).
 export const Alpha = createToken({ name: "Alpha", pattern: /α/ });
 export const Beta  = createToken({ name: "Beta",  pattern: /β/ });
 export const Eta   = createToken({ name: "Eta",   pattern: /η/ });
 
 // Reserved logic symbols — not valid as identifiers (future syntax: types, assertions, proofs).
-// Same tie-breaking strategy as Alpha/Beta/Eta.
-export const ForAll   = createToken({ name: "ForAll",   pattern: /∀/ });
-export const Exists   = createToken({ name: "Exists",   pattern: /∃/ });
-export const Equiv    = createToken({ name: "Equiv",    pattern: /≡/ });
+export const ForAll    = createToken({ name: "ForAll",    pattern: /∀/ });
+export const Exists    = createToken({ name: "Exists",    pattern: /∃/ });
+export const Equiv     = createToken({ name: "Equiv",     pattern: /≡/ });
 export const Turnstile = createToken({ name: "Turnstile", pattern: /⊢/ });
 
 // Backtick-quoted identifier: `anything except backtick and newline`
@@ -35,16 +77,9 @@ export const BacktickIdent = createToken({
 });
 
 // Free logic/math symbols usable as identifier characters.
-// Arrows block U+2190-21FF (→↔ etc.) is safe wholesale — no reserved symbols there.
-// Math Operators block U+2200-22FF has reserved symbols (∀∃≡⊢), so list free ones individually:
-//   ∅=U+2205, ∘=U+2218, ∧=U+2227, ∨=U+2228, ≠=U+2260, ⊕=U+2295, ⊗=U+2297, ⊤=U+22A4, ⊥=U+22A5
-// Also ¬=U+00AC.
 const LOGIC_FREE = /[\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 // Mixed charset: alphanumeric/Greek + operator chars + free logic symbols.
-// An identifier is either alphanumeric-starting or operator-starting, but both may freely mix
-// alphanumeric and operator chars after the first character — so +3, 3+3, a+b are all one token.
-// Note: : is excluded so := is never consumed as part of an identifier.
 const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 export const OperatorIdent = createToken({
@@ -61,24 +96,15 @@ export const Identifier = createToken({
   categories: [IdentifierLike],
 });
 
-// Whitespace: skipped
-export const WhiteSpace = createToken({
-  name: "WhiteSpace",
-  pattern: /\s+/,
-  group: Lexer.SKIPPED,
-});
-
-// Line comment: # until end of line, skipped
-export const LineComment = createToken({
-  name: "LineComment",
-  pattern: /#[^\n]*/,
-  group: Lexer.SKIPPED,
-});
-
 export const allTokens = [
-  LineComment,      // before WhiteSpace so # is matched first
-  WhiteSpace,
-  DefAssign,        // := before Dot so := isn't split into : + .  (: isn't a token but safer)
+  BlockComment,             // before PragmaLine, LineComment (so #* wins over #! and #)
+  UnterminatedBlockComment, // before LineComment (so unterminated #* wins over #)
+  PragmaLine,               // before LineComment (#! wins over #)
+  LineComment,              // after pragma
+  WhiteSpace,               // skip spaces/tabs (not newlines)
+  NewLine,                  // significant statement separator
+  Semi,                     // significant statement separator
+  DefAssign,                // := before Dot so := isn't split into : + =
   Dot,
   Backslash,
   Pi,
@@ -88,6 +114,9 @@ export const allTokens = [
   RParen,
   LBracket,
   RBracket,
+  LBrace,
+  RBrace,
+  Comma,
   BacktickIdent,    // before Identifier so backtick pattern takes priority
   OperatorIdent,    // before Identifier (disjoint charsets, but explicit ordering)
   Identifier,
