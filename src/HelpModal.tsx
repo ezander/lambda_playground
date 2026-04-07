@@ -81,15 +81,16 @@ type Tab = "language" | "editing" | "grammar";
 
 export function HelpModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("language");
-  const [diagramHtml, setDiagramHtml] = useState<string | null>(null);
+  const [diagramHtml, setDiagramHtml] = useState<string | null>(null); // cached after first generation
 
   const handleShowDiagrams = () => {
-    if (!diagramHtml) {
-      const html = createSyntaxDiagramsCode(
-        parser.getSerializedGastProductions() as any
-      );
-      setDiagramHtml(html);
-    }
+    const html = diagramHtml ?? createSyntaxDiagramsCode(
+      parser.getSerializedGastProductions() as any
+    );
+    if (!diagramHtml) setDiagramHtml(html);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener");
   };
 
   // close on Escape
@@ -210,29 +211,15 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         {/* ── Grammar tab ── */}
         {tab === "grammar" && <>
-          <p>Complete grammar as defined in the Chevrotain parser:</p>
-
-          <h3>EBNF</h3>
-          <pre className="help-ebnf">{generateEBNF()}</pre>
-
-          <h3>railroad diagrams</h3>
-          <p style={{ marginBottom: "0.5rem" }}>
-            Interactive diagrams (rendered via{" "}
-            <a href="https://chevrotain.io" target="_blank" rel="noopener noreferrer">chevrotain.io</a>;
-            requires internet access to load styles):
-          </p>
-          {!diagramHtml && (
-            <button className="help-diagrams-btn" onClick={handleShowDiagrams}>
-              Load railroad diagrams
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <p style={{ margin: 0 }}>Complete grammar in EBNF notation:</p>
+            <button className="help-diagrams-btn" onClick={handleShowDiagrams}
+              title="Interactive railroad diagrams via chevrotain.io — opens in a new tab">
+              Railroad diagrams ↗
             </button>
-          )}
-          {diagramHtml && (
-            <iframe
-              srcDoc={diagramHtml}
-              className="help-diagrams-frame"
-              title="Grammar railroad diagrams"
-            />
-          )}
+          </div>
+
+          <pre className="help-ebnf">{generateEBNF()}</pre>
         </>}
       </div>
     </div>

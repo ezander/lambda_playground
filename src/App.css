@@ -1029,13 +1029,6 @@ label {
 }
 .help-diagrams-btn:hover { color: var(--text); border-color: var(--muted); }
 
-.help-diagrams-frame {
-  width: 100%;
-  height: 600px;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-}
-
 
 /* ── Autocomplete tooltip ── */
 .cm-tooltip-autocomplete {
