@@ -77,7 +77,7 @@ function generateEBNF(): string {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-type Tab = "language" | "editing" | "grammar";
+type Tab = "language" | "editing" | "grammar" | "credits";
 
 export function HelpModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("language");
@@ -108,6 +108,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <button className={`help-tab-btn${tab === "language" ? " active" : ""}`} onClick={() => setTab("language")}>Language</button>
           <button className={`help-tab-btn${tab === "editing"  ? " active" : ""}`} onClick={() => setTab("editing")}>UI &amp; editing</button>
           <button className={`help-tab-btn${tab === "grammar"  ? " active" : ""}`} onClick={() => setTab("grammar")}>Grammar</button>
+          <button className={`help-tab-btn${tab === "credits"  ? " active" : ""}`} onClick={() => setTab("credits")}>Credits</button>
         </div>
 
         {/* ── Language tab ── */}
@@ -220,6 +221,36 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <pre className="help-ebnf">{generateEBNF()}</pre>
+        </>}
+
+        {/* ── Credits tab ── */}
+        {tab === "credits" && <>
+          <table className="help-table"><tbody>
+            <tr><td><a href="https://react.dev" target="_blank" rel="noopener noreferrer">React</a></td><td>UI framework</td></tr>
+            <tr><td><a href="https://chevrotain.io" target="_blank" rel="noopener noreferrer">Chevrotain</a></td><td>lexer &amp; parser</td></tr>
+            <tr><td><a href="https://codemirror.net" target="_blank" rel="noopener noreferrer">CodeMirror 6</a></td><td>editor</td></tr>
+            <tr><td><a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">Vite</a></td><td>build tool &amp; dev server</td></tr>
+            <tr><td><a href="https://vitest.dev" target="_blank" rel="noopener noreferrer">Vitest</a></td><td>unit testing</td></tr>
+            <tr><td><a href="https://www.typescriptlang.org" target="_blank" rel="noopener noreferrer">TypeScript</a></td><td>language</td></tr>
+            <tr><td><a href="https://github.com/pieroxy/lz-string" target="_blank" rel="noopener noreferrer">lz-string</a></td><td>URL compression for sharing</td></tr>
+            <tr><td><a href="https://stuk.github.io/jszip" target="_blank" rel="noopener noreferrer">JSZip</a></td><td>zip export</td></tr>
+            <tr><td><a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a></td><td>icons</td></tr>
+          </tbody></table>
+
+          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
+            Concept, design &amp; direction —{" "}
+            <a href="https://github.com/ezander/" target="_blank" rel="noopener noreferrer">Elmar Zander</a>
+</p>
+
+          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
+            Built with assistance from{" "}
+            <a href="https://claude.ai" target="_blank" rel="noopener noreferrer">Claude</a>{" "}
+            (Anthropic)
+            {" · "}
+            <a href="https://github.com/ezander/lambda_playground" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+            {" · "}
+            <a href="https://github.com/ezander/lambda_playground/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
+          </p>
         </>}
       </div>
     </div>
