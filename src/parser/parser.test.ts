@@ -519,6 +519,24 @@ describe("include system", () => {
     expect(r.printInfos).toHaveLength(0);
     expect(r.defs.has("x")).toBe(true);
   });
+
+  it("parent max-steps pragma does not affect included file", () => {
+    // not(not(true)) takes several steps — would fail with max-steps=1 but include ignores parent pragmas
+    const bools = "true := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
+    const res = (path: string) => path === "sys/Bools" ? bools : null;
+    const r = parseProgram("#! max-steps=1\n#! include \"sys/Bools\"\n", {}, res);
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("not")).toBe(true);
+  });
+
+  it("included file max-steps pragma does not affect parent", () => {
+    // included file sets max-steps=1; parent's π should still normalize not(not(true))
+    const bools = "#! max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
+    const res = (path: string) => path === "sys/Bools" ? bools : null;
+    const r = parseProgram("#! include \"sys/Bools\"\nπ not (not true)\n", {}, res);
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].normal).toBe(true);
+  });
 });
 
 // ── comprehension ─────────────────────────────────────────────────────────────
