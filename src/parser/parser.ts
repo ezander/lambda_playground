@@ -231,7 +231,7 @@ const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 // Returned by the AST visitor for the program-level rules.
 // Semantic analysis (in parseProgram) converts these to ProgramResult.
 
-type RawBinding  = { name: string; termValues: Term[] };
+type RawBinding  = { name: string; nameTok: IToken; termValues: Term[] };
 type RawEmpty    = { kind: "empty" };
 type RawPragma   = { kind: "pragma"; text: string; offset: number };
 type RawDef      = { kind: "def"; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
@@ -326,7 +326,7 @@ class AstBuilder extends BaseCstVisitor {
   compBinding(ctx: any): RawBinding {
     const nameTok = (ctx.Identifier as IToken[])[0];
     const termValues = (ctx.term ?? []).map((t: CstNode) => this.visit(t) as Term);
-    return { name: tokenName(nameTok), termValues };
+    return { name: tokenName(nameTok), nameTok, termValues };
   }
 
   // ── Term-level visitors ────────────────────────────────────────────────────
@@ -532,7 +532,7 @@ export type ProgramResult = {
   expr: Term | null;
   rawExpr: Term | null;
   defInfos:   DefInfo[];
-  exprInfos:  { term: Term; positions: PositionMap }[];
+  exprInfos:  { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[] }[];
   printInfos: { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
   equivInfos: EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
@@ -691,9 +691,34 @@ export function parseProgram(
   // Shared positions map (accumulated across all statements during the visitor pass above)
   const globalPositions = astBuilder.positions;
 
+  // Helper: extract bound names and declaration positions from comprehension bindings.
+  const compBindingHighlight = (bindings: RawBinding[] | null) => bindings ? {
+    boundNames:     new Set(bindings.map(b => b.name)),
+    paramPositions: bindings.map(b => ({ from: b.nameTok.startOffset, to: (b.nameTok.endOffset ?? b.nameTok.startOffset) + 1 })),
+  } : {};
+
   // ── Semantic analysis ──────────────────────────────────────────────────────
   for (const stmt of stmts) {
-    if (equivFailed.value) continue;
+    if (equivFailed.value) {
+      // Execution stopped, but still collect terms for syntax highlighting.
+      switch (stmt.kind) {
+        case "def":
+          defInfos.push({ name: stmt.name, namePos: { from: stmt.nameTok.startOffset, to: (stmt.nameTok.endOffset ?? stmt.nameTok.startOffset) + 1 }, body: stmt.rawBody, positions: globalPositions });
+          break;
+        case "print":
+          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
+          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          break;
+        case "equiv":
+          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
+          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          break;
+        case "expr":
+          exprInfos.push({ term: stmt.term, positions: globalPositions });
+          break;
+      }
+      continue;
+    }
 
     switch (stmt.kind) {
       case "empty":
@@ -788,7 +813,8 @@ export function parseProgram(
             values: expandedBindings[bi].valueSrcs,
           }));
           printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows, offset: stmt.offset, line: currentLine });
-          exprInfos.push({ term: stmt.term, positions: globalPositions });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
+          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
         } else {
           // ── regular π ────────────────────────────────────────────────────
           const expanded = expandDefs(stmt.term, defs);
@@ -861,7 +887,8 @@ export function parseProgram(
           }));
           equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, offset: stmt.offset, line: currentLine });
           if (!allPassed) equivFailed.value = true;
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions });
+          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
+          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
         } else {
           // ── regular ≡ ─────────────────────────────────────────────────────
           const t1 = expandDefs(stmt.atom1, defs);

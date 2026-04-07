@@ -133,8 +133,11 @@ function buildDecorations(view: EditorView): DecorationSet {
       knownDefs.add(name);
     }
 
-    for (const { term, positions } of parsed.exprInfos)
-      walkTerm(term, positions, allDefNames, new Set(), tks);
+    for (const { term, positions, boundNames, paramPositions } of parsed.exprInfos) {
+      for (const pos of paramPositions ?? [])
+        tks.push({ from: pos.from, to: pos.to, m: mParam });
+      walkTerm(term, positions, allDefNames, boundNames ?? new Set(), tks);
+    }
   }
 
   tks.sort((a, b) => a.from - b.from || a.to - b.to);
