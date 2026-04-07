@@ -786,6 +786,53 @@ label {
 .equiv-pass { color: var(--ok); }
 .equiv-fail { color: var(--warn); }
 
+/* ── Comprehension rows ── */
+.comp-spec {
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
+.comp-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.comp-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.comp-bullet {
+  color: var(--muted);
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  line-height: 1.5;
+  user-select: none;
+  position: relative;
+  top: -0.35em;
+}
+
+.comp-row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.comp-subst-expr {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* ── History ── */
 .history-section {
   display: flex;

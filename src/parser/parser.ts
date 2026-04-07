@@ -287,6 +287,44 @@ export type EquivInfo = {
   offset: number; line: number;
 };
 
+export type ComprehensionBinding = { name: string; values: string[] };
+
+export type PrintComprehensionRow = {
+  substExpr: string;  // e.g. "(and a b)[a:=true, b:=false]"
+  result: string;
+  normal: boolean;
+  steps: number;
+  size?: number;
+  match?: string;
+};
+
+export type PrintComprehensionInfo = {
+  src: string;
+  bindings: ComprehensionBinding[];
+  rows: PrintComprehensionRow[];
+  offset: number;
+  line: number;
+};
+
+export type EquivComprehensionRow = {
+  substExpr1: string;
+  substExpr2: string;
+  norm1: string;
+  norm2: string;
+  equivalent: boolean;
+  terminated: boolean;
+};
+
+export type EquivComprehensionInfo = {
+  src1: string;
+  src2: string;
+  bindings: ComprehensionBinding[];
+  rows: EquivComprehensionRow[];
+  allPassed: boolean;
+  offset: number;
+  line: number;
+};
+
 export type ProgramResult = {
   ok: boolean;
   errors: LambdaError[];
@@ -300,6 +338,9 @@ export type ProgramResult = {
   printInfos: { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
   // ≡ equivalence assertions:
   equivInfos: EquivInfo[];
+  // comprehension forms:
+  printComprehensionInfos: PrintComprehensionInfo[];
+  equivComprehensionInfos: EquivComprehensionInfo[];
   pragmaConfig: PragmaConfig;
 };
 
@@ -326,6 +367,59 @@ function cachedParseInclude(
   return result;
 }
 
+// ── Comprehension spec parser ─────────────────────────────────────────────────
+// Parses `[a:={v1,v2,...}, b:={...}]` from the start of `text`.
+// Returns bindings + rest of text after the `]`, or null if not a valid spec.
+function parseComprehensionSpec(text: string): { bindings: ComprehensionBinding[]; rest: string; consumed: number } | null {
+  if (!text.startsWith("[")) return null;
+  // Find closing ] while tracking {} to skip their content
+  let depth = 0, inBrace = false, i = 0;
+  for (; i < text.length; i++) {
+    if (text[i] === "{") { inBrace = true; continue; }
+    if (text[i] === "}") { inBrace = false; continue; }
+    if (inBrace) continue;
+    if (text[i] === "[") depth++;
+    else if (text[i] === "]") { depth--; if (depth === 0) break; }
+  }
+  if (i >= text.length || depth !== 0) return null;
+  const inside = text.slice(1, i);
+  const afterBracket = text.slice(i + 1);
+  const rest = afterBracket.trimStart();
+  const consumed = i + 1 + (afterBracket.length - rest.length);
+  // Parse: name:={val,...} pairs
+  const bindings: ComprehensionBinding[] = [];
+  const re = /([^\s:=,{}\[\]]+)\s*:=\s*\{([^}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(inside)) !== null) {
+    const vals = m[2].split(",").map((v: string) => v.trim()).filter((v: string) => v.length > 0);
+    if (vals.length === 0) return null;
+    bindings.push({ name: m[1].trim(), values: vals });
+  }
+  if (bindings.length === 0) return null;
+  // Check nothing unexpected remains
+  const leftover = inside.replace(/([^\s:=,{}\[\]]+)\s*:=\s*\{([^}]*)\}/g, "").replace(/[\s,]/g, "");
+  if (leftover.length > 0) return null;
+  return { bindings, rest, consumed };
+}
+
+// Cartesian product: cartesian([["a","b"],["x","y"]]) → [["a","x"],["a","y"],["b","x"],["b","y"]]
+function cartesian<T>(arrays: T[][]): T[][] {
+  return arrays.reduce<T[][]>(
+    (acc, arr) => acc.flatMap(prev => arr.map(val => [...prev, val])),
+    [[]]
+  );
+}
+
+// Apply sequential substitutions T[name_0:=v0][name_1:=v1]... by building App(Abs(...)) chains
+function applySubsts(term: Term, substs: { name: string; value: Term }[]): Term {
+  return substs.reduce((inner, { name, value }) => App(Abs(name, inner), value), term);
+}
+
+// Format a multi-subst expression string: "(src)[a:=v1, b:=v2]"
+function formatSubstExpr(src: string, substs: { name: string; value: string }[]): string {
+  return `(${src})[${substs.map(s => `${s.name}:=${s.value}`).join(", ")}]`;
+}
+
 export function parseProgram(
   input: string,
   defaultConfig: ProgramRunConfig = {},
@@ -340,6 +434,8 @@ export function parseProgram(
   const exprInfos:  { term: Term; positions: PositionMap }[] = [];
   const printInfos: ProgramResult["printInfos"] = [];
   const equivInfos: EquivInfo[] = [];
+  const printComprehensionInfos: PrintComprehensionInfo[] = [];
+  const equivComprehensionInfos: EquivComprehensionInfo[] = [];
   const pragmaConfig: PragmaConfig = {};
   // Strip block comments (#* ... *#), preserving newlines so offsets stay correct.
   // First pass: terminated comments; second pass: unterminated comment to end of file.
@@ -411,6 +507,116 @@ export function parseProgram(
       lineOffset += rawLine.length + 1;
       continue;
     }
+    // ── Pre-tokenization comprehension detection ──────────────────────────────
+    // Must happen before LambdaLexer.tokenize because { and } are not lex tokens.
+    {
+      const trimmed = rawLine.trimStart();
+      const leadingSpace = rawLine.length - trimmed.length;
+      const isPi    = trimmed.startsWith("π");
+      const isEquiv = !isPi && trimmed.startsWith("≡");
+      if (isPi || isEquiv) {
+        const afterFirst    = trimmed.slice(1);              // may have space before [
+        const afterTrimmed  = afterFirst.trimStart();
+        const interSpace    = afterFirst.length - afterTrimmed.length;
+        const spec = parseComprehensionSpec(afterTrimmed);
+        if (spec) {
+          const exprOffset = lineOffset + leadingSpace + 1 + interSpace + spec.consumed;
+          const exprSrc    = spec.rest;
+          const currentLine = input.slice(0, lineOffset).split("\n").length;
+
+          if (!exprSrc) {
+            errors.push({ message: `${isPi ? "π" : "≡"} comprehension: missing expression after spec`, offset: lineOffset });
+          } else if (isPi) {
+            // ── π comprehension ──────────────────────────────────────────────
+            const exprResult = parse(exprSrc, exprOffset);
+            if (!exprResult.ok) {
+              errors.push(...exprResult.errors);
+            } else {
+              const merged = { ...defaultConfig, ...pragmaConfig };
+              const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize };
+              const bindingNames = new Set(spec.bindings.map(b => b.name));
+              const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
+              const expandedBase = expandDefs(exprResult.term, defsFiltered);
+              const baseSrc = prettyPrint(exprResult.term);
+              const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize });
+              const parsedValues: (Term | null)[][] = spec.bindings.map(b =>
+                b.values.map(v => { const r = parse(v, exprOffset); return r.ok ? expandDefs(r.term, defsFiltered) : null; })
+              );
+              const valueCombos = cartesian(spec.bindings.map((b, bi) =>
+                b.values.map((v, vi) => ({ name: b.name, valueSrc: v, valueTerm: parsedValues[bi][vi] }))
+              ));
+              const rows: PrintComprehensionRow[] = [];
+              for (const combo of valueCombos) {
+                if (combo.some(c => c.valueTerm === null)) continue;
+                const wrappedTerm = applySubsts(expandedBase, combo.map(c => ({ name: c.name, value: c.valueTerm! })));
+                const runResult = normalize(wrappedTerm, cfg);
+                const { term: normalizedTerm, kind, steps } = runResult;
+                rows.push({
+                  substExpr: formatSubstExpr(baseSrc, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
+                  result:    prettyPrint(normalizedTerm),
+                  normal:    kind === "normalForm",
+                  steps,
+                  size:      kind === "sizeLimit" ? runResult.size : undefined,
+                  match:     kind === "normalForm" ? findMatch(normalizedTerm, nd) : undefined,
+                });
+              }
+              printComprehensionInfos.push({ src: baseSrc, bindings: spec.bindings, rows, offset: lineOffset, line: currentLine });
+              exprInfos.push({ term: exprResult.term, positions: exprResult.positions });
+            }
+          } else {
+            // ── ≡ comprehension ──────────────────────────────────────────────
+            const result = parse(exprSrc, exprOffset);
+            if (!result.ok) {
+              errors.push(...result.errors);
+            } else if (result.term.kind !== "App") {
+              errors.push({ message: "≡ comprehension requires two terms, e.g. ≡[a:={true,false}] (f a) (g a)", offset: lineOffset });
+            } else {
+              const merged = { ...defaultConfig, ...pragmaConfig };
+              const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize };
+              const bindingNames = new Set(spec.bindings.map(b => b.name));
+              const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
+              const baseT1 = expandDefs(result.term.func, defsFiltered);
+              const baseT2 = expandDefs(result.term.arg,  defsFiltered);
+              const src1 = prettyPrint(result.term.func);
+              const src2 = prettyPrint(result.term.arg);
+              const parsedValues: (Term | null)[][] = spec.bindings.map(b =>
+                b.values.map(v => { const r = parse(v, exprOffset); return r.ok ? expandDefs(r.term, defsFiltered) : null; })
+              );
+              const valueCombos = cartesian(spec.bindings.map((b, bi) =>
+                b.values.map((v, vi) => ({ name: b.name, valueSrc: v, valueTerm: parsedValues[bi][vi] }))
+              ));
+              const rows: EquivComprehensionRow[] = [];
+              let allPassed = true;
+              for (const combo of valueCombos) {
+                if (combo.some(c => c.valueTerm === null)) continue;
+                const substs = combo.map(c => ({ name: c.name, value: c.valueTerm! }));
+                const w1 = applySubsts(baseT1, substs);
+                const w2 = applySubsts(baseT2, substs);
+                const r1 = normalize(w1, cfg);
+                const r2 = normalize(w2, cfg);
+                const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
+                const equivalent = terminated && alphaEq(r1.term, r2.term);
+                if (!equivalent) allPassed = false;
+                rows.push({
+                  substExpr1: formatSubstExpr(src1, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
+                  substExpr2: formatSubstExpr(src2, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
+                  norm1: prettyPrint(r1.term),
+                  norm2: prettyPrint(r2.term),
+                  equivalent,
+                  terminated,
+                });
+              }
+              equivComprehensionInfos.push({ src1, src2, bindings: spec.bindings, rows, allPassed, offset: lineOffset, line: currentLine });
+              if (!allPassed) equivFailed = true;
+              exprInfos.push({ term: result.term, positions: result.positions });
+            }
+          }
+          lineOffset += rawLine.length + 1;
+          continue;
+        }
+      }
+    }
+
     const { tokens, errors: lexErrors } = LambdaLexer.tokenize(rawLine);
     if (lexErrors.length > 0) {
       errors.push(...lexErrors.map((e) => ({
@@ -422,10 +628,11 @@ export function parseProgram(
     }
     if (tokens.length === 0) { lineOffset += rawLine.length + 1; continue; }
 
-    // ── π print statement ──────────────────────────────────────────────────────
+    // ── π print statement ─────────────────────────────────────────────────────
     if (tokens[0]?.tokenType === Pi) {
-      const rest = rawLine.slice(tokens[0].endOffset! + 1);
-      const result = parse(rest, lineOffset + tokens[0].endOffset! + 1);
+      const piEnd = tokens[0].endOffset! + 1;
+      const rest = rawLine.slice(piEnd);
+      const result = parse(rest, lineOffset + piEnd);
       if (!result.ok) {
         errors.push(...result.errors);
       } else {
@@ -452,8 +659,9 @@ export function parseProgram(
 
     // ── ≡ equivalence assertion ────────────────────────────────────────────────
     if (tokens[0]?.tokenType === Equiv) {
-      const rest = rawLine.slice(tokens[0].endOffset! + 1);
-      const result = parse(rest, lineOffset + tokens[0].endOffset! + 1);
+      const eqEnd = tokens[0].endOffset! + 1;
+      const rest = rawLine.slice(eqEnd);
+      const result = parse(rest, lineOffset + eqEnd);
       if (!result.ok) {
         errors.push(...result.errors);
       } else if (result.term.kind !== "App") {
@@ -573,5 +781,5 @@ export function parseProgram(
     lineOffset += rawLine.length + 1;
   }
 
-  return { ok: errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos, equivInfos, pragmaConfig };
+  return { ok: !equivFailed && errors.filter(e => e.kind !== "warning").length === 0, errors, defs, expr, rawExpr, defInfos, exprInfos, printInfos, equivInfos, printComprehensionInfos, equivComprehensionInfos, pragmaConfig };
 }

@@ -520,3 +520,56 @@ describe("include system", () => {
     expect(r.defs.has("x")).toBe(true);
   });
 });
+
+// ── comprehension ─────────────────────────────────────────────────────────────
+
+describe("comprehension", () => {
+  const boolDefs = "true := λx y. x\nfalse := λx y. y\nand := λa b. a b false";
+
+  it("π comprehension produces one row per combination", () => {
+    const r = parseProgram(`${boolDefs}\nπ[a:={true,false}, b:={true,false}] and a b`);
+    expect(r.printComprehensionInfos).toHaveLength(1);
+    const info = r.printComprehensionInfos[0];
+    expect(info.src).toBe("and a b");
+    expect(info.bindings).toHaveLength(2);
+    expect(info.rows).toHaveLength(4);
+    // and true true → true
+    expect(info.rows[0].substExpr).toBe("(and a b)[a:=true, b:=true]");
+    expect(info.rows[0].result).toBe("λx y. x");
+    expect(info.rows[0].normal).toBe(true);
+  });
+
+  it("π comprehension with single binding", () => {
+    const r = parseProgram(`${boolDefs}\nπ[a:={true,false}] a`);
+    expect(r.printComprehensionInfos).toHaveLength(1);
+    expect(r.printComprehensionInfos[0].rows).toHaveLength(2);
+  });
+
+  it("≡ comprehension passes when all equivalent", () => {
+    // not (not x) ≡ x for both true and false
+    const prog = `${boolDefs}\nnot := λb. b false true\n≡[a:={true,false}] (not (not a)) a`;
+    const r = parseProgram(prog);
+    expect(r.equivComprehensionInfos).toHaveLength(1);
+    const info = r.equivComprehensionInfos[0];
+    expect(info.allPassed).toBe(true);
+    expect(info.rows).toHaveLength(2);
+    expect(info.rows.every(row => row.equivalent)).toBe(true);
+  });
+
+  it("≡ comprehension fails and sets equivFailed when not all pass", () => {
+    // a ≡ (not a) — clearly false for both true and false
+    const prog = `${boolDefs}\nnot := λb. b false true\n≡[a:={true,false}] a (not a)`;
+    const r = parseProgram(prog);
+    expect(r.equivComprehensionInfos).toHaveLength(1);
+    expect(r.equivComprehensionInfos[0].allPassed).toBe(false);
+    expect(r.ok).toBe(false); // equivFailed halts processing
+  });
+
+  it("≡ comprehension row substExprs are formatted correctly", () => {
+    const prog = `${boolDefs}\n≡[a:={true,false}] (and a a) a`;
+    const r = parseProgram(prog);
+    const rows = r.equivComprehensionInfos[0].rows;
+    expect(rows[0].substExpr1).toBe("(and a a)[a:=true]");
+    expect(rows[0].substExpr2).toBe("(a)[a:=true]");
+  });
+});

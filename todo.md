@@ -82,8 +82,10 @@
 ## Up next
 
 * [x] export/import facility via zip-file of all user programs (selective import?) ← export all named buffers to zip, import with selective checkbox dialog, conflict highlighting
-* [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
-
+* [x] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables) ← also ≡[...] comprehension
+* [ ] bug: no error shown when equiv failed in include, needs to be bubbled up
+* [ ] no `` when it's an operator symbol inside, only for symbols we like space, or what we usually don't allow as identifiers
+* [ ] what happens in import when the current buffer is overwritten and/or in modified state
 
 
 
@@ -94,7 +96,7 @@
 * [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 * [ ] maybe add a draggable slider between editor and right panels in kino mode
-* [ ] output expressions: highlighting, inline output, manual reductions
+* [ ] output expressions: term highlighting (like in the editor), possibility for inline output (as "widgets" directly in the editor via codemirror plugins), manual reductions (just a thought)
 
 ## For later
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig, EquivInfo } from "./parser/parser";
+import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
@@ -807,12 +807,16 @@ export default function App() {
         {/* ── Print panel ── */}
         <Panel label="output" open={printOpen} onToggle={togglePrint}
           headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
-          {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0) ? (() => {
-            type PrintItem = { kind: "print"; data: typeof programResult.printInfos[number] };
-            type EquivItem = { kind: "equiv"; data: EquivInfo };
-            const items: (PrintItem | EquivItem)[] = [
+          {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0 || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0) ? (() => {
+            type PrintItem      = { kind: "print";      data: typeof programResult.printInfos[number] };
+            type EquivItem      = { kind: "equiv";      data: EquivInfo };
+            type PrintCompItem  = { kind: "print-comp"; data: PrintComprehensionInfo };
+            type EquivCompItem  = { kind: "equiv-comp"; data: EquivComprehensionInfo };
+            const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem)[] = [
               ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
               ...programResult.equivInfos.filter(d => config.showPassingEquiv || !d.equivalent).map(d => ({ kind: "equiv" as const, data: d })),
+              ...programResult.printComprehensionInfos.map(d => ({ kind: "print-comp" as const, data: d })),
+              ...programResult.equivComprehensionInfos.filter(d => config.showPassingEquiv || d.rows.some(r => !r.equivalent)).map(d => ({ kind: "equiv-comp" as const, data: d })),
             ].sort((a, b) => (printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset));
             return (
               <div className="print-section">
@@ -834,7 +838,7 @@ export default function App() {
                       </span>
                     </code>
                   </div>
-                ) : (
+                ) : item.kind === "equiv" ? (
                   <div key={i} className="print-entry equiv-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
                     <code className="print-src">
                       <span className="print-index">{item.data.line}:</span>
@@ -856,6 +860,73 @@ export default function App() {
                             : <span className="eval-status did-not-terminate">no normal form</span>}
                       </span>
                     </code>
+                  </div>
+                ) : item.kind === "print-comp" ? (
+                  <div key={i} className="print-entry print-comp-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
+                    <code className="print-src">
+                      <span className="print-index">{item.data.line}:</span>
+                      {" π "}{item.data.src}
+                      <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                    </code>
+                    <div className="comp-rows">
+                      {item.data.rows.map((row, ri) => (
+                        <div key={ri} className="comp-row">
+                          <span className="comp-bullet">•</span>
+                          <div className="comp-row-content">
+                            <code className="comp-subst-expr">{row.substExpr}</code>
+                            <code className="print-result">
+                              <span className="print-result-text"><Truncated text={row.result} /></span>
+                              <span className="print-result-status">
+                                {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
+                                {row.normal
+                                  ? <><span className="eval-status normal-form">normal form</span>{row.steps > 0 && <span className="eval-status normal-form">in {row.steps} steps</span>}</>
+                                  : row.size !== undefined
+                                    ? <span className="eval-status did-not-terminate">exceeded {row.size} nodes after {row.steps} steps</span>
+                                    : <span className="eval-status did-not-terminate">did not terminate in {row.steps} steps</span>}
+                              </span>
+                            </code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={i} className="print-entry equiv-comp-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
+                    <code className="print-src">
+                      <span className="print-index">{item.data.line}:</span>
+                      {" "}{item.data.src1}
+                      <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                      {item.data.src2}
+                      <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                    </code>
+                    <div className="comp-rows">
+                      {item.data.rows.map((row, ri) => (
+                        <div key={ri} className="comp-row">
+                          <span className="comp-bullet">•</span>
+                          <div className="comp-row-content">
+                            <code className="comp-subst-expr">
+                              {row.substExpr1}
+                              <span className={`equiv-op ${row.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                              {row.substExpr2}
+                            </code>
+                            <code className="print-result">
+                              <span className="print-result-text">
+                                <Truncated text={row.norm1} />
+                                <span className={`equiv-op ${row.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                                <Truncated text={row.norm2} />
+                              </span>
+                              <span className="print-result-status">
+                                {row.equivalent
+                                  ? <span className="eval-status normal-form">equivalent</span>
+                                  : row.terminated
+                                    ? <span className="eval-status did-not-terminate">not equivalent</span>
+                                    : <span className="eval-status did-not-terminate">no normal form</span>}
+                              </span>
+                            </code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
