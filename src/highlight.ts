@@ -124,7 +124,7 @@ function buildDecorations(view: EditorView): DecorationSet {
 
   // AST-based identifier highlighting
   if (parsed) {
-    const allDefNames = new Set(parsed.defs.keys());
+    const allDefNames = new Set([...parsed.defs.keys(), ...parsed.defInfos.map(d => d.name)]);
 
     for (const { name, namePos, body, positions } of parsed.defInfos) {
       tks.push({ from: namePos.from, to: namePos.to, m: mDefName });
