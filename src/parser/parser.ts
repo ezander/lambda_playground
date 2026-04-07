@@ -308,6 +308,24 @@ export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number;
 // Resolves an include path (e.g. "sys/Church Booleans") to its source text, or null if not found.
 export type IncludeResolver = (path: string) => string | null;
 
+// Module-level include cache: keyed by path, stores last-seen content + parsed result.
+// On each lookup, content is compared — stale entries are overwritten, missing entries parsed fresh.
+const includeCache = new Map<string, { content: string; result: ProgramResult }>();
+
+function cachedParseInclude(
+  path: string,
+  content: string,
+  defaultConfig: ProgramRunConfig,
+  resolver: IncludeResolver,
+  includeStack: string[],
+): ProgramResult {
+  const cached = includeCache.get(path);
+  if (cached && cached.content === content) return cached.result;
+  const result = parseProgram(content, defaultConfig, resolver, includeStack);
+  includeCache.set(path, { content, result });
+  return result;
+}
+
 export function parseProgram(
   input: string,
   defaultConfig: ProgramRunConfig = {},
@@ -351,7 +369,7 @@ export function parseProgram(
           if (content === null) {
             errors.push({ message: `Include not found: "${path}"`, offset: lineOffset });
           } else {
-            const included = parseProgram(content, defaultConfig, resolver, [..._includeStack, path]);
+            const included = cachedParseInclude(path, content, defaultConfig, resolver, [..._includeStack, path]);
             // Propagate errors with source annotation; a failing ≡ in an include halts the parent too
             for (const e of included.errors)
               errors.push({ ...e, source: e.source ?? path });

@@ -73,21 +73,22 @@
 * [x] we need multiline comments
 * [x] shall we allow ' for identifiers, just to be able to do x'. is it worth it or not?
 * [x] allow e.g. max-steps 10 instead of max-steps=10? or auto-insert? we have this simplified form for truth values
+* [x] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from ← `#! include "sys/..."` / `"user/..."` syntax; isolated; ≡ checked, π silenced; circular detection; errors annotated with source
 
 ## Up next
 
-* [x] consider making an include system maybe also with comments, some standard stuff can be pulled in (boolean, list, numerals, or own stuff, maybe comment syntax #< boolean), maybe `#! include="Church Booleans"` or "sys/Booleans". pulls in only defs, leaves other stuff unevaluated, then each def should track where they come from ← `#! include "sys/..."` / `"user/..."` syntax; isolated; ≡ checked, π silenced; circular detection; errors annotated with source
+* [x] storing parsed/evaluated includes including errors (?) ← module-level cache keyed by path, content-compared on each lookup
 * [ ] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables)
 * [ ] export/import facility via zip-file of all user programs (selective import?)
 
-* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened)
+* [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function)
 
+* [ ] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
+* [ ] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs
 
 
 ## Consider
 
-* [ ] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
-* [ ] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
@@ -95,7 +96,7 @@
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 * [ ] maybe make the default editor just a scratchpad, open other files/stores in tabs? like an ide
 * [ ] maybe add a draggable slider between editor and right panels in kino mode
-
+* [ ] output expressions: highlighting, inline output, manual reductions
 
 ## For later
 
