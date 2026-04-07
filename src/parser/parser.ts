@@ -605,7 +605,12 @@ function processPragma(
     const included = cachedParseInclude(path, content, defaultConfig, resolver, [...includeStack, path]);
     for (const e of included.errors)
       errors.push({ ...e, source: e.source ?? path });
-    if (!included.ok) equivFailed.value = true;
+    if (!included.ok) {
+      equivFailed.value = true;
+      const hasRealErrors = included.errors.some(e => e.kind !== "warning");
+      if (!hasRealErrors)
+        errors.push({ message: `Assertion failed in included file "${path}"`, offset });
+    }
     for (const [name, term] of included.defs) {
       if (defs.has(name)) {
         const oldNorm = normalize(defs.get(name)!).term;

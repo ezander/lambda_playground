@@ -529,6 +529,14 @@ describe("include system", () => {
     expect(r.defs.has("not")).toBe(true);
   });
 
+  it("bubbles up equiv failure from included file as an error", () => {
+    const bad = "true := λx y. x\nfalse := λx y. y\n≡ true false\n";
+    const res = (path: string) => path === "sys/Bad" ? bad : null;
+    const r = parseProgram("#! include \"sys/Bad\"\n", {}, res);
+    expect(r.ok).toBe(false);
+    expect(r.errors.some(e => e.message.match(/assertion failed/i))).toBe(true);
+  });
+
   it("included file max-steps pragma does not affect parent", () => {
     // included file sets max-steps=1; parent's π should still normalize not(not(true))
     const bools = "#! max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
