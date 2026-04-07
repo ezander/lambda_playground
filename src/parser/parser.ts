@@ -331,7 +331,7 @@ export function parseProgram(input: string, defaultConfig: ProgramRunConfig = {}
     // ── #! pragma directive ────────────────────────────────────────────────────
     if (rawLine.trimStart().startsWith("#!")) {
       const text = rawLine.trimStart().slice(2).trim();
-      const m = text.match(/^(no-)?([a-z][a-z0-9-]*)(?:\s*=\s*(true|false|\d+))?\s*$/);
+      const m = text.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
       if (!m) {
         errors.push({ message: `Invalid pragma: "${text}"`, offset: lineOffset, kind: "warning" });
       } else {

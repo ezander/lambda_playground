@@ -411,6 +411,35 @@ describe("block comments", () => {
   });
 });
 
+// ── Pragma value syntax ───────────────────────────────────────────────────────
+
+describe("pragma value syntax", () => {
+  it("accepts = syntax: #! max-steps = 42", () => {
+    const r = parseProgram("#! max-steps = 42");
+    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+  });
+
+  it("accepts space syntax: #! max-steps 42", () => {
+    const r = parseProgram("#! max-steps 42");
+    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+  });
+
+  it("accepts no-space =: #! max-steps=42", () => {
+    const r = parseProgram("#! max-steps=42");
+    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+  });
+
+  it("accepts boolean pragma without value", () => {
+    const r = parseProgram("#! normalize-defs");
+    expect(r.pragmaConfig.normalizeDefs).toBe(true);
+  });
+
+  it("accepts boolean pragma with space value: #! normalize-defs true", () => {
+    const r = parseProgram("#! normalize-defs true");
+    expect(r.pragmaConfig.normalizeDefs).toBe(true);
+  });
+});
+
 // ── Error clickability: every error must carry an offset ─────────────────────
 // Errors without an offset cannot be made clickable in the UI.
 
