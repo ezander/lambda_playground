@@ -104,6 +104,18 @@ function insertAt(view: EditorView, text: string): boolean {
   return true;
 }
 
+// Insert text at the start of the current line (for line-level constructs like π and ≡).
+// If the line already starts with the text, do nothing.
+function insertAtLineStart(view: EditorView, text: string): boolean {
+  const line = view.state.doc.lineAt(view.state.selection.main.head);
+  if (line.text.startsWith(text)) return true;
+  view.dispatch({
+    changes: { from: line.from, insert: text },
+    selection: { anchor: line.from + text.length },
+  });
+  return true;
+}
+
 // ── Greek symbol table ────────────────────────────────────────────────────────
 // Shared by Tab-expansion and the symbol picker in App.tsx.
 
@@ -182,8 +194,8 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "<", run: v => wrapSelection(v, "<", ">") },
   { key: "Alt-l", run: v => insertAt(v, "λ") },
   { key: "Alt-L", run: v => insertAt(v, "λ") },
-  { key: "Alt-p", run: v => insertAt(v, "π") },
-  { key: "Alt-P", run: v => insertAt(v, "π") },
-  { key: "Alt-e", run: v => insertAt(v, "≡") },
-  { key: "Alt-E", run: v => insertAt(v, "≡") },
+  { key: "Alt-p", run: v => insertAtLineStart(v, "π ") },
+  { key: "Alt-P", run: v => insertAtLineStart(v, "π ") },
+  { key: "Alt-e", run: v => insertAtLineStart(v, "≡ ") },
+  { key: "Alt-E", run: v => insertAtLineStart(v, "≡ ") },
 ]));

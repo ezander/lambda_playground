@@ -83,7 +83,7 @@
 
 * [ ] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function)
 
-* [ ] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
+* [x] shall alt-e and alt-p insert equiv and pi at the beginning of the line?
 * [ ] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs
 
 
