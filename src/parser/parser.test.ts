@@ -560,7 +560,7 @@ describe("comprehension", () => {
     expect(info.bindings).toHaveLength(2);
     expect(info.rows).toHaveLength(4);
     // and true true → true
-    expect(info.rows[0].substExpr).toBe("(and a b)[a:=true, b:=true]");
+    expect(info.rows[0].substExpr).toBe("(and a b)[a:=true][b:=true]");
     expect(info.rows[0].result).toBe("λx y. x");
     expect(info.rows[0].normal).toBe(true);
   });
