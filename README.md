@@ -23,7 +23,7 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Named save/load slots in browser local storage; slot picker dropdown; download as plain text
 - Share button: encodes editor content into a URL (LZ-compressed) and copies it to the clipboard
 - Kino (fullscreen) mode for the editor
-- Select text and press `(`, `[`, `{`, or `<` to wrap in brackets
+- Select text and press `(`, `[`, or `{` to wrap in brackets; `` ` `` wraps in backticks (or inserts paired backticks with cursor inside when nothing is selected)
 
 ## Syntax
 
@@ -104,9 +104,12 @@ Below the editor, a compact toolbar provides three groups:
 | Key | Action |
 |-----|--------|
 | `Ctrl-/` | Toggle `#` comment on current line or all selected lines |
-| `( [ { <` with selection | Wrap selected text in the chosen brackets |
+| `( [ {` with selection | Wrap selected text in the chosen brackets |
+| `` ` `` with selection | Wrap selected text in backticks |
+| `` ` `` without selection | Insert paired backticks with cursor inside |
 | `Alt-L` | Insert λ at cursor |
-| `Alt-P` | Insert π at cursor |
+| `Alt-P` | Insert π at start of line |
+| `Alt-E` | Insert ≡ at start of line |
 | `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧); reserved symbols greyed out in picker |
 
 ## Development

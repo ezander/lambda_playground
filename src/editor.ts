@@ -53,9 +53,16 @@ export const lambdaTheme: Extension = EditorView.theme({
 // ── Bracket-wrap keymap ───────────────────────────────────────────────────────
 // When text is selected and a bracket key is pressed, wrap the selection.
 
-function wrapSelection(view: EditorView, open: string, close: string): boolean {
+function wrapSelection(view: EditorView, open: string, close: string, autoClose = false): boolean {
   const { from, to } = view.state.selection.main;
-  if (from === to) return false; // no selection — let default handling proceed
+  if (from === to) {
+    if (!autoClose) return false; // no selection — let default handling proceed
+    view.dispatch({
+      changes: { from, insert: open + close },
+      selection: { anchor: from + open.length },
+    });
+    return true;
+  }
   view.dispatch({
     changes: [{ from, insert: open }, { from: to, insert: close }],
     selection: { anchor: from + 1, head: to + 1 },
@@ -191,11 +198,11 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
   { key: "{", run: v => wrapSelection(v, "{", "}") },
-  { key: "<", run: v => wrapSelection(v, "<", ">") },
+  { key: "`", run: v => wrapSelection(v, "`", "`", true) },
   { key: "Alt-l", run: v => insertAt(v, "λ") },
   { key: "Alt-L", run: v => insertAt(v, "λ") },
-  { key: "Alt-p", run: v => insertAtLineStart(v, "π ") },
-  { key: "Alt-P", run: v => insertAtLineStart(v, "π ") },
-  { key: "Alt-e", run: v => insertAtLineStart(v, "≡ ") },
-  { key: "Alt-E", run: v => insertAtLineStart(v, "≡ ") },
+  { key: "Alt-p", run: v => insertAtLineStart(v, "π") },
+  { key: "Alt-P", run: v => insertAtLineStart(v, "π") },
+  { key: "Alt-e", run: v => insertAtLineStart(v, "≡") },
+  { key: "Alt-E", run: v => insertAtLineStart(v, "≡") },
 ]));

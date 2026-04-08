@@ -735,7 +735,7 @@ export default function App() {
                   : "Scratch buffer (auto-saved)"
               }>
                 {loadedSlotName ?? "*scratch*"}{isDirty ? (() => {
-                  const hasErrors = programResult.errors.some(e => e.kind !== "warning");
+                  const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
                   const hasWarnings = programResult.errors.some(e => e.kind === "warning");
                   const cls = hasErrors ? "dirty-indicator dirty-indicator-error" : hasWarnings ? "dirty-indicator dirty-indicator-warning" : "dirty-indicator dirty-indicator-ok";
                   return <span className={cls}> ●</span>;

@@ -602,7 +602,7 @@ function applySubsts(term: Term, substs: { name: string; value: Term }[]): Term 
 }
 
 function formatSubstExpr(src: string, substs: { name: string; value: string }[]): string {
-  return `(${src})[${substs.map(s => `${s.name}:=${s.value}`).join(", ")}]`;
+  return `(${src})${substs.map(s => `[${s.name}:=${s.value}]`).join("")}`;
 }
 
 // ── Pragma processing ──────────────────────────────────────────────────────────

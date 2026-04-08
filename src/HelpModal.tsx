@@ -188,7 +188,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>F10</code></td><td>β-step</td></tr>
             <tr><td><code>F11</code></td><td>η-step</td></tr>
             <tr><td><code>Ctrl-/</code></td><td>toggle <code>#</code> comment on current / selected lines</td></tr>
-            <tr><td><code>( [ &#123; &lt;</code> with selection</td><td>wrap selected text in brackets</td></tr>
+            <tr><td><code>( [ &#123;</code> with selection</td><td>wrap selected text in brackets</td></tr>
+            <tr><td><code>`</code> with selection</td><td>wrap selected text in backticks</td></tr>
+            <tr><td><code>`</code> without selection</td><td>insert paired backticks, cursor inside</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
             <tr><td><code>Alt-E</code></td><td>insert ≡ at start of line</td></tr>
