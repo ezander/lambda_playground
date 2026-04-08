@@ -1,0 +1,42 @@
+#*
+  Welcome to the λ playground!
+
+  This is a full-fledged environment for experimenting with the untyped λ calculus.
+  It grew out of the wish to really experiment with those definitions for booleans,
+  numerals, pairs, lists, combinators, recursion and so on. Of course, you can do
+  some things with paper and pencil, but this is not really fun, and I guess nobody
+  has ever gone through all the steps of e.g. evaluating `factorial 4`. It's also
+  deeply satisfying to be able to write the definitions down and see how they
+  reduce or whether some weird-looking terms result in something equivalent.
+
+  When you want to try those things automatically, you are mostly referred then to functional
+  languages like Haskell or theorem provers like Coq or Agda or the like. But those
+  are difficult beasts, and they usually have a different syntax that you have to
+  learn, and they usually have a type system, that, well, keeps you from doing bogus
+  things, but also from all the flexibility that the lack of a type system brings.
+  Thus, I wanted to have an environment where I can enter any untyped λ formula
+  and evaluate it and do whatever I like, close to the original λ syntax, but made exact
+  by some grammar (you'll find the EBNF in the Help). And, here we are, a joint effort
+  of myself and Claude Code in implementing such a system. I hope you have fun!
+
+  I've created a couple of docs and tutorials on how that all works and the basis
+  of λ calculus. You can just click the links below or select them from the pickers
+  in the toolbar.
+
+  Some docs to start with:
+    [doc/Basics]           — How this system works
+    [tutorial/Basics]      — The history and basics of the λ calculus
+    [example/Booleans]     — An example on different types of booleans
+
+  In the following you'll see a simple example of the so-called Church-encoded
+  booleans (if you don't know that yet, you'll find out in the tutorials). It just
+  defines `true`, `false` and `not` in λ calculus and in the last line, evaluates
+  the expression `not true`. When you go to the eval panel (or just hit F5) you can
+  see how this expression is evaluated/reduced either in one go or step by step. And
+  in the end gives you - as expected - the value `false`.
+*#
+
+true  := λx y. x
+false := λx y. y
+not p := p false true
+not true
