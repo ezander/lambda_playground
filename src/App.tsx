@@ -8,7 +8,7 @@ import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/e
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView, EditorState } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
-import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
+import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
@@ -338,6 +338,23 @@ export default function App() {
     }
   }, [saveName, resetEditorContent]);
 
+  const loadExample = useCallback((exSrc: string) => {
+    const view = editorViewRef.current;
+    const oldScratch = localStorage.getItem("lambda-playground:source") ?? "";
+    // Switch to scratch buffer
+    loadedSlotRef.current = null;
+    setLoadedSlotName(null);
+    setSaveName("");
+    // Reset editor history to old scratch content as base, then apply example on top
+    if (view) {
+      view.setState(EditorState.create({ doc: oldScratch, extensions: editorExtRef.current }));
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: exSrc } });
+    }
+    const newSrc = exSrc;
+    setSource(newSrc);
+    localStorage.setItem("lambda-playground:source", newSrc);
+  }, []);
+
   const handleDownload = useCallback(() => {
     const blob = new Blob([source], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -455,6 +472,7 @@ export default function App() {
 
   const editorExtensions = useMemo(() => {
     const exts = [
+      cmHistory(),
       lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
       lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
     ];
@@ -653,7 +671,7 @@ export default function App() {
               <div className="select-wrap">
                 <select className="tool-select" onChange={e => {
                   const ex = EXAMPLES.find(x => x.label === e.target.value);
-                  if (ex) { setSourceAndSave(ex.src.trimStart()); setSaveName(""); setLoadedSlotName(null); }
+                  if (ex) loadExample(ex.src.trimStart());
                 }}>
                   {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
                 </select>
