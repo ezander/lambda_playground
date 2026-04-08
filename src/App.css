@@ -79,7 +79,7 @@ body {
   display: grid;
   grid-template-rows: auto 1fr auto; /* label | editor | toolbar */
 }
-.app.kino .toolbar { min-width: 0; overflow: hidden; }
+.app.kino .toolbar { min-width: 0; }
 .app.kino .cm-theme-light { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .app.kino .cm-editor { flex: 1; min-height: 0; max-height: none; overflow: hidden; }
 .app.kino .cm-scroller { min-height: 0 !important; overflow: auto !important; }

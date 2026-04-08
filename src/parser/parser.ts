@@ -565,6 +565,29 @@ function cachedParseInclude(
   return result;
 }
 
+const mixinCache = new Map<string, ProgramResult>();
+
+function defsKey(defs: Map<string, Term>): string {
+  return [...defs.entries()].sort(([a], [b]) => a < b ? -1 : 1)
+    .map(([k, v]) => `${k}:${prettyPrint(v)}`).join("|");
+}
+
+function cachedParseMixin(
+  path: string,
+  content: string,
+  defaultConfig: ProgramRunConfig,
+  resolver: IncludeResolver,
+  includeStack: string[],
+  initialDefs: Map<string, Term>,
+): ProgramResult {
+  const key = path + "\0" + content + "\0" + defsKey(initialDefs);
+  const cached = mixinCache.get(key);
+  if (cached) return cached;
+  const result = parseProgram(content, defaultConfig, resolver, includeStack, initialDefs);
+  mixinCache.set(key, result);
+  return result;
+}
+
 // ── Comprehension helpers ──────────────────────────────────────────────────────
 
 function cartesian<T>(arrays: T[][]): T[][] {
@@ -595,6 +618,39 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
+  const mixinMatch = text.match(/^mixin\s+"([^"]+)"\s*$/);
+  if (mixinMatch) {
+    const path = mixinMatch[1];
+    if (includeStack.includes(path)) {
+      errors.push({ message: `Circular mixin: "${path}"`, offset });
+      return;
+    }
+    const content = resolver(path);
+    if (content === null) {
+      errors.push({ message: `Mixin not found: "${path}"`, offset });
+      return;
+    }
+    const mixed = cachedParseMixin(path, content, defaultConfig, resolver, [...includeStack, path], defs);
+    for (const e of mixed.errors)
+      errors.push({ ...e, source: e.source ?? path });
+    if (!mixed.ok) {
+      equivFailed.value = true;
+      const hasRealErrors = mixed.errors.some(e => e.kind !== "warning");
+      if (!hasRealErrors)
+        errors.push({ message: `Assertion failed in mixin "${path}"`, offset });
+    }
+    for (const [name, term] of mixed.defs) {
+      if (defs.has(name)) {
+        const oldNorm = normalize(defs.get(name)!).term;
+        const newNorm = normalize(term).term;
+        if (!alphaEq(oldNorm, newNorm))
+          errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
+      }
+      defs.set(name, term);
+    }
+    return;
+  }
+
   const incMatch = text.match(/^include\s+"([^"]+)"\s*$/);
   if (incMatch) {
     const path = incMatch[1];
@@ -656,8 +712,9 @@ export function parseProgram(
   defaultConfig: ProgramRunConfig = {},
   resolver: IncludeResolver = () => null,
   _includeStack: string[] = [],
+  initialDefs: Map<string, Term> = new Map(),
 ): ProgramResult {
-  const defs = new Map<string, Term>();
+  const defs = new Map(initialDefs);
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
