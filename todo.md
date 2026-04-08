@@ -78,30 +78,33 @@
 * [x] fix text overflow in output for long outputs e.g. non-converging, non-normalizing exprs ← truncate at 200 chars with expandable (more)/(less)
 * [x] storing parsed/evaluated includes including errors (?) ← module-level cache keyed by path, content-compared on each lookup
 * [x] if we're editing a "file" or not, we need to make that clearer (or if we do, always auto-save, store that also in storage, indicate when changes have happened) (scratchpad function) ← scratch buffer auto-saved, named buffers with ● dirty indicator, save/save-as/new/delete, buffer switcher in dropdown
-
-## Up next
-
 * [x] export/import facility via zip-file of all user programs (selective import?) ← export all named buffers to zip, import with selective checkbox dialog, conflict highlighting
 * [x] `π[a:={true,false}, b:={true,false}] and a b` — substitution comprehension for π: evaluate expr for each combination of values, print as flat list (useful for truth tables) ← also ≡[...] comprehension
-* [ ] bug: no error shown when equiv failed in include, needs to be bubbled up
-* [ ] no `` when it's an operator symbol inside, only for symbols we like space, or what we usually don't allow as identifiers
-* [ ] what happens in import when the current buffer is overwritten and/or in modified state
+* [x] are pragma effects reset after the include files ends? ← confirmed; includes run with isolated config, only defs cross boundary; tests added
+* [x] bug: no error shown when equiv failed in include, needs to be bubbled up ← synthetic error pushed when included result has !ok with no real errors
+* [x] kino mode is great, can we have it without fullscreen too? ← three modes: normal / theater (⛶, layout only) / fullscreen (Maximize, layout + browser fullscreen)
+* [x] maybe add a draggable slider between editor and right panels in kino mode ← draggable divider with kinoSplitPct state, defaults to 33%
+* [x] in the output: there should be no backticks when it's an operator symbol inside. Only for symbols like space, or what we usually don't allow as identifiers, i.e. only when whats inside backticks is not a plainIdent  
 
+## Up next
 
 
 ## Consider
 
+* [ ] move the errors in kino mode to the right pane (with panel or without? at least not collapsible)
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
-* [ ] consider marking not disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
-* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
-* [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
-* [ ] maybe add a draggable slider between editor and right panels in kino mode
+* [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
 * [ ] output expressions: term highlighting (like in the editor), possibility for inline output (as "widgets" directly in the editor via codemirror plugins), manual reductions (just a thought)
+
+* [ ] consider marking disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
+* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
+* [ ] maybe add a draggable slider between editor and right panels in kino mode
+* [ ] what about a markdown export?
+* [ ] I want to have a text rewrap with ctrl+r in multiline comments
+* [ ] make a literature tab in help
 
 ## For later
 
-* [ ] what about a markdown export?
-* [ ] I want to have a text rewrap with ctrl+r in multiline comments
 * [ ] remember when a term is copied, when it is then reduced apply the reduction to all copies, i.e. "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
 * [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
 * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
@@ -109,7 +112,8 @@
 * [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
 * [ ] make identified forms clickable and go to line
 * [ ] introduce typed lambda calculus (τ for type inf?)
-* [ ] should we have line continuation with e.g. \ or next line starts with tab?
+* [ ] should we have line continuation with e.g. \ or next line starts with tab? maybe only when we have types lc, as lines get longer
+* [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 
 ## Questionable
  

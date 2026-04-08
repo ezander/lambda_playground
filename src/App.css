@@ -49,28 +49,42 @@ body {
   min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 0.75rem;
+  grid-template-columns: 1fr 6px 2fr;
+  gap: 0;
 }
+
+.kino-divider {
+  cursor: col-resize;
+  background: var(--border);
+  border-radius: 3px;
+  margin: 0 2px;
+  transition: background 0.15s;
+  align-self: stretch;
+}
+.kino-divider:hover { background: var(--muted); }
 .panels-right { display: contents; } /* transparent in normal mode */
 .app.kino .panels-right {
   display: flex;
   flex-direction: column;
+  padding-left: 0.375rem;
   min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   gap: 0.75rem;
 }
 .app.kino .editor-section {
   min-width: 0;
   overflow: hidden;
+  padding-right: 0.375rem;
   display: grid;
-  grid-template-rows: auto 1fr auto auto; /* label | editor | toolbar | parse-errors */
+  grid-template-rows: auto 1fr auto; /* label | editor | toolbar */
 }
+.app.kino .toolbar { min-width: 0; overflow: hidden; }
 .app.kino .cm-theme-light { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .app.kino .cm-editor { flex: 1; min-height: 0; max-height: none; overflow: hidden; }
 .app.kino .cm-scroller { min-height: 0 !important; overflow: auto !important; }
 .app.kino .cm-content { min-height: 0 !important; }
-.app.kino .parse-errors {
+.app.kino .editor-section .parse-errors {
   max-height: 7rem;
   overflow-y: auto;
 }

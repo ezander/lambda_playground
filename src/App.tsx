@@ -12,7 +12,7 @@ import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
-import { Settings, Share2 } from "lucide-react";
+import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
 import "./App.css";
 import LZString from "lz-string";
@@ -122,7 +122,11 @@ export default function App() {
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
   const [canUndo, setCanUndo]         = useState(false);
   const [canRedo, setCanRedo]         = useState(false);
-  const [kinoMode, setKinoMode]       = useState(false);
+  const [kinoLayout, setKinoLayout]   = useState(() => localStorage.getItem("lambda-playground:kino") === "1");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const kinoActive = kinoLayout || isFullscreen;
+  const [kinoSplitPct, setKinoSplitPct] = useState(() => Number(localStorage.getItem("lambda-playground:kino-split")) || 40);
+  const mainRef = useRef<HTMLElement>(null);
   const [showSubst, setShowSubst]     = useState(false);
   const [saveName, setSaveName]       = useState("");
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
@@ -458,14 +462,12 @@ export default function App() {
     return exts;
   }, []);
 
-  const toggleKino = useCallback(() => {
-    if (!document.fullscreenElement) {
+  const toggleTheater   = useCallback(() => setKinoLayout(v => { const next = !v; localStorage.setItem("lambda-playground:kino", next ? "1" : "0"); return next; }), []);
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement)
       document.documentElement.requestFullscreen().catch(() => {});
-      setKinoMode(true);
-    } else {
+    else
       document.exitFullscreen().catch(() => {});
-      setKinoMode(false);
-    }
   }, []);
 
   useEffect(() => {
@@ -479,11 +481,29 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun, toggleKino]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, toggleFullscreen]);
+
+  const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!mainRef.current) return;
+      const rect = mainRef.current.getBoundingClientRect();
+      const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.max(20, Math.min(75, pct));
+      localStorage.setItem("lambda-playground:kino-split", String(clamped));
+      setKinoSplitPct(clamped);
+    };
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, []);
 
   // Sync kino state if user exits fullscreen via browser (Escape)
   useEffect(() => {
-    const handler = () => { if (!document.fullscreenElement) setKinoMode(false); };
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handler);
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
@@ -530,8 +550,24 @@ export default function App() {
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
 
+  const parseErrorsBlock = (programResult.errors.length > 0 || roundTripError) ? (
+    <ul className="parse-errors">
+      {programResult.errors.map((e, i) => (
+        <li
+          key={i}
+          className={[
+            e.kind === "warning" ? "parse-warning" : "",
+            e.offset !== undefined ? "parse-error-link" : "",
+          ].join(" ").trim()}
+          onClick={() => e.offset !== undefined && jumpTo(e.offset)}
+        >{e.source ? `In "${e.source}": ${e.message}` : e.message}</li>
+      ))}
+      {roundTripError && <li>{roundTripError}</li>}
+    </ul>
+  ) : null;
+
   return (
-    <div className={kinoMode ? "app kino" : "app"}>
+    <div className={kinoActive ? "app kino" : "app"}>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showImport && (
         <div className="modal-backdrop" onClick={() => setShowImport(false)}>
@@ -573,7 +609,7 @@ export default function App() {
         <p className="subtitle">an untyped lambda dialect</p>
       </header>
 
-      <main>
+      <main ref={mainRef} style={kinoActive ? { gridTemplateColumns: `${kinoSplitPct}% 6px 1fr` } : undefined}>
         {/* ── Editor ── */}
         <section className="editor-section">
           <div className="editor-label-row">
@@ -589,7 +625,10 @@ export default function App() {
               </button>
               <button className="help-btn" onClick={() => setShowSettings(true)} title="Settings"><Settings size={16} /></button>
               <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
-              <button className="help-btn kino-btn" onClick={toggleKino} title="Toggle kino (fullscreen) mode">⛶</button>
+              <button className="help-btn" onClick={toggleTheater} title={kinoLayout ? "Exit theater mode" : "Theater mode"}><span style={{ display: "inline-block", transform: "scale(1.3, 0.85)" }}>⛶</span></button>
+              <button className="help-btn" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+                {isFullscreen ? <Minimize2 size={16}/> : <Maximize2 size={16}/>}
+              </button>
             </span>
           </div>
           <CodeMirror
@@ -668,7 +707,8 @@ export default function App() {
                 )}
               </div>
             </div>
-            <span className="toolbar-sep" />
+          </div>
+          <div className="toolbar">
             <div className="toolbar-group">
               <span className="row-label">buffers</span>
               <span className="current-buffer" title={
@@ -710,16 +750,19 @@ export default function App() {
                   )}
                 </div>
               </div>
+            </div>
+            <div className="toolbar-group">
               <button className="ex-btn" onClick={handleSaveSlot}
                 disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
-                title="Save current content as a named buffer">save as</button>
+                title="Save current content as a named buffer">save&nbsp;as</button>
               <button className="ex-btn" onClick={handleNewBuffer}
                 disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
                 title="Create a new empty buffer with this name">new</button>
               <button className="ex-btn" onClick={handleDeleteSlot}
                 disabled={!savedSlots.includes(saveName.trim())}
                 title="Delete this buffer">delete</button>
-              <span className="toolbar-sep" />
+            </div>
+            <div className="toolbar-group">
               <button className="ex-btn" onClick={handleDownload}
                 title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
               <button className="ex-btn" onClick={handleExport}
@@ -730,24 +773,12 @@ export default function App() {
               <input ref={importInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={handleImportPick} />
             </div>
           </div>
-          {(programResult.errors.length > 0 || roundTripError) && (
-            <ul className="parse-errors">
-              {programResult.errors.map((e, i) => (
-                <li
-                  key={i}
-                  className={[
-                    e.kind === "warning" ? "parse-warning" : "",
-                    e.offset !== undefined ? "parse-error-link" : "",
-                  ].join(" ").trim()}
-                  onClick={() => e.offset !== undefined && jumpTo(e.offset)}
-                >{e.source ? `In "${e.source}": ${e.message}` : e.message}</li>
-              ))}
-              {roundTripError && <li>{roundTripError}</li>}
-            </ul>
-          )}
+          {!kinoActive && parseErrorsBlock}
         </section>
 
+        {kinoActive && <div className="kino-divider" onMouseDown={handleDividerMouseDown} />}
         <div className="panels-right">
+          {kinoActive && parseErrorsBlock}
         {/* ── Steps panel ── */}
         <Panel label="eval" open={stepsOpen} onToggle={toggleSteps}>
           <div className="output-tabs">
