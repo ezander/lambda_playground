@@ -461,7 +461,9 @@ label {
   padding: 0 0.2rem;
   font-weight: 600;
 }
-.dirty-indicator { color: var(--accent); }
+.dirty-indicator-ok      { color: #4caf50; }
+.dirty-indicator-warning { color: var(--accent); }
+.dirty-indicator-error   { color: var(--warn); }
 
 /* ── Symbol picker ── */
 .sym-picker { position: relative; }

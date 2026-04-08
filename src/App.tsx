@@ -716,7 +716,12 @@ export default function App() {
                   ? (isDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
                   : "Scratch buffer (auto-saved)"
               }>
-                {loadedSlotName ?? "*scratch*"}{isDirty ? <span className="dirty-indicator"> ●</span> : ""}
+                {loadedSlotName ?? "*scratch*"}{isDirty ? (() => {
+                  const hasErrors = programResult.errors.some(e => e.kind !== "warning");
+                  const hasWarnings = programResult.errors.some(e => e.kind === "warning");
+                  const cls = hasErrors ? "dirty-indicator dirty-indicator-error" : hasWarnings ? "dirty-indicator dirty-indicator-warning" : "dirty-indicator dirty-indicator-ok";
+                  return <span className={cls}> ●</span>;
+                })() : ""}
               </span>
               <button className="ex-btn" onClick={handleSaveOverwrite}
                 disabled={!loadedSlotName || !isDirty}
