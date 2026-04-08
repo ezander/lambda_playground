@@ -26,8 +26,8 @@ export const lambdaTheme: Extension = EditorView.theme({
   },
   ".cm-line": { padding: "0" },
   ".cm-cursor": { borderLeftColor: "#e8e4dc" },
-  ".cm-activeLine": { background: "rgba(255,255,255,0.03)" },
-  ".cm-activeLineGutter": { background: "rgba(255,255,255,0.03)" },
+  ".cm-activeLine": { background: "rgba(255,255,255,0.09)" },
+  ".cm-activeLineGutter": { background: "rgba(255,255,255,0.09)" },
   ".cm-gutters": {
     background: "#1a1a1a",
     color: "#6b6660",

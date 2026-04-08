@@ -113,7 +113,7 @@
 * [ ] what about undefining symbols, or marking as not for export, i.e. only local
 * [ ] think about the state and future of the eval panel...
 * [ ] maybe ::= for redef or undef, for temp things
-* [ ] make the current line somewhat more prominent in the editor
+* [x] make the current line somewhat more prominent in the editor ← activeLine opacity 0.03→0.09
 * [ ] maybe have equiv[a] with a def for a, just make a new free variable in the expressions to come, without possiblity of being defined at outer scope
 * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
 * [ ] what about evaluating expression when error occurred before
