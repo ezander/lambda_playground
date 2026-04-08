@@ -85,23 +85,40 @@
 * [x] kino mode is great, can we have it without fullscreen too? ← three modes: normal / theater (⛶, layout only) / fullscreen (Maximize, layout + browser fullscreen)
 * [x] maybe add a draggable slider between editor and right panels in kino mode ← draggable divider with kinoSplitPct state, defaults to 33%
 * [x] in the output: there should be no backticks when it's an operator symbol inside. Only for symbols like space, or what we usually don't allow as identifiers, i.e. only when whats inside backticks is not a plainIdent  
+* [x] move the errors in kino mode to the right pane (with panel or without? at least not collapsible)
+* [x] syntax highlighting preserved for valid code before a parse error ← prefix re-parse up to last newline before first error
+* [x] mixin pragma: like include but passes parent defs to the file ← `#! mixin "..."` caches on path+content+serialized defs
+* [x] the save button dot: make it green when everything's okay, make it read when not ← dirty ● colors: green=ok, yellow=warning, red=error; also red on equiv assertion failure
+* [x] output in multi-assert should not contain comma in subst ← chained `[a:=v][b:=w]` display instead of comma-separated
+* [x] leave out the space, when inserting equiv via alt-e ← also alt-p; no trailing space
+* [x] make backticks work on selection in editor like parens ← also auto-closes (inserts paired backticks) when no selection; removed <> wrap since < > are identifier chars
 
 ## Up next
 
 
 ## Consider
 
-* [ ] move the errors in kino mode to the right pane (with panel or without? at least not collapsible)
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
 * [ ] output expressions: term highlighting (like in the editor), possibility for inline output (as "widgets" directly in the editor via codemirror plugins), manual reductions (just a thought)
 
 * [ ] consider marking disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
 * [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
-* [ ] maybe add a draggable slider between editor and right panels in kino mode
 * [ ] what about a markdown export?
 * [ ] I want to have a text rewrap with ctrl+r in multiline comments
 * [ ] make a literature tab in help
+* [x] problem with scratch and examples and undo: select an example, fills your scratch buffer, but if you were in a diff buffer before, you can't undo and your prev scratch is lost ← old scratch set as undo base before loading example
+* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
+* [ ] in our current framework, can we make sure that a symbol is defined? 
+* [ ] what about undefining symbols, or marking as not for export, i.e. only local
+* [ ] think about the state and future of the eval panel...
+* [ ] maybe ::= for redef or undef, for temp things
+* [ ] make the current line somewhat more prominent in the editor
+* [ ] maybe have equiv[a] with a def for a, just make a new free variable in the expressions to come, without possiblity of being defined at outer scope
+* [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
+* [ ] what about evaluating expression when error occurred before
+* [ ] links in comments e.g. with [example/Bla], make clickable, load example bla, or tut/bla into scratch, user links load buffers
+* [ ] get rid of the inserts/snippets - we have includes, better: docs/tutorials/examples/maybe quizzes
 
 ## For later
 
