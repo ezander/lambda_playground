@@ -48,6 +48,7 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-param":    { color: "#4caf7d", fontWeight: "600" },  // binder (declaration site)
   ".cml-bound":    { color: "#4caf7d" },                     // bound variable use
   ".cml-free":     { color: "#7ab0c8" },                     // free variable
+  ".cml-link":     { color: "#c9a84c", textDecoration: "underline", cursor: "pointer !important" },
 }, { dark: true });
 
 // ── Bracket-wrap keymap ───────────────────────────────────────────────────────

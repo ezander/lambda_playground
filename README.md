@@ -24,6 +24,7 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Share button: encodes editor content into a URL (LZ-compressed) and copies it to the clipboard
 - Kino (fullscreen) mode for the editor
 - Select text and press `(`, `[`, or `{` to wrap in brackets; `` ` `` wraps in backticks (or inserts paired backticks with cursor inside when nothing is selected)
+- Clickable links in comments: `[example/name]`, `[user/name]`, `[tut/name]` — loads the referenced content into scratch
 
 ## Syntax
 

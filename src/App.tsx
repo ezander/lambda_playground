@@ -14,6 +14,7 @@ import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./edito
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
+import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
 import LZString from "lz-string";
 import JSZip from "jszip";
@@ -105,6 +106,7 @@ function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix
 export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
   const editorExtRef    = useRef<import("@codemirror/state").Extension[]>([]);
+  const linkHandlerRef  = useRef<LinkHandler | null>(null);
   const slotPickerRef   = useRef<HTMLDivElement | null>(null);
   const symPickerRef    = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]         = useState(false);
@@ -355,6 +357,23 @@ export default function App() {
     localStorage.setItem("lambda-playground:source", newSrc);
   }, []);
 
+  useEffect(() => {
+    linkHandlerRef.current = (type: string, name: string) => {
+      if (loadedSlotRef.current !== null && isDirty) {
+        if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
+      }
+      if (type === "example") {
+        const ex = EXAMPLES.find(x => x.label === name);
+        if (ex) loadExample(ex.src.trimStart());
+        else alert(`Example "${name}" not found.`);
+      } else if (type === "user") {
+        switchToSlot(name);
+      } else if (type === "tut") {
+        alert(`Tutorial links not yet supported.`);
+      }
+    };
+  }, [isDirty, loadExample, switchToSlot]);
+
   const handleDownload = useCallback(() => {
     const blob = new Blob([source], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -475,6 +494,7 @@ export default function App() {
       cmHistory(),
       lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
       lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
+      lambdaLinks(linkHandlerRef),
     ];
     editorExtRef.current = exts;
     return exts;
