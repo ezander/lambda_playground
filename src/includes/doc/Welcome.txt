@@ -27,6 +27,7 @@
     [doc/Basics]           — How this system works
     [tutorial/Basics]      — The history and basics of the λ calculus
     [example/Booleans]     — An example on different types of booleans
+  (*** NB: the links may not yet be working, I'm still working on it. ***)
 
   In the following you'll see a simple example of the so-called Church-encoded
   booleans (if you don't know that yet, you'll find out in the tutorials). It just
