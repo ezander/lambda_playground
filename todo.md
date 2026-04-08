@@ -118,7 +118,7 @@
 * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
 * [ ] what about evaluating expression when error occurred before
 * [x] links in comments e.g. with [example/Bla], make clickable, load example bla, or tut/bla into scratch, user links load buffers ← [type/name] in line+block comments; underlined accent color; asks if dirty
-* [ ] get rid of the inserts/snippets - we have includes, better: docs/tutorials/examples/maybe quizzes
+* [x] get rid of the inserts/snippets - we have includes, better: docs/tutorials/examples/maybe quizzes ← doc/example/tutorial namespaces as .txt files; toolbar dropdowns; [] link + #! include completion; doc/Welcome.txt as default scratch
 
 ## For later
 

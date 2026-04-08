@@ -1,0 +1,10 @@
+# Church pairs
+pair  a b f := f a b
+fst   p     := p (λa b. a)
+snd   p     := p (λa b. b)
+
+# Church booleans (needed by fst/snd)
+true    := λx y. x
+false   := λx y. y
+
+snd (pair false true)

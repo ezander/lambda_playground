@@ -24,7 +24,7 @@ function inComment(pos: number, ranges: [number, number][]): boolean {
 // ── Link pattern ──────────────────────────────────────────────────────────────
 // Matches [example/name], [user/name], [tut/name] inside comments.
 
-const LINK_RE = /\[(example|user|tut)\/([^\]\n]+)\]/g;
+const LINK_RE = /\[(doc|sys|example|tutorial|user)\/([^\]\n]+)\]/g;
 
 export type LinkHandler = (type: string, name: string) => void;
 

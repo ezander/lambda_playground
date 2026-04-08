@@ -10,9 +10,13 @@
 	https://www.ps.uni-saarland.de/courses/sem-ws19/lambda-intro.pdf
 
 Identity proof/operator? alpha-equiv?
-allow omega/Omega for the combinators?
 On load: focus on editor window
 Maybe: short-cut to return to editor from everywhere on the page
-Maybe: go from ::= to := (i think it's better, don't know about [], and := in lambda)
 
+https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html#church-numerals
+https://www.cs.ru.nl/~herman/PUBS/ChurchScottDataTypes.pdf
+https://www.cs.ru.nl/~herman/talk_TLCA2015.pdf
 
+https://en.wikipedia.org/wiki/Church_encoding
+https://esolangs.org/wiki/Scott_numeral
+https://hbr.github.io/Lambda-Calculus/lambda1/untyped_lambda.pdf

@@ -1,0 +1,7 @@
+# SKI combinators
+I     := λx. x
+K     := λx y. x
+S f g x := f x (g x)
+
+# S K K reduces to I
+S K K z

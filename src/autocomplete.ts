@@ -3,7 +3,7 @@ import { keymap, Extension } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
-import { SYS_INCLUDES } from "./includes/index";
+import { BUNDLED_CONTENT } from "./data/content";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
@@ -11,6 +11,8 @@ const SAVE_PREFIX = "lambda-playground:saved:";
 const IDENT_RE = /[a-zA-Z0-9_'\u0370-\u03FF+\-*/^~&|<>!?=]+/;
 // Pragma keys are lowercase with hyphens, optional no- prefix
 const PRAGMA_KEY_RE = /[a-z-]+/;
+// Link path inside [...]: type/name
+const LINK_PATH_RE = /[a-zA-Z0-9_/ .'-]+/;
 
 const PRAGMA_OPTIONS = [
   ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
@@ -27,6 +29,22 @@ function getUserIncludePaths(): string[] {
   return paths.sort();
 }
 
+function getAllIncludePaths(): string[] {
+  return [...Object.keys(BUNDLED_CONTENT), ...getUserIncludePaths()];
+}
+
+// Check if the cursor is inside a comment (line or block)
+function isInComment(line: { text: string }, pos: number, lineFrom: number): boolean {
+  const text = line.text;
+  const col = pos - lineFrom;
+  // Line comment
+  const hashIdx = text.search(/(?<![\S])#(?![!*])|^#(?![!*])/);
+  if (hashIdx !== -1 && col > hashIdx) return true;
+  // Simplified block comment: just check if line contains #*
+  // (full detection would require multi-line scan; good enough for autocomplete)
+  return false;
+}
+
 function completionSource(context: CompletionContext): CompletionResult | null {
   const parsed = context.state.field(parsedField);
   if (!parsed) return null;
@@ -35,18 +53,13 @@ function completionSource(context: CompletionContext): CompletionResult | null {
 
   // ── Pragma context: #! line ──────────────────────────────────────────────────
   if (line.text.trimStart().startsWith("#!")) {
-    // Inside include string: #! include "...
-    const incMatch = line.text.match(/^\s*#!\s*include\s*"([^"]*)/);
+    const incMatch = line.text.match(/^\s*#!\s*(?:include|mixin)\s*"([^"]*)/);
     if (incMatch) {
       const quotePos = line.from + line.text.indexOf('"') + 1;
       if (context.pos >= quotePos) {
-        const allPaths = [
-          ...Object.keys(SYS_INCLUDES),
-          ...getUserIncludePaths(),
-        ];
         return {
           from: quotePos,
-          options: allPaths.map(p => ({ label: p, type: "text" as const })),
+          options: getAllIncludePaths().map(p => ({ label: p, type: "text" as const })),
           filter: true,
         };
       }
@@ -54,6 +67,30 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     const word = context.matchBefore(PRAGMA_KEY_RE);
     if (!word && !context.explicit) return null;
     return { from: word ? word.from : context.pos, options: PRAGMA_OPTIONS, filter: true };
+  }
+
+  // ── Link context: [...] in a comment ─────────────────────────────────────────
+  // Look for an opening [ before the cursor on the same line
+  const textToCursor = line.text.slice(0, context.pos - line.from);
+  const bracketIdx = textToCursor.lastIndexOf("[");
+  if (bracketIdx !== -1 && !textToCursor.slice(bracketIdx + 1).includes("]")) {
+    // Only complete inside comments
+    const lineIsComment = line.text.trimStart().startsWith("#");
+    // Check for block comment context by scanning backwards for #*
+    const fullText = context.state.doc.toString();
+    const posInDoc = context.pos;
+    const lastBlockOpen  = fullText.lastIndexOf("#*", posInDoc);
+    const lastBlockClose = fullText.lastIndexOf("*#", posInDoc);
+    const inBlockComment = lastBlockOpen !== -1 && lastBlockOpen > lastBlockClose;
+
+    if (lineIsComment || inBlockComment) {
+      const from = line.from + bracketIdx + 1;
+      return {
+        from,
+        options: getAllIncludePaths().map(p => ({ label: p, type: "text" as const })),
+        filter: true,
+      };
+    }
   }
 
   // ── Normal context: definition names before the cursor ───────────────────────
@@ -66,7 +103,6 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     .filter(({ name }) => !seen.has(name) && !!seen.add(name))
     .map(({ name }) => ({ label: name, type: "variable" as const }));
 
-  // Also include defs from includes (not in defInfos, always in scope)
   for (const name of parsed.defs.keys()) {
     if (!seen.has(name)) options.push({ label: name, type: "variable" as const });
   }

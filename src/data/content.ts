@@ -1,0 +1,56 @@
+// ── Bundled content loader ────────────────────────────────────────────────────
+// All .txt files under src/includes/ are bundled at build time via import.meta.glob.
+// Claude maintains the ordered name lists below; just drop files in the folders.
+
+const sysRaw      = import.meta.glob("../includes/sys/*.txt",      { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+const docRaw      = import.meta.glob("../includes/doc/*.txt",      { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+const exampleRaw  = import.meta.glob("../includes/example/*.txt",  { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+const tutorialRaw = import.meta.glob("../includes/tutorial/*.txt", { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+
+function stripPath(globKey: string): string {
+  return globKey.replace(/^.*\//, "").replace(/\.txt$/, "");
+}
+
+function buildMap(raw: Record<string, string>, ns: string): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const [key, content] of Object.entries(raw))
+    map[`${ns}/${stripPath(key)}`] = content;
+  return map;
+}
+
+const sysMap      = buildMap(sysRaw,      "sys");
+const docMap      = buildMap(docRaw,      "doc");
+const exampleMap  = buildMap(exampleRaw,  "example");
+const tutorialMap = buildMap(tutorialRaw, "tutorial");
+
+// All bundled paths — used by the include resolver (sys/doc/example/tutorial)
+export const BUNDLED_CONTENT: Record<string, string> = {
+  ...sysMap, ...docMap, ...exampleMap, ...tutorialMap,
+};
+
+function ordered(map: Record<string, string>, ns: string, names: string[]): { label: string; src: string }[] {
+  return names
+    .filter(n => `${ns}/${n}` in map)
+    .map(n => ({ label: n, src: map[`${ns}/${n}`] }));
+}
+
+// ── Ordered display lists (update when adding files) ──────────────────────────
+
+export const DOCS: { label: string; src: string }[] = ordered(docMap, "doc", [
+  "Welcome",
+]);
+
+export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "example", [
+  "Booleans",
+  "Numerals",
+  "Pairs",
+  "SKI Combinators",
+  "Y Combinator",
+]);
+
+export const TUTORIALS: { label: string; src: string }[] = ordered(tutorialMap, "tutorial", [
+  // add tutorial names here in desired order as files are created
+]);
+
+// ── Default scratch content for new users ─────────────────────────────────────
+export const DEFAULT_SCRATCH: string = DOCS[0]?.src.trimStart() ?? "";

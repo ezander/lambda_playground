@@ -1,0 +1,6 @@
+# Y combinator — diverges without a lazy argument
+Y   := λf. (λx. f (x x)) (λx. f (x x))
+I   := λx. x
+
+# Y I diverges; step carefully
+Y I

@@ -18,9 +18,7 @@ import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
 import LZString from "lz-string";
 import JSZip from "jszip";
-import { examples as EXAMPLES } from "./data/examples";
-import { snippets as SNIPPETS } from "./data/snippets";
-import { SYS_INCLUDES } from "./includes/index";
+import { BUNDLED_CONTENT, DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
 
 const SAVE_PREFIX = "lambda-playground:saved:";
 
@@ -114,7 +112,7 @@ export default function App() {
   const [source, setSource]           = useState(() => {
     const p = new URLSearchParams(window.location.search).get("s");
     if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
-    return localStorage.getItem("lambda-playground:source") ?? EXAMPLES[0].src.trimStart();
+    return localStorage.getItem("lambda-playground:source") ?? DEFAULT_SCRATCH;
   });
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
@@ -161,9 +159,8 @@ export default function App() {
   }, []);
 
   const includeResolver = useCallback((path: string): string | null => {
-    if (path.startsWith("sys/"))  return SYS_INCLUDES[path] ?? null;
     if (path.startsWith("user/")) return localStorage.getItem(SAVE_PREFIX + path.slice("user/".length)) ?? null;
-    return null;
+    return BUNDLED_CONTENT[path] ?? null;
   }, []);
 
   const programResult = useMemo(() => parseProgram(source, config, includeResolver), [source, config, includeResolver]);
@@ -241,15 +238,6 @@ export default function App() {
     const view = editorViewRef.current;
     if (!view) return;
     view.dispatch({ selection: { anchor: offset }, scrollIntoView: true });
-    view.focus();
-  }, []);
-
-  const insertSnippetAtCursor = useCallback((def: string) => {
-    const view = editorViewRef.current;
-    if (!view) return;
-    const pos = view.state.selection.main.head;
-    const line = view.state.doc.lineAt(pos);
-    view.dispatch({ changes: { from: line.from, insert: def + "\n" } });
     view.focus();
   }, []);
 
@@ -347,8 +335,9 @@ export default function App() {
     loadedSlotRef.current = null;
     setLoadedSlotName(null);
     setSaveName("");
-    // Reset editor history to old scratch content as base, then apply example on top
-    if (view) {
+    // Reset editor history to old scratch content as base, then apply example on top.
+    // Skip if content is already identical (avoids breaking extensions on no-op reload).
+    if (view && view.state.doc.toString() !== exSrc) {
       view.setState(EditorState.create({ doc: oldScratch, extensions: editorExtRef.current }));
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: exSrc } });
     }
@@ -362,14 +351,19 @@ export default function App() {
       if (loadedSlotRef.current !== null && isDirty) {
         if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
       }
-      if (type === "example") {
-        const ex = EXAMPLES.find(x => x.label === name);
-        if (ex) loadExample(ex.src.trimStart());
-        else alert(`Example "${name}" not found.`);
-      } else if (type === "user") {
+      if (type === "user") {
         switchToSlot(name);
-      } else if (type === "tut") {
-        alert(`Tutorial links not yet supported.`);
+      } else {
+        const path = `${type}/${name}`;
+        const src = BUNDLED_CONTENT[path];
+        if (src) loadExample(src.trimStart());
+        else {
+          // Try display lists for case-insensitive or label match
+          const all = [...DOCS, ...TUTORIALS, ...EXAMPLES];
+          const entry = all.find(x => x.label === name);
+          if (entry) loadExample(entry.src.trimStart());
+          else alert(`"${path}" not found.`);
+        }
       }
     };
   }, [isDirty, loadExample, switchToSlot]);
@@ -686,26 +680,39 @@ export default function App() {
             }}
           />
           <div className="toolbar">
+            {DOCS.length > 0 && <><div className="toolbar-group">
+              <span className="row-label">docs</span>
+              <div className="select-wrap">
+                <select className="tool-select" value="" onChange={e => {
+                  const d = DOCS.find(x => x.label === e.target.value);
+                  if (d) loadExample(d.src.trimStart());
+                }}>
+                  <option value="" disabled>— pick —</option>
+                  {DOCS.map(d => <option key={d.label} value={d.label}>{d.label}</option>)}
+                </select>
+              </div>
+            </div><span className="toolbar-sep" /></>}
+            {TUTORIALS.length > 0 && <><div className="toolbar-group">
+              <span className="row-label">tutorials</span>
+              <div className="select-wrap">
+                <select className="tool-select" value="" onChange={e => {
+                  const t = TUTORIALS.find(x => x.label === e.target.value);
+                  if (t) loadExample(t.src.trimStart());
+                }}>
+                  <option value="" disabled>— pick —</option>
+                  {TUTORIALS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+                </select>
+              </div>
+            </div><span className="toolbar-sep" /></>}
             <div className="toolbar-group">
               <span className="row-label">examples</span>
               <div className="select-wrap">
-                <select className="tool-select" onChange={e => {
+                <select className="tool-select" value="" onChange={e => {
                   const ex = EXAMPLES.find(x => x.label === e.target.value);
                   if (ex) loadExample(ex.src.trimStart());
                 }}>
+                  <option value="" disabled>— pick —</option>
                   {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
-                </select>
-              </div>
-            </div>
-            <span className="toolbar-sep" />
-            <div className="toolbar-group">
-              <span className="row-label">insert</span>
-              <div className="select-wrap">
-                <select className="tool-select" onChange={e => {
-                  const s = SNIPPETS.find(x => x.label === e.target.value);
-                  if (s) insertSnippetAtCursor(s.def);
-                }}>
-                  {SNIPPETS.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}
                 </select>
               </div>
             </div>
