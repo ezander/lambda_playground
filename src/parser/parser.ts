@@ -261,7 +261,12 @@ class AstBuilder extends BaseCstVisitor {
   // ── Program-level visitors ─────────────────────────────────────────────────
 
   program(ctx: any): RawStmt[] {
-    return (ctx.programItem ?? []).map((item: CstNode) => this.visit(item) as RawStmt);
+    return (ctx.programItem ?? []).flatMap((item: CstNode) => {
+      try {
+        const stmt = this.visit(item) as RawStmt;
+        return stmt ? [stmt] : [];
+      } catch { return []; }
+    });
   }
 
   programItem(ctx: any): RawStmt {
@@ -689,9 +694,38 @@ export function parseProgram(
 
   // ── Visit CST → raw statements ─────────────────────────────────────────────
   astBuilder.reset(0);
-  const stmts: RawStmt[] = lexResult.errors.length === 0 && parser.errors.length === 0
-    ? (astBuilder.visit(cst) as RawStmt[])
-    : [];
+  let stmts: RawStmt[] = [];
+  try {
+    const visited = astBuilder.visit(cst);
+    if (Array.isArray(visited)) stmts = visited as RawStmt[];
+  } catch {
+    // partial CST from error recovery — handled below
+  }
+
+  // Chevrotain's error recovery can corrupt the whole program CST.
+  // Fall back: re-parse only the tokens before the first error token.
+  if (stmts.length === 0 && parser.errors.length > 0) {
+    const firstErrOffset = parser.errors[0].token.startOffset ?? Infinity;
+    // Cut at the last newline before the error so we only include complete statements
+    const newlinesBefore = lexResult.tokens.filter(
+      t => tokenMatcher(t, NewLine) && (t.startOffset ?? 0) < firstErrOffset
+    );
+    const cutoff = newlinesBefore.length > 0
+      ? (newlinesBefore[newlinesBefore.length - 1].endOffset ?? newlinesBefore[newlinesBefore.length - 1].startOffset)
+      : -1;
+    const prefixTokens = lexResult.tokens.filter(t => (t.startOffset ?? 0) <= cutoff);
+    if (prefixTokens.length > 0) {
+      parser.input = prefixTokens;
+      const prefixCst = parser.program();
+      if (parser.errors.length === 0) {
+        astBuilder.reset(0);
+        try {
+          const visited = astBuilder.visit(prefixCst);
+          if (Array.isArray(visited)) stmts = visited as RawStmt[];
+        } catch {}
+      }
+    }
+  }
 
   // Shared positions map (accumulated across all statements during the visitor pass above)
   const globalPositions = astBuilder.positions;
