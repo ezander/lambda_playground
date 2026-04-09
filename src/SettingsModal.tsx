@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number; showPassingEquiv: boolean };
+import { Config } from "./config";
 
 function parsePositiveInt(s: string, fallback: number): number {
   const v = parseInt(s, 10);

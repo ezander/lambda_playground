@@ -4,8 +4,7 @@ import { Prec } from "@codemirror/state";
 import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
 import { BUNDLED_CONTENT } from "./data/content";
-
-const SAVE_PREFIX = "lambda-playground:saved:";
+import { getUserIncludePaths } from "./storage";
 
 // Matches any identifier-like token (alphanumeric/Greek/operator chars)
 const IDENT_RE = /[a-zA-Z0-9_'\u0370-\u03FF+\-*/^~&|<>!?=]+/;
@@ -20,29 +19,8 @@ const PRAGMA_OPTIONS = [
   { label: "include", type: "keyword" as const },
 ];
 
-function getUserIncludePaths(): string[] {
-  const paths: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(SAVE_PREFIX)) paths.push("user/" + key.slice(SAVE_PREFIX.length));
-  }
-  return paths.sort();
-}
-
 function getAllIncludePaths(): string[] {
   return [...Object.keys(BUNDLED_CONTENT), ...getUserIncludePaths()];
-}
-
-// Check if the cursor is inside a comment (line or block)
-function isInComment(line: { text: string }, pos: number, lineFrom: number): boolean {
-  const text = line.text;
-  const col = pos - lineFrom;
-  // Line comment
-  const hashIdx = text.search(/(?<![\S])#(?![!*])|^#(?![!*])/);
-  if (hashIdx !== -1 && col > hashIdx) return true;
-  // Simplified block comment: just check if line contains #*
-  // (full detection would require multi-line scan; good enough for autocomplete)
-  return false;
 }
 
 function completionSource(context: CompletionContext): CompletionResult | null {

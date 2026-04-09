@@ -18,12 +18,9 @@ import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
 import LZString from "lz-string";
 import JSZip from "jszip";
-import { BUNDLED_CONTENT, DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
-
-const SAVE_PREFIX = "lambda-playground:saved:";
-
-type Config = { maxStepsPrint: number; maxStepsRun: number; maxStepsIdent: number; maxHistory: number; maxSize: number; showPassingEquiv: boolean };
-const DEFAULT_CONFIG: Config = { maxStepsPrint: 1000, maxStepsRun: 1000, maxStepsIdent: 1000, maxHistory: 200, maxSize: 10000, showPassingEquiv: false };
+import { DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
+import { SAVE_PREFIX, getSavedSlots, resolveContent } from "./storage";
+import { Config, DEFAULT_CONFIG } from "./config";
 
 function loadConfig(): Config {
   try {
@@ -52,17 +49,6 @@ function Panel({ label, open, onToggle, children, className, flush = false, head
     </section>
   );
 }
-
-function getSavedSlots(): string[] {
-  const slots: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(SAVE_PREFIX)) slots.push(key.slice(SAVE_PREFIX.length));
-  }
-  return slots.sort();
-}
-
-
 
 const TRUNCATE_LEN = 200;
 
@@ -158,10 +144,7 @@ export default function App() {
     });
   }, []);
 
-  const includeResolver = useCallback((path: string): string | null => {
-    if (path.startsWith("user/")) return localStorage.getItem(SAVE_PREFIX + path.slice("user/".length)) ?? null;
-    return BUNDLED_CONTENT[path] ?? null;
-  }, []);
+  const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
   const programResult = useMemo(() => parseProgram(source, config, includeResolver), [source, config, includeResolver]);
 
@@ -355,7 +338,7 @@ export default function App() {
         switchToSlot(name);
       } else {
         const path = `${type}/${name}`;
-        const src = BUNDLED_CONTENT[path];
+        const src = resolveContent(path);
         if (src) loadExample(src.trimStart());
         else {
           // Try display lists for case-insensitive or label match
