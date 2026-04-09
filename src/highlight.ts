@@ -29,6 +29,7 @@ const mDefUse   = Decoration.mark({ class: "cml-def-use" });
 const mBound    = Decoration.mark({ class: "cml-bound" });
 const mParam    = Decoration.mark({ class: "cml-param" });
 const mFree     = Decoration.mark({ class: "cml-free" });
+const mUnparsed = Decoration.mark({ class: "cml-unparsed" });
 
 type Tk = { from: number; to: number; m: Decoration };
 
@@ -66,9 +67,9 @@ function applyTokenDecorations(
     const to = (tok.endOffset ?? tok.startOffset) + 1;
     if (tok.tokenType === Pragma)
       tks.push({ from, to, m: mPragma });
-    else if (tokenMatcher(tok, DefAssign) || tokenMatcher(tok, Dot))
+    else if (tokenMatcher(tok, DefAssign))
       tks.push({ from, to, m: mOp });
-    else if (tokenMatcher(tok, Backslash))
+    else if (tokenMatcher(tok, Backslash) || tokenMatcher(tok, Dot))
       tks.push({ from, to, m: mLambda });
     else if (tok.tokenType === Pi || tok.tokenType === Equiv)
       tks.push({ from, to, m: mPi });
@@ -135,6 +136,14 @@ function buildDecorations(view: EditorView): DecorationSet {
       for (const pos of paramPositions ?? [])
         tks.push({ from: pos.from, to: pos.to, m: mParam });
       walkTerm(term, positions, allDefNames, boundNames ?? new Set(), tks);
+    }
+  }
+
+  // Dim the region from the first hard error onward — signals "not parsed"
+  if (parsed) {
+    const firstError = parsed.errors.find(e => e.kind !== "warning");
+    if (firstError && firstError.offset < fullText.length) {
+      tks.push({ from: firstError.offset, to: fullText.length, m: mUnparsed });
     }
   }
 

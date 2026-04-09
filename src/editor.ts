@@ -45,9 +45,10 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-pi":       { color: "#e8e4dc", fontWeight: "600" },
   ".cml-def-name": { color: "#c9a84c", fontWeight: "600" },
   ".cml-def-use":  { color: "#c9a84c" },
-  ".cml-param":    { color: "#4caf7d", fontWeight: "600" },  // binder (declaration site)
-  ".cml-bound":    { color: "#4caf7d" },                     // bound variable use
-  ".cml-free":     { color: "#7ab0c8" },                     // free variable
+  ".cml-param":    { color: "#4caf7d", fontWeight: "600", fontStyle: "italic" },  // binder (declaration site)
+  ".cml-bound":    { color: "#4caf7d", fontStyle: "italic" },                     // bound variable use
+  ".cml-free":     { color: "#7ab0c8", fontStyle: "italic" },                     // free variable
+  ".cml-unparsed": { opacity: "0.35" },                      // region after first parse error
   ".cml-link":     { color: "#c9a84c", textDecoration: "underline", cursor: "pointer !important" },
 }, { dark: true });
 
