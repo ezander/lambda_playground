@@ -105,11 +105,13 @@
 * [x] weird: all white when last char is only an equiv, but when there's an error before, highlighting works ← append \n to input in parseProgram; simplifies grammar (no EOF gate needed)
 * [x] split parser.ts (>1000 lines) into types.ts / grammar.ts / semantics.ts; parser.ts becomes a selective barrel re-export
 * [x] code review: formatError inline type → LambdaError; selective barrel (no Raw* leakage); includeCache invalidated on config change; +10 tests; fix autocomplete Extension import (@codemirror/view → @codemirror/state)
+* [x] maybe ::= for redef or undef, for temp things ← ::= redefines without warning; warns if name not yet defined; no undef for now
+* [x] I want to have a text rewrap with ctrl+r in multiline comments
 
 ## Up next
 
-* [x] maybe ::= for redef or undef, for temp things ← ::= redefines without warning; warns if name not yet defined; no undef for now
-* [ ] I want to have a text rewrap with ctrl+r in multiline comments
+* [ ] Maybe: short-cut to return to editor from everywhere on the page
+* [ ] extend [ ] links for html links, in new tab or window
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
 * [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
@@ -120,6 +122,8 @@
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
 
 ## Consider
+
+* [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
 
 * [ ] output expressions: term highlighting (like in the editor), possibility for inline output (as "widgets" directly in the editor via codemirror plugins), manual reductions (just a thought)
 
