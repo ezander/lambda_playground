@@ -1,5 +1,6 @@
 import { ViewPlugin, ViewUpdate, DecorationSet, Decoration, EditorView } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
+import { BUNDLED_CONTENT } from "./data/content";
 
 // ── Comment range detection ───────────────────────────────────────────────────
 
@@ -30,7 +31,14 @@ export type LinkHandler = (type: string, name: string) => void;
 
 // ── ViewPlugin ────────────────────────────────────────────────────────────────
 
-const linkMark = Decoration.mark({ class: "cml-link" });
+const linkMark     = Decoration.mark({ class: "cml-link" });
+const linkDeadMark = Decoration.mark({ class: "cml-link-dead" });
+
+function linkExists(type: string, name: string): boolean {
+  if (type === "user")
+    return localStorage.getItem("lambda-playground:saved:" + name) !== null;
+  return (`${type}/${name}`) in BUNDLED_CONTENT;
+}
 
 class LinkViewPlugin {
   decorations: DecorationSet;
@@ -42,14 +50,14 @@ class LinkViewPlugin {
     const builder = new RangeSetBuilder<Decoration>();
     const text = view.state.doc.toString();
     const commentRanges = findCommentRanges(text);
-    const matches: { from: number; to: number }[] = [];
+    const matches: { from: number; to: number; dead: boolean }[] = [];
     LINK_RE.lastIndex = 0;
     let m;
     while ((m = LINK_RE.exec(text)) !== null)
       if (inComment(m.index, commentRanges))
-        matches.push({ from: m.index + 1, to: m.index + m[0].length - 1 }); // inside the brackets
+        matches.push({ from: m.index + 1, to: m.index + m[0].length - 1, dead: !linkExists(m[1], m[2]) });
     matches.sort((a, b) => a.from - b.from);
-    for (const { from, to } of matches) builder.add(from, to, linkMark);
+    for (const { from, to, dead } of matches) builder.add(from, to, dead ? linkDeadMark : linkMark);
     return builder.finish();
   }
 }
@@ -61,7 +69,7 @@ export function lambdaLinks(handlerRef: { current: LinkHandler | null }) {
     ViewPlugin.fromClass(LinkViewPlugin, { decorations: p => p.decorations }),
     EditorView.domEventHandlers({
       click(event) {
-        const target = (event.target as HTMLElement).closest(".cml-link");
+        const target = (event.target as HTMLElement).closest(".cml-link, .cml-link-dead");
         if (!target) return false;
         const m = /^(example|user|tut)\/(.+)$/.exec(target.textContent ?? "");
         if (!m) return false;

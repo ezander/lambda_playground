@@ -39,9 +39,9 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cm-scroller": { overflow: "auto", background: "#1a1a1a" },
   // ── Syntax highlighting ──
   ".cml-comment":  { color: "#8a9090", fontStyle: "italic" },
-  ".cml-error":    { textDecoration: "underline wavy red" },
+  ".cml-error":    { textDecoration: "underline wavy #b03030", textDecorationThickness: "1px", textUnderlineOffset: "4px" },
   ".cml-pragma":   { color: "#7a8fa8", fontStyle: "italic" },
-  ".cml-op":       { color: "#7a7060" },
+  ".cml-op":       { color: "#9a8860" },
   ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
   ".cml-pi":       { color: "#e8e4dc", fontWeight: "600" },
   ".cml-def-name": { color: "#c9a84c", fontWeight: "600" },
@@ -50,7 +50,8 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-bound":    { color: "#4caf7d", fontStyle: "italic" },                     // bound variable use
   ".cml-free":     { color: "#7ab0c8", fontStyle: "italic" },                     // free variable
   ".cml-unparsed": { opacity: "0.35" },                      // region after first parse error
-  ".cml-link":     { color: "#c9a84c", textDecoration: "underline", cursor: "pointer !important" },
+  ".cml-link":      { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
+  ".cml-link-dead": { color: "#7ab0c8", textDecoration: "underline dotted #b05050", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
 }, { dark: true });
 
 // ── Bracket-wrap keymap ───────────────────────────────────────────────────────
