@@ -71,9 +71,10 @@ export function lambdaLinks(handlerRef: { current: LinkHandler | null }) {
       click(event) {
         const target = (event.target as HTMLElement).closest(".cml-link, .cml-link-dead");
         if (!target) return false;
-        const m = /^(example|user|tut)\/(.+)$/.exec(target.textContent ?? "");
-        if (!m) return false;
-        handlerRef.current?.(m[1], m[2]);
+        const text = target.textContent ?? "";
+        const slash = text.indexOf("/");
+        if (slash < 1) return false;
+        handlerRef.current?.(text.slice(0, slash), text.slice(slash + 1));
         event.preventDefault();
         return true;
       }
