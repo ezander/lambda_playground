@@ -411,7 +411,9 @@ export default function App() {
   const showImportRef = useRef(false);
   showImportRef.current = showImport;
   anyModalOpenRef.current = anyModalOpenRef.current || showImport;
-  const importInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef   = useRef<HTMLInputElement>(null);
+  const saveNameInputRef = useRef<HTMLInputElement>(null);
+  const saveBtnRef       = useRef<HTMLButtonElement>(null);
 
   const handleImportPick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -523,7 +525,16 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showImportRef.current) { setShowImport(false); return; }
-        if (!anyModalOpenRef.current) { editorViewRef.current?.focus(); return; }
+        if (!anyModalOpenRef.current) {
+          const view = editorViewRef.current;
+          if (view?.hasFocus) {
+            view.contentDOM.blur();
+            if (isDirtyRef.current && saveBtnRef.current) saveBtnRef.current.focus();
+            else saveNameInputRef.current?.focus();
+          }
+          else view?.focus();
+          return;
+        }
         return;
       }
       if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
@@ -790,7 +801,7 @@ export default function App() {
                   return <span className={cls}> ●</span>;
                 })() : ""}
               </span>
-              <button className="ex-btn" onClick={handleSaveOverwrite}
+              <button className="ex-btn" ref={saveBtnRef} onClick={handleSaveOverwrite}
                 disabled={!loadedSlotName || !isDirty}
                 title="Save changes to current buffer">save</button>
               <span className="toolbar-sep" />
@@ -798,6 +809,7 @@ export default function App() {
                 <input
                   className="save-name-input"
                   type="text"
+                  ref={saveNameInputRef}
                   placeholder="name…"
                   value={saveName}
                   onChange={e => setSaveName(e.target.value)}

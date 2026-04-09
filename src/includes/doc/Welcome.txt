@@ -21,15 +21,15 @@
   grammar (you'll find the EBNF in the Help). And, here we are, a joint effort
   of myself and Claude Code in implementing such a system. I hope you have fun!
 
-  I've created a couple of docs and tutorials on how that all works and the
-  basis of λ calculus. You can just click the links below or select them from
-  the pickers in the toolbar.
+  I've created a couple of docs and tutorials on how that all works and basis of
+  λ calculus. You can just click the links below or select them from the pickers
+  in the toolbar.
 
   Some docs to start with:
     [doc/Basics]           — How this system works
     [tutorial/Basics]      — The history and basics of the λ calculus
     [example/Booleans]     — An example on different types of booleans
-  (*** NB: the links may not yet be working, I'm still working on it. ***)
+  (NB: red underlined links are not yet working, this is still work in progress.)
 
   In the following you'll see a simple example of the so-called Church-encoded
   booleans (if you don't know what that is yet, you'll find out in the
@@ -44,3 +44,15 @@ true  := λx y. x
 false := λx y. y
 not p := p false true
 not true
+
+#*
+  All of this was inspired by Helmut Brandl's article "Programming with Lambda
+  Calculus" at [https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html] . My
+  original intention was to make all of the codes in the article runnable within
+  my programming framework by just copy-and-pasting from it, but I slowly
+  diverted from that. E.g. I slowly ditched the notation of pure 7-bit ascii to
+  utf8/unicode to better resemble the original λ calculus (though I sometimes
+  like the retro-look of the ascii version), and also changed some other
+  syntactical elements to be unambiguously parseable. Tbc...
+*#
+
