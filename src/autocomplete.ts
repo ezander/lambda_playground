@@ -5,6 +5,7 @@ import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
 import { BUNDLED_CONTENT } from "./data/content";
 import { getUserIncludePaths } from "./storage";
+import { findCommentRanges, inComment } from "./comment";
 
 // Matches any identifier-like token (alphanumeric/Greek/operator chars)
 const IDENT_RE = /[a-zA-Z0-9_'\u0370-\u03FF+\-*/^~&|<>!?=]+/;
@@ -52,16 +53,8 @@ function completionSource(context: CompletionContext): CompletionResult | null {
   const textToCursor = line.text.slice(0, context.pos - line.from);
   const bracketIdx = textToCursor.lastIndexOf("[");
   if (bracketIdx !== -1 && !textToCursor.slice(bracketIdx + 1).includes("]")) {
-    // Only complete inside comments
-    const lineIsComment = line.text.trimStart().startsWith("#");
-    // Check for block comment context by scanning backwards for #*
     const fullText = context.state.doc.toString();
-    const posInDoc = context.pos;
-    const lastBlockOpen  = fullText.lastIndexOf("#*", posInDoc);
-    const lastBlockClose = fullText.lastIndexOf("*#", posInDoc);
-    const inBlockComment = lastBlockOpen !== -1 && lastBlockOpen > lastBlockClose;
-
-    if (lineIsComment || inBlockComment) {
+    if (inComment(context.pos, findCommentRanges(fullText))) {
       const from = line.from + bracketIdx + 1;
       return {
         from,
