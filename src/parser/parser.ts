@@ -34,7 +34,7 @@ import { prettyPrint } from "./pretty";
 //
 // Program grammar:
 //   program            ::= programItem*
-//   programItem        ::= statementSep | statement (statementSep | EOF) | pragmaLine
+//   programItem        ::= statementSep | statement statementSep | pragmaLine
 //   statementSep       ::= NewLine | Semi
 //   pragmaLine         ::= Pragma NewLine
 //   statement          ::= printStmt | equivStmt | nequivStmt | definition | term
@@ -74,17 +74,10 @@ class LambdaParser extends CstParser {
       {
         ALT: () => {
           this.SUBRULE(this.statement);
-          this.OR2([
-            { ALT: () => this.SUBRULE2(this.statementSep) },
-            { GATE: () => tokenMatcher(this.LA(1), EOF), ALT: () => {} },
-          ]);
+          this.SUBRULE2(this.statementSep);
         },
       },
-      {
-        ALT: () => {
-          this.SUBRULE(this.pragmaLine);
-        },
-      },
+      { ALT: () => this.SUBRULE(this.pragmaLine) },
     ]);
   });
 
@@ -750,6 +743,10 @@ export function parseProgram(
   const equivComprehensionInfos: EquivComprehensionInfo[] = [];
   const pragmaConfig: PragmaConfig = {};
   const equivFailed = { value: false };
+
+  // Ensure input ends with a newline so the last statement always has a terminator.
+  // This fixes syntax highlighting when the last line is incomplete (e.g. a bare ≡).
+  if (!input.endsWith("\n")) input += "\n";
 
   // ── Lex the full input ─────────────────────────────────────────────────────
   const lexResult = LambdaLexer.tokenize(input);

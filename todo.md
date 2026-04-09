@@ -111,7 +111,7 @@
   * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
   * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
-* [ ] weird: all white when last char is only an equiv, but when there's an error before, highlighting works
+* [x] weird: all white when last char is only an equiv, but when there's an error before, highlighting works ← append \\n to input in parseProgram; simplifies grammar (no EOF gate needed)
 
 ## Consider
 
