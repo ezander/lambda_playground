@@ -2,7 +2,14 @@ import { BUNDLED_CONTENT } from "./data/content";
 
 // ── localStorage key constants ────────────────────────────────────────────────
 
-export const SAVE_PREFIX = "lambda-playground:saved:";
+export const SAVE_PREFIX     = "lambda-playground:saved:";
+export const KEY_CONFIG      = "lambda-playground:config";
+export const KEY_SOURCE      = "lambda-playground:source";
+export const KEY_KINO        = "lambda-playground:kino";
+export const KEY_KINO_SPLIT  = "lambda-playground:kino-split";
+export const KEY_PANEL_STEPS = "lambda-playground:panel:steps";
+export const KEY_PANEL_PRINT = "lambda-playground:panel:print";
+export const KEY_PRINT_DESC  = "lambda-playground:print:desc";
 
 // ── Saved slot helpers ────────────────────────────────────────────────────────
 

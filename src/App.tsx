@@ -19,19 +19,19 @@ import "./App.css";
 import LZString from "lz-string";
 import JSZip from "jszip";
 import { DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
-import { SAVE_PREFIX, getSavedSlots, resolveContent } from "./storage";
+import { SAVE_PREFIX, getSavedSlots, resolveContent, KEY_CONFIG, KEY_SOURCE, KEY_KINO, KEY_KINO_SPLIT, KEY_PANEL_STEPS, KEY_PANEL_PRINT, KEY_PRINT_DESC } from "./storage";
 import { Config, DEFAULT_CONFIG } from "./config";
 
 function loadConfig(): Config {
   try {
-    const s = localStorage.getItem("lambda-playground:config");
+    const s = localStorage.getItem(KEY_CONFIG);
     if (s) return { ...DEFAULT_CONFIG, ...JSON.parse(s) };
   } catch {}
   return { ...DEFAULT_CONFIG };
 }
 
 function saveConfig(c: Config) {
-  localStorage.setItem("lambda-playground:config", JSON.stringify(c));
+  localStorage.setItem(KEY_CONFIG, JSON.stringify(c));
 }
 
 function Panel({ label, open, onToggle, children, className, flush = false, headerExtra }: {
@@ -109,7 +109,7 @@ export default function App() {
   const [source, setSource]           = useState(() => {
     const p = new URLSearchParams(window.location.search).get("s");
     if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
-    return localStorage.getItem("lambda-playground:source") ?? DEFAULT_SCRATCH;
+    return localStorage.getItem(KEY_SOURCE) ?? DEFAULT_SCRATCH;
   });
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
@@ -119,10 +119,10 @@ export default function App() {
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
   const [canUndo, setCanUndo]         = useState(false);
   const [canRedo, setCanRedo]         = useState(false);
-  const [kinoLayout, setKinoLayout]   = useState(() => localStorage.getItem("lambda-playground:kino") === "1");
+  const [kinoLayout, setKinoLayout]   = useState(() => localStorage.getItem(KEY_KINO) === "1");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const kinoActive = kinoLayout || isFullscreen;
-  const [kinoSplitPct, setKinoSplitPct] = useState(() => Number(localStorage.getItem("lambda-playground:kino-split")) || 40);
+  const [kinoSplitPct, setKinoSplitPct] = useState(() => Number(localStorage.getItem(KEY_KINO_SPLIT)) || 40);
   const mainRef = useRef<HTMLElement>(null);
   const [showSubst, setShowSubst]     = useState(false);
   const [saveName, setSaveName]       = useState("");
@@ -136,21 +136,21 @@ export default function App() {
   const [showCopied, setShowCopied]   = useState(false);
   const [copiedKey,  setCopiedKey]    = useState(0);
   const [config, setConfig]         = useState<Config>(loadConfig);
-  const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:steps") !== "0");
-  const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem("lambda-playground:panel:print") !== "0");
-  const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem("lambda-playground:print:desc") === "1");
+  const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem(KEY_PANEL_STEPS) !== "0");
+  const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem(KEY_PANEL_PRINT) !== "0");
+  const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem(KEY_PRINT_DESC) === "1");
   const updateConfig = useCallback((patch: Partial<Config>) => {
     setConfig(c => { const next = { ...c, ...patch }; saveConfig(next); return next; });
   }, []);
 
-  const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:steps", n ? "1" : "0"); return n; }), []);
-  const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem("lambda-playground:panel:print", n ? "1" : "0"); return n; }), []);
+  const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem(KEY_PANEL_STEPS, n ? "1" : "0"); return n; }), []);
+  const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem(KEY_PANEL_PRINT, n ? "1" : "0"); return n; }), []);
 
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
       const next = typeof s === "function" ? s(prev) : s;
       if (loadedSlotRef.current === null)
-        localStorage.setItem("lambda-playground:source", next); // only auto-save scratch
+        localStorage.setItem(KEY_SOURCE, next); // only auto-save scratch
       return next;
     });
   }, []);
@@ -261,7 +261,7 @@ export default function App() {
     if (loadedSlotRef.current !== null && isDirty) {
       if (!window.confirm(`Discard unsaved changes to buffer "${loadedSlotRef.current}"?`)) return;
     }
-    const scratch = localStorage.getItem("lambda-playground:source") ?? "";
+    const scratch = localStorage.getItem(KEY_SOURCE) ?? "";
     loadedSlotRef.current = null;
     setLoadedSlotName(null);
     setSaveName("");
@@ -314,7 +314,7 @@ export default function App() {
     setSavedSlots(getSavedSlots());
     setSaveName("");
     if (loadedSlotRef.current === name) {
-      const scratch = localStorage.getItem("lambda-playground:source") ?? "";
+      const scratch = localStorage.getItem(KEY_SOURCE) ?? "";
       loadedSlotRef.current = null;
       setLoadedSlotName(null);
       setSource(scratch);
@@ -324,7 +324,7 @@ export default function App() {
 
   const loadExample = useCallback((exSrc: string) => {
     const view = editorViewRef.current;
-    const oldScratch = localStorage.getItem("lambda-playground:source") ?? "";
+    const oldScratch = localStorage.getItem(KEY_SOURCE) ?? "";
     // Switch to scratch buffer
     loadedSlotRef.current = null;
     setLoadedSlotName(null);
@@ -337,7 +337,7 @@ export default function App() {
     }
     const newSrc = exSrc;
     setSource(newSrc);
-    localStorage.setItem("lambda-playground:source", newSrc);
+    localStorage.setItem(KEY_SOURCE, newSrc);
   }, []);
 
   useEffect(() => {
@@ -488,7 +488,7 @@ export default function App() {
     return exts;
   }, []);
 
-  const toggleTheater   = useCallback(() => setKinoLayout(v => { const next = !v; localStorage.setItem("lambda-playground:kino", next ? "1" : "0"); return next; }), []);
+  const toggleTheater   = useCallback(() => setKinoLayout(v => { const next = !v; localStorage.setItem(KEY_KINO, next ? "1" : "0"); return next; }), []);
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement)
       document.documentElement.requestFullscreen().catch(() => {});
@@ -516,7 +516,7 @@ export default function App() {
       const rect = mainRef.current.getBoundingClientRect();
       const pct = ((ev.clientX - rect.left) / rect.width) * 100;
       const clamped = Math.max(20, Math.min(75, pct));
-      localStorage.setItem("lambda-playground:kino-split", String(clamped));
+      localStorage.setItem(KEY_KINO_SPLIT, String(clamped));
       setKinoSplitPct(clamped);
     };
     const onMouseUp = () => {
@@ -881,7 +881,7 @@ export default function App() {
 
         {/* ── Print panel ── */}
         <Panel label="output" open={printOpen} onToggle={togglePrint}
-          headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
+          headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem(KEY_PRINT_DESC, n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
           {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0 || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0) ? (() => {
             type PrintItem      = { kind: "print";      data: typeof programResult.printInfos[number] };
             type EquivItem      = { kind: "equiv";      data: EquivInfo; passed: boolean; opSym: string };
