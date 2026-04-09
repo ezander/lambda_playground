@@ -30,6 +30,7 @@ const mBound    = Decoration.mark({ class: "cml-bound" });
 const mParam    = Decoration.mark({ class: "cml-param" });
 const mFree     = Decoration.mark({ class: "cml-free" });
 const mUnparsed = Decoration.mark({ class: "cml-unparsed" });
+const mError    = Decoration.mark({ class: "cml-error" });
 
 type Tk = { from: number; to: number; m: Decoration };
 
@@ -139,10 +140,17 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
   }
 
-  // Dim the region from the first hard error onward — signals "not parsed"
+  // Squiggles under each error token (to end of line), dim region after first hard error
   if (parsed) {
-    const firstError = parsed.errors.find(e => e.kind !== "warning");
-    if (firstError && firstError.offset < fullText.length) {
+    for (const err of parsed.errors) {
+      if (err.kind === "warning" || err.offset == null) continue;
+      const lineStart = fullText.lastIndexOf("\n", err.offset - 1) + 1;
+      const lineEnd   = fullText.indexOf("\n", err.offset);
+      const to = lineEnd === -1 ? fullText.length : lineEnd;
+      if (lineStart < to) tks.push({ from: lineStart, to, m: mError });
+    }
+    const firstError = parsed.errors.find(e => e.kind !== "warning" && e.offset != null);
+    if (firstError && firstError.offset != null && firstError.offset < fullText.length) {
       tks.push({ from: firstError.offset, to: fullText.length, m: mUnparsed });
     }
   }

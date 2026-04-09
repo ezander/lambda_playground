@@ -38,7 +38,8 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cm-selectionBackground, ::selection": { background: "rgba(201,168,76,0.2) !important" },
   ".cm-scroller": { overflow: "auto", background: "#1a1a1a" },
   // ── Syntax highlighting ──
-  ".cml-comment":  { color: "#6b6660", fontStyle: "italic" },
+  ".cml-comment":  { color: "#8a9090", fontStyle: "italic" },
+  ".cml-error":    { textDecoration: "underline wavy red" },
   ".cml-pragma":   { color: "#7a8fa8", fontStyle: "italic" },
   ".cml-op":       { color: "#7a7060" },
   ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
