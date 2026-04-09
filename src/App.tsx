@@ -728,7 +728,7 @@ export default function App() {
                     <div className="sym-row">
                       {LOGIC_SYMBOLS.map(g => (
                         <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
                           onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
                       ))}
                     </div>
@@ -736,7 +736,7 @@ export default function App() {
                     <div className="sym-row">
                       {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
                         <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
                           onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
                       ))}
                     </div>
@@ -744,7 +744,7 @@ export default function App() {
                     <div className="sym-row">
                       {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
                         <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : `\\${g.name}`}
+                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
                           onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
                       ))}
                     </div>

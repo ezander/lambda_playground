@@ -127,14 +127,11 @@ function insertAtLineStart(view: EditorView, text: string): boolean {
 // ── Greek symbol table ────────────────────────────────────────────────────────
 // Shared by Tab-expansion and the symbol picker in App.tsx.
 
-export type GreekSymbol = { sym: string; name: string; reserved?: boolean };
+export type GreekSymbol = { sym: string; name: string; reserved?: boolean; shortcut?: string };
 
 export const LOGIC_SYMBOLS: GreekSymbol[] = [
-  { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
-  { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
-  { sym: "≡", name: "equiv"                     },  // equivalence assertion
-  { sym: "≢", name: "nequiv"                    },  // non-equivalence assertion
-  { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
+  { sym: "≡", name: "equiv",  shortcut: "alt-e"  },  // equivalence assertion
+  { sym: "≢", name: "nequiv", shortcut: "alt-n"  },  // non-equivalence assertion
   { sym: "∧", name: "and"      },
   { sym: "∨", name: "or"       },
   { sym: "¬", name: "not"      },
@@ -147,6 +144,9 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "∘", name: "compose"  },
   { sym: "≠", name: "neq"      },
   { sym: "∅", name: "emptyset" },
+  { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
+  { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
+  { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
 ];
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
@@ -156,9 +156,9 @@ export const GREEK_SYMBOLS: GreekSymbol[] = [
   { sym: "ε", name: "epsilon" }, { sym: "ζ", name: "zeta"    },
   { sym: "η", name: "eta",     reserved: true }, { sym: "θ", name: "theta"  },
   { sym: "ι", name: "iota"    }, { sym: "κ", name: "kappa"   },
-  { sym: "λ", name: "lambda"  }, { sym: "μ", name: "mu"      },
+  { sym: "λ", name: "lambda", shortcut: "alt-l" }, { sym: "μ", name: "mu"      },
   { sym: "ν", name: "nu"      }, { sym: "ξ", name: "xi"      },
-  { sym: "π", name: "pi"      }, { sym: "ρ", name: "rho"     },
+  { sym: "π", name: "pi", shortcut: "alt-p" }, { sym: "ρ", name: "rho"     },
   { sym: "σ", name: "sigma"   }, { sym: "τ", name: "tau"     },
   { sym: "υ", name: "upsilon" }, { sym: "φ", name: "phi"     },
   { sym: "χ", name: "chi"     }, { sym: "ψ", name: "psi"     },
