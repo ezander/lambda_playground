@@ -106,12 +106,13 @@
 * [x] split parser.ts (>1000 lines) into types.ts / grammar.ts / semantics.ts; parser.ts becomes a selective barrel re-export
 * [x] code review: formatError inline type → LambdaError; selective barrel (no Raw* leakage); includeCache invalidated on config change; +10 tests; fix autocomplete Extension import (@codemirror/view → @codemirror/state)
 * [x] maybe ::= for redef or undef, for temp things ← ::= redefines without warning; warns if name not yet defined; no undef for now
-* [x] I want to have a text rewrap with ctrl+r in multiline comments
+* [x] I want to have a text rewrap with ctrl+r in multiline comments ← ruler at wrap width; Ctrl-R reflows paragraph; preserves [...] links atomic; width settable in settings
+* [x] shortcut to return to editor / leave editor: Escape toggles focus; lands on save button (if dirty) or buffer name field
+* [x] extend [ ] links for html links, in new tab or window ← [https://...] in comments opens new tab with ↗ indicator
+* [x] link navigation (doc/example/tutorial) pushes onto undo stack so Ctrl-Z acts as go-back
 
 ## Up next
 
-* [x] shortcut to return to editor / leave editor: Escape toggles focus; lands on save button (if dirty) or buffer name field
-* [x] extend [ ] links for html links, in new tab or window ← [https://...] in comments opens new tab with ↗ indicator
 * [ ] review full tab order on rendered page and fix keyboard navigation
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
