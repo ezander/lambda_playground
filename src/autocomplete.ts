@@ -1,6 +1,6 @@
 import { autocompletion, startCompletion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-import { keymap, Extension } from "@codemirror/view";
-import { Prec } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
+import { Prec, Extension } from "@codemirror/state";
 import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
 import { BUNDLED_CONTENT } from "./data/content";
