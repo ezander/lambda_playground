@@ -343,16 +343,15 @@ export default function App() {
 
   const loadExample = useCallback((exSrc: string) => {
     const view = editorViewRef.current;
-    const oldScratch = localStorage.getItem(KEY_SOURCE) ?? "";
     // Switch to scratch buffer
     loadedSlotRef.current = null;
     setLoadedSlotName(null);
     setSaveName("");
-    // Reset editor history to old scratch content as base, then apply example on top.
-    // Skip if content is already identical (avoids breaking extensions on no-op reload).
+    // Push new content onto the existing undo stack so Ctrl-Z navigates back through link history.
+    // Skip if content is already identical (avoids a no-op history entry).
     if (view && view.state.doc.toString() !== exSrc) {
-      view.setState(EditorState.create({ doc: oldScratch, extensions: editorExtRef.current }));
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: exSrc } });
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: exSrc },
+                      effects: EditorView.scrollIntoView(0) });
     }
     const newSrc = exSrc;
     setSource(newSrc);
