@@ -58,6 +58,11 @@ function offsetToLineCol(source: string, offset: number): string {
   return `${line}:${col}`;
 }
 
+function formatError(e: { message: string; offset?: number; source?: string; location?: string; via?: string }, source: string): string {
+  const pos = e.location ?? (e.offset !== undefined ? offsetToLineCol(source, e.offset) : null);
+  return `${e.message}${e.source ? ` in "${e.source}"` : ""}${pos ? ` at (${pos})` : ""}${e.via ? `, via "${e.via}"` : ""}`;
+}
+
 function TruncatedText({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
   if (text.length <= TRUNCATE_LEN) return <>{text}</>;
@@ -581,7 +586,7 @@ export default function App() {
             e.offset !== undefined ? "parse-error-link" : "",
           ].join(" ").trim()}
           onClick={() => e.offset !== undefined && jumpTo(e.offset)}
-        >{`${e.source ? `In "${e.source}": ` : ""}${e.message}${e.offset !== undefined ? ` (${offsetToLineCol(source, e.offset)})` : ""}`}</li>
+        >{formatError(e, source)}</li>
       ))}
       {roundTripError && <li>{roundTripError}</li>}
     </ul>

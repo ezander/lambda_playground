@@ -407,7 +407,13 @@ const astBuilder = new AstBuilder();
 // ── 3. Public parse function ───────────────────────────────────────────────────
 // Parses a single expression. Used for the eval panel and single-term evaluation.
 
-export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning"; source?: string };
+export type LambdaError = { message: string; offset?: number; kind?: "error" | "warning"; source?: string; location?: string; via?: string };
+
+function errLocation(content: string, offset: number): string {
+  const line = (content.slice(0, offset).match(/\n/g)?.length ?? 0) + 1;
+  const col  = offset - content.lastIndexOf("\n", offset - 1);
+  return `${line}:${col}`;
+}
 
 export type ParseResult =
   | { ok: true;  term: Term; positions: PositionMap }
@@ -648,8 +654,10 @@ function processPragma(
       return;
     }
     const mixed = cachedParseMixin(path, content, defaultConfig, resolver, [...includeStack, path], defs);
-    for (const e of mixed.errors)
-      errors.push({ ...e, source: e.source ?? path });
+    for (const e of mixed.errors) {
+      const effectiveSource = e.source ?? path;
+      errors.push({ ...e, source: effectiveSource, location: e.location ?? (e.offset !== undefined ? errLocation(content, e.offset) : undefined), via: effectiveSource !== path ? path : undefined, offset });
+    }
     if (!mixed.ok) {
       equivFailed.value = true;
       const hasRealErrors = mixed.errors.some(e => e.kind !== "warning");
@@ -681,8 +689,10 @@ function processPragma(
       return;
     }
     const included = cachedParseInclude(path, content, defaultConfig, resolver, [...includeStack, path]);
-    for (const e of included.errors)
-      errors.push({ ...e, source: e.source ?? path });
+    for (const e of included.errors) {
+      const effectiveSource = e.source ?? path;
+      errors.push({ ...e, source: effectiveSource, location: e.location ?? (e.offset !== undefined ? errLocation(content, e.offset) : undefined), via: effectiveSource !== path ? path : undefined, offset });
+    }
     if (!included.ok) {
       equivFailed.value = true;
       const hasRealErrors = included.errors.some(e => e.kind !== "warning");
