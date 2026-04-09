@@ -107,6 +107,7 @@ export default function App() {
   const symPickerRef    = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp]         = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const anyModalOpenRef = useRef(false);
   const [source, setSource]           = useState(() => {
     const p = new URLSearchParams(window.location.search).get("s");
     if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
@@ -132,6 +133,9 @@ export default function App() {
   const loadedSlotRef = useRef<string | null>(null); // ref copy for use in setSourceAndSave closure
   const isDirty = loadedSlotName !== null &&
     source !== (localStorage.getItem(SAVE_PREFIX + loadedSlotName) ?? "");
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+  anyModalOpenRef.current = showHelp || showSettings;
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
   const [showCopied, setShowCopied]   = useState(false);
@@ -164,6 +168,15 @@ export default function App() {
   useEffect(() => {
     editorViewRef.current?.dispatch({ effects: setParsed.of(programResult) });
   }, [programResult]);
+
+  // Warn before page unload when a named buffer has unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   // Reconfigure wrap width (ruler + Ctrl-R keymap) when it changes
   useEffect(() => {
@@ -395,6 +408,9 @@ export default function App() {
 
   const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; checked: boolean }[]>([]);
   const [showImport, setShowImport]   = useState(false);
+  const showImportRef = useRef(false);
+  showImportRef.current = showImport;
+  anyModalOpenRef.current = anyModalOpenRef.current || showImport;
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportPick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -505,7 +521,12 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setShowImport(false); return; }
+      if (e.key === "Escape") {
+        if (showImportRef.current) { setShowImport(false); return; }
+        if (!anyModalOpenRef.current) { editorViewRef.current?.focus(); return; }
+        return;
+      }
+      if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
       if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }

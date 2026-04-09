@@ -2,71 +2,84 @@ import { EditorView, keymap } from "@codemirror/view";
 import { Compartment, Prec, Extension } from "@codemirror/state";
 import type { Command } from "@codemirror/view";
 
+// Pure reflow logic — no CM6 dependency, fully testable.
+// Returns { from, to, insert } describing the change, or null if nothing to do.
+export function rewrapAt(
+  text: string,
+  pos: number,
+  width: number,
+): { from: number; to: number; insert: string } | null {
+  // Must be inside a block comment (#* ... *#)
+  const BLOCK_RE = /#\*[\s\S]*?\*#/g;
+  let inComment = false;
+  let m: RegExpExecArray | null;
+  while ((m = BLOCK_RE.exec(text)) !== null) {
+    if (pos >= m.index && pos <= m.index + m[0].length) { inComment = true; break; }
+  }
+  if (!inComment) return null;
+
+  // Split into lines for navigation
+  const rawLines = text.split("\n");
+  // Find 0-based line index for pos
+  let lineIdx = 0, offset = 0;
+  for (let i = 0; i < rawLines.length; i++) {
+    if (offset + rawLines[i].length >= pos) { lineIdx = i; break; }
+    offset += rawLines[i].length + 1;
+  }
+
+  const trimmed = rawLines[lineIdx].trim();
+  if (trimmed === "" || trimmed === "#*" || trimmed === "*#") return null;
+
+  // Walk back to paragraph start
+  let startIdx = lineIdx;
+  while (startIdx > 0) {
+    const t = rawLines[startIdx - 1].trim();
+    if (t === "" || t === "#*") break;
+    startIdx--;
+  }
+
+  // Walk forward to paragraph end
+  let endIdx = lineIdx;
+  while (endIdx < rawLines.length - 1) {
+    const t = rawLines[endIdx + 1].trim();
+    if (t === "" || t === "*#") break;
+    endIdx++;
+  }
+
+  const indent = rawLines[startIdx].match(/^(\s*)/)?.[1] ?? "";
+
+  // Collect words, keeping [...] link groups atomic
+  const words: string[] = [];
+  for (let i = startIdx; i <= endIdx; i++)
+    words.push(...(rawLines[i].trim().match(/\[[^\]\n]*\]|\S+/g) ?? []));
+  if (words.length === 0) return null;
+
+  // Reflow
+  const lines: string[] = [];
+  let cur = indent + words[0];
+  for (let i = 1; i < words.length; i++) {
+    if (cur.length + 1 + words[i].length <= width) {
+      cur += " " + words[i];
+    } else {
+      lines.push(cur);
+      cur = indent + words[i];
+    }
+  }
+  lines.push(cur);
+
+  const from = rawLines.slice(0, startIdx).reduce((s, l) => s + l.length + 1, 0);
+  const to   = from + rawLines.slice(startIdx, endIdx + 1).reduce((s, l, i) => s + l.length + (i < endIdx - startIdx ? 1 : 0), 0);
+  const insert = lines.join("\n");
+
+  if (text.slice(from, to) === insert) return null; // already wrapped
+  return { from, to, insert };
+}
+
 function rewrapCmd(width: number): Command {
   return (view: EditorView): boolean => {
-    const doc  = view.state.doc;
-    const text = doc.toString();
-    const pos  = view.state.selection.main.head;
-
-    // Must be inside a block comment (#* ... *#)
-    const BLOCK_RE = /#\*[\s\S]*?\*#/g;
-    let inComment = false;
-    let m: RegExpExecArray | null;
-    while ((m = BLOCK_RE.exec(text)) !== null) {
-      if (pos >= m.index && pos <= m.index + m[0].length) { inComment = true; break; }
-    }
-    if (!inComment) return false;
-
-    const curLine = doc.lineAt(pos);
-    const trimmed = curLine.text.trim();
-
-    // Don't rewrap from delimiter or blank lines
-    if (trimmed === "" || trimmed === "#*" || trimmed === "*#") return false;
-
-    // Walk back to paragraph start (stop at blank line or #* line)
-    let startLine = curLine.number;
-    while (startLine > 1) {
-      const t = doc.line(startLine - 1).text.trim();
-      if (t === "" || t === "#*") break;
-      startLine--;
-    }
-
-    // Walk forward to paragraph end (stop at blank line or *# line)
-    let endLine = curLine.number;
-    while (endLine < doc.lines) {
-      const t = doc.line(endLine + 1).text.trim();
-      if (t === "" || t === "*#") break;
-      endLine++;
-    }
-
-    // Preserve leading whitespace of the first paragraph line
-    const indent = doc.line(startLine).text.match(/^(\s*)/)?.[1] ?? "";
-
-    // Collect all words across the paragraph
-    const words: string[] = [];
-    for (let ln = startLine; ln <= endLine; ln++)
-      words.push(...doc.line(ln).text.trim().split(/\s+/).filter(Boolean));
-    if (words.length === 0) return false;
-
-    // Reflow into lines ≤ width chars
-    const lines: string[] = [];
-    let cur = indent + words[0];
-    for (let i = 1; i < words.length; i++) {
-      if (cur.length + 1 + words[i].length <= width) {
-        cur += " " + words[i];
-      } else {
-        lines.push(cur);
-        cur = indent + words[i];
-      }
-    }
-    lines.push(cur);
-
-    const from   = doc.line(startLine).from;
-    const to     = doc.line(endLine).to;
-    const insert = lines.join("\n");
-
-    if (doc.sliceString(from, to) === insert) return true; // already wrapped
-    view.dispatch({ changes: { from, to, insert } });
+    const result = rewrapAt(view.state.doc.toString(), view.state.selection.main.head, width);
+    if (!result) return false;
+    view.dispatch({ changes: result });
     return true;
   };
 }
