@@ -890,14 +890,14 @@ export default function App() {
           headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem("lambda-playground:print:desc", n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
           {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0 || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0) ? (() => {
             type PrintItem      = { kind: "print";      data: typeof programResult.printInfos[number] };
-            type EquivItem      = { kind: "equiv";      data: EquivInfo };
+            type EquivItem      = { kind: "equiv";      data: EquivInfo; passed: boolean; opSym: string };
             type PrintCompItem  = { kind: "print-comp"; data: PrintComprehensionInfo };
             type EquivCompItem  = { kind: "equiv-comp"; data: EquivComprehensionInfo };
             const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem)[] = [
               ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
-              ...programResult.equivInfos.filter(d => config.showPassingEquiv || !d.equivalent).map(d => ({ kind: "equiv" as const, data: d })),
+              ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d, passed: d.negated ? !d.equivalent : d.equivalent, opSym: d.negated ? "≢" : "≡" })).filter(d => config.showPassingEquiv || !d.passed),
               ...programResult.printComprehensionInfos.map(d => ({ kind: "print-comp" as const, data: d })),
-              ...programResult.equivComprehensionInfos.filter(d => config.showPassingEquiv || d.rows.some(r => !r.equivalent)).map(d => ({ kind: "equiv-comp" as const, data: d })),
+              ...programResult.equivComprehensionInfos.filter(d => config.showPassingEquiv || !d.allPassed).map(d => ({ kind: "equiv-comp" as const, data: d })),
             ].sort((a, b) => (printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset));
             return (
               <div className="print-section">
@@ -924,20 +924,20 @@ export default function App() {
                     <code className="print-src">
                       <span className="print-index">{item.data.line}:</span>
                       {" "}{item.data.src1}
-                      <span className={`equiv-op ${item.data.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                      <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
                       {item.data.src2}
                     </code>
                     <code className="print-result">
                       <span className="print-result-text">
                         <Truncated text={item.data.norm1} />
-                        <span className={`equiv-op ${item.data.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                        <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
                         <Truncated text={item.data.norm2} />
                       </span>
                       <span className="print-result-status">
                         {item.data.equivalent
-                          ? <span className="eval-status normal-form">equivalent</span>
+                          ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
                           : item.data.terminated
-                            ? <span className="eval-status did-not-terminate">not equivalent</span>
+                            ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
                             : <span className="eval-status did-not-terminate">no normal form</span>}
                       </span>
                     </code>
@@ -976,37 +976,41 @@ export default function App() {
                     <code className="print-src">
                       <span className="print-index">{item.data.line}:</span>
                       {" "}{item.data.src1}
-                      <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
+                      <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
                       {item.data.src2}
                       <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
                     </code>
                     <div className="comp-rows">
-                      {item.data.rows.map((row, ri) => (
-                        <div key={ri} className="comp-row">
-                          <span className="comp-bullet">•</span>
-                          <div className="comp-row-content">
-                            <code className="comp-subst-expr">
-                              {row.substExpr1}
-                              <span className={`equiv-op ${row.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
-                              {row.substExpr2}
-                            </code>
-                            <code className="print-result">
-                              <span className="print-result-text">
-                                <Truncated text={row.norm1} />
-                                <span className={`equiv-op ${row.equivalent ? "equiv-pass" : "equiv-fail"}`}> ≡ </span>
-                                <Truncated text={row.norm2} />
-                              </span>
-                              <span className="print-result-status">
-                                {row.equivalent
-                                  ? <span className="eval-status normal-form">equivalent</span>
-                                  : row.terminated
-                                    ? <span className="eval-status did-not-terminate">not equivalent</span>
-                                    : <span className="eval-status did-not-terminate">no normal form</span>}
-                              </span>
-                            </code>
+                      {item.data.rows.map((row, ri) => {
+                        const rowPassed = item.data.negated ? !row.equivalent : row.equivalent;
+                        const rowClass = `equiv-op ${rowPassed ? "equiv-pass" : "equiv-fail"}`;
+                        return (
+                          <div key={ri} className="comp-row">
+                            <span className="comp-bullet">•</span>
+                            <div className="comp-row-content">
+                              <code className="comp-subst-expr">
+                                {row.substExpr1}
+                                <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
+                                {row.substExpr2}
+                              </code>
+                              <code className="print-result">
+                                <span className="print-result-text">
+                                  <Truncated text={row.norm1} />
+                                  <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
+                                  <Truncated text={row.norm2} />
+                                </span>
+                                <span className="print-result-status">
+                                  {row.equivalent
+                                    ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
+                                    : row.terminated
+                                      ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
+                                      : <span className="eval-status did-not-terminate">no normal form</span>}
+                                </span>
+                              </code>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

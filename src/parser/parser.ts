@@ -6,6 +6,7 @@ import {
   Backslash,
   Pi,
   Equiv,
+  NEquiv,
   DefAssign,
   Dot,
   LParen,
@@ -36,9 +37,10 @@ import { prettyPrint } from "./pretty";
 //   programItem        ::= statementSep | statement (statementSep | EOF) | pragmaLine
 //   statementSep       ::= NewLine | Semi
 //   pragmaLine         ::= Pragma NewLine
-//   statement          ::= printStmt | equivStmt | definition | term
+//   statement          ::= printStmt | equivStmt | nequivStmt | definition | term
 //   printStmt          ::= π comprehensionSpec? term
 //   equivStmt          ::= ≡ comprehensionSpec? atom atom
+//   nequivStmt         ::= ≢ comprehensionSpec? atom atom
 //   definition         ::= identifier+ ':=' term         (gated: next := after identifier+)
 //   comprehensionSpec  ::= '[' compBinding (',' compBinding)* ']'
 //   compBinding ::= identLike ':=' '{' term (',' term)* '}'
@@ -97,6 +99,7 @@ class LambdaParser extends CstParser {
     this.OR([
       { ALT: () => this.SUBRULE(this.printStmt) },
       { ALT: () => this.SUBRULE(this.equivStmt) },
+      { ALT: () => this.SUBRULE(this.nequivStmt) },
       { GATE: () => this.isDefinition(), ALT: () => this.SUBRULE(this.definition) },
       { ALT: () => this.SUBRULE(this.term) },
     ]);
@@ -126,6 +129,13 @@ class LambdaParser extends CstParser {
 
   equivStmt = this.RULE("equivStmt", () => {
     this.CONSUME(Equiv);
+    this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
+    this.SUBRULE(this.atom);    // first operand
+    this.SUBRULE2(this.atom);   // second operand
+  });
+
+  nequivStmt = this.RULE("nequivStmt", () => {
+    this.CONSUME(NEquiv);
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.atom);    // first operand
     this.SUBRULE2(this.atom);   // second operand
@@ -236,7 +246,7 @@ type RawEmpty    = { kind: "empty" };
 type RawPragma   = { kind: "pragma"; text: string; offset: number };
 type RawDef      = { kind: "def"; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
 type RawPrint    = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number };
-type RawEquiv    = { kind: "equiv"; atom1: Term; atom2: Term; bindings: RawBinding[] | null; offset: number };
+type RawEquiv    = { kind: "equiv"; atom1: Term; atom2: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
 type RawExpr     = { kind: "expr"; term: Term; offset: number };
 type RawStmt     = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr;
 
@@ -280,6 +290,7 @@ class AstBuilder extends BaseCstVisitor {
   statement(ctx: any): RawStmt {
     if (ctx.printStmt)      return this.visit(ctx.printStmt[0])      as RawStmt;
     if (ctx.equivStmt)      return this.visit(ctx.equivStmt[0])      as RawStmt;
+    if (ctx.nequivStmt)     return this.visit(ctx.nequivStmt[0])     as RawStmt;
     if (ctx.definition)     return this.visit(ctx.definition[0])     as RawStmt;
     if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: 0 }; }
     return { kind: "empty" };
@@ -304,7 +315,16 @@ class AstBuilder extends BaseCstVisitor {
     const atom1 = this.visit(ctx.atom[0]) as Term;
     const atom2 = this.visit(ctx.atom[1]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "equiv", atom1, atom2, bindings, offset: equivTok.startOffset };
+    return { kind: "equiv", atom1, atom2, bindings, negated: false, offset: equivTok.startOffset };
+  }
+
+  nequivStmt(ctx: any): RawEquiv | RawEmpty {
+    if (!ctx.NEquiv || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
+    const tok = ctx.NEquiv[0] as IToken;
+    const atom1 = this.visit(ctx.atom[0]) as Term;
+    const atom2 = this.visit(ctx.atom[1]) as Term;
+    const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
+    return { kind: "equiv", atom1, atom2, bindings, negated: true, offset: tok.startOffset };
   }
 
   definition(ctx: any): RawDef | RawEmpty {
@@ -491,6 +511,7 @@ export type EquivInfo = {
   norm1: string; norm2: string;
   equivalent: boolean;
   terminated: boolean;
+  negated: boolean;
   offset: number; line: number;
 };
 
@@ -528,6 +549,7 @@ export type EquivComprehensionInfo = {
   bindings: ComprehensionBinding[];
   rows: EquivComprehensionRow[];
   allPassed: boolean;
+  negated: boolean;
   offset: number;
   line: number;
 };
@@ -968,7 +990,8 @@ export function parseProgram(
             const r2 = normalize(w2, cfg);
             const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
             const equivalent = terminated && alphaEq(r1.term, r2.term);
-            if (!equivalent) allPassed = false;
+            const passed = stmt.negated ? !equivalent : equivalent;
+            if (!passed) allPassed = false;
             rows.push({
               substExpr1: formatSubstExpr(src1, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
               substExpr2: formatSubstExpr(src2, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
@@ -983,7 +1006,7 @@ export function parseProgram(
             name: b.name,
             values: expandedBindings[bi].valueSrcs,
           }));
-          equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, offset: stmt.offset, line: currentLine });
+          equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, negated: stmt.negated, offset: stmt.offset, line: currentLine });
           if (!allPassed) equivFailed.value = true;
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
@@ -995,6 +1018,7 @@ export function parseProgram(
           const r2 = normalize(t2, cfg);
           const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
           const equivalent = terminated && alphaEq(r1.term, r2.term);
+          const passed = stmt.negated ? !equivalent : equivalent;
           equivInfos.push({
             src1: prettyPrint(stmt.atom1),
             src2: prettyPrint(stmt.atom2),
@@ -1002,10 +1026,11 @@ export function parseProgram(
             norm2: prettyPrint(r2.term),
             equivalent,
             terminated,
+            negated: stmt.negated,
             offset: stmt.offset,
             line: currentLine,
           });
-          if (!equivalent) equivFailed.value = true;
+          if (!passed) equivFailed.value = true;
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions });
         }
         break;

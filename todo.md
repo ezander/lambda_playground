@@ -100,7 +100,7 @@
 
 ## Up next
 
-* [ ] shall we have a non-equiv, too? could be useful* 
+* [x] shall we have a non-equiv, too? could be useful ← ≢ (Alt-N, \nequiv); passes when not equivalent; halts on failure; comprehension supported
 * [ ] maybe ::= for redef or undef, for temp things
 * [ ] I want to have a text rewrap with ctrl+r in multiline comments
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
@@ -139,6 +139,7 @@
 
 ## Questionable
  
+* [ ] ≢ renders smaller than ≡ in the editor — font fallback issue (U+2262 not in most monospace fonts)
 * [ ] Shall we have editor tabs like an ide
 * [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 * [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)

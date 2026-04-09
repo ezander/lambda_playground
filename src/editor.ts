@@ -132,7 +132,8 @@ export type GreekSymbol = { sym: string; name: string; reserved?: boolean };
 export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
   { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
-  { sym: "≡", name: "equiv",    reserved: true  },  // reserved for equivalence assertion
+  { sym: "≡", name: "equiv"                     },  // equivalence assertion
+  { sym: "≢", name: "nequiv"                    },  // non-equivalence assertion
   { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
   { sym: "∧", name: "and"      },
   { sym: "∨", name: "or"       },
@@ -206,4 +207,6 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-P", run: v => insertAtLineStart(v, "π") },
   { key: "Alt-e", run: v => insertAtLineStart(v, "≡") },
   { key: "Alt-E", run: v => insertAtLineStart(v, "≡") },
+  { key: "Alt-n", run: v => insertAtLineStart(v, "≢") },
+  { key: "Alt-N", run: v => insertAtLineStart(v, "≢") },
 ]));

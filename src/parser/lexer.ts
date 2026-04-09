@@ -67,6 +67,7 @@ export const Eta   = createToken({ name: "Eta",   pattern: /η/ });
 export const ForAll    = createToken({ name: "ForAll",    pattern: /∀/ });
 export const Exists    = createToken({ name: "Exists",    pattern: /∃/ });
 export const Equiv     = createToken({ name: "Equiv",     pattern: /≡/ });
+export const NEquiv    = createToken({ name: "NEquiv",    pattern: /≢/ });
 export const Turnstile = createToken({ name: "Turnstile", pattern: /⊢/ });
 
 // Backtick-quoted identifier: `anything except backtick and newline`
@@ -82,7 +83,7 @@ const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?
 
 // Plain identifier: one or more characters from the mixed charset.
 // Operator and alphanumeric chars may be freely mixed (e.g. "+3", "5-", "x+y" are all valid).
-// Reserved tokens (α, β, η, π, λ, ≡, ∀, ∃, ⊢) take priority via allTokens ordering.
+// Reserved tokens (α, β, η, π, λ, ≡, ≢, ∀, ∃, ⊢) take priority via allTokens ordering.
 export const PlainIdent = createToken({
   name: "PlainIdent",
   pattern: new RegExp(`${MIXED}+`),
@@ -102,7 +103,7 @@ export const allTokens = [
   Backslash,
   Pi,
   Alpha, Beta, Eta,                       // reserved Greek — before PlainIdent (same-length tie → first wins)
-  ForAll, Exists, Equiv, Turnstile,       // reserved logic — same strategy
+  ForAll, Exists, Equiv, NEquiv, Turnstile, // reserved logic — same strategy
   LParen,
   RParen,
   LBracket,

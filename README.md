@@ -10,7 +10,8 @@ An interactive browser-based playground for an untyped lambda dialect with step-
 - Named definitions with eager expansion into subsequent lines
 - Shorthand `f x y := e` desugars to `f := \x y. e`
 - `π expr` print statements: evaluate an expression to normal form and show it in the output panel
-- `≡ expr1 expr2` equivalence assertions: checks alpha-beta equivalence; green/red ≡ in output; halts further output on failure
+- `≡ expr1 expr2` equivalence assertions: checks alpha-beta equivalence; green/red in output; halts further output on failure
+- `≢ expr1 expr2` non-equivalence assertions: passes when terms are *not* equivalent; also halts on failure
 - Live parsing on every keystroke with clickable error locations
 - Syntax highlighting: defined names, lambda binders, bound/free variables, comments
 - Greek letters in identifiers (ω, Ω, Θ, …); logic symbols as operator identifiers (∧, ∨, ¬, →, ↔, ⊤, ⊥, ⊕, ⊗, ∘, ≠, ∅); backtick-quoted identifiers for arbitrary names
@@ -41,7 +42,7 @@ e[x:=a]              # substitution: desugars to (λx. e) a
 
 ### Identifiers
 
-Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η, ∀, ∃, ≡, ⊢ are reserved). Operator identifiers may also start with free logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅), enabling definitions like `∧ p q := p q false`.
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η, ∀, ∃, ⊢ are reserved). Operator identifiers may also start with free logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅), enabling definitions like `∧ p q := p q false`.
 
 Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 
@@ -77,10 +78,11 @@ and p q := p q false      # shorthand: f x y := e  means  f := λx y. e
 
 π and true false          # print to output panel (normalized)
 ≡ and true false false    # assert  and true false ≡ false  (left-assoc: last term is rhs)
+≢ true false              # assert  true ≢ false
 and true false            # last expression line is what gets evaluated
 ```
 
-Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π` and `≡` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression. A failing `≡` assertion halts further output.
+Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π`, `≡`, and `≢` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression. A failing assertion halts further output.
 
 ## Toolbar
 
@@ -117,6 +119,7 @@ Below the editor, a compact toolbar provides these groups:
 | `Alt-L` | Insert λ at cursor |
 | `Alt-P` | Insert π at start of line |
 | `Alt-E` | Insert ≡ at start of line |
+| `Alt-N` | Insert ≢ at start of line |
 | `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧); reserved symbols greyed out in picker |
 
 ## Development

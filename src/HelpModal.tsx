@@ -12,6 +12,7 @@ const TOKEN_LABELS: Record<string, string> = {
   Semi:         "';'",
   Pi:           "'π'",
   Equiv:        "'≡'",
+  NEquiv:       "'≢'",
   DefAssign:    "':='",
   Dot:          "'.'",
   Backslash:    "'λ'|'\\\\'",
@@ -132,7 +133,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>identifiers</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code></td><td>alphanumeric + Greek (except λ, π); may start with a digit; α/β/η/∀/∃/≡/⊢ reserved</td></tr>
+            <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code></td><td>alphanumeric + Greek (except λ, π); may start with a digit; α/β/η/∀/∃/⊢ reserved</td></tr>
             <tr><td><code>+</code>, <code>∧</code>, <code>∧x</code></td><td>operator: starts with <code>+ - * / ^ ~ &amp; | &lt; &gt; ! ? =</code> or a free logic symbol; chars may freely mix</td></tr>
             <tr><td><code>`any name`</code></td><td>backtick-quoted — allows spaces and special chars</td></tr>
           </tbody></table>
@@ -144,6 +145,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>π expr</code></td><td>evaluate to normal form, show in output panel</td></tr>
             <tr><td><code>π[a:=&#123;T,F&#125;] expr</code></td><td>comprehension: evaluate for each combination of substitutions</td></tr>
             <tr><td><code>≡ atom1 atom2</code></td><td>assert alpha-beta equivalence; halts script on failure</td></tr>
+            <tr><td><code>≢ atom1 atom2</code></td><td>assert non-equivalence; halts script on failure</td></tr>
             <tr><td><code>≡[a:=&#123;T,F&#125;] atom1 atom2</code></td><td>equivalence comprehension over substitution combinations</td></tr>
           </tbody></table>
 
@@ -199,6 +201,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
             <tr><td><code>Alt-E</code></td><td>insert ≡ at start of line</td></tr>
+            <tr><td><code>Alt-N</code></td><td>insert ≢ at start of line</td></tr>
             <tr><td><code>\name</code> + <kbd>space</kbd></td><td>insert symbol (e.g. <code>\omega</code> → ω)</td></tr>
           </tbody></table>
 

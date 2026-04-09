@@ -598,4 +598,21 @@ describe("comprehension", () => {
     expect(rows[0].substExpr1).toBe("(and a a)[a:=true]");
     expect(rows[0].substExpr2).toBe("(a)[a:=true]");
   });
+
+  it("≢ passes when terms are not equivalent", () => {
+    const prog = `${boolDefs}\n≢ true false`;
+    const r = parseProgram(prog);
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos).toHaveLength(1);
+    expect(r.equivInfos[0].negated).toBe(true);
+    expect(r.equivInfos[0].equivalent).toBe(false);
+  });
+
+  it("≢ fails (halts) when terms are equivalent", () => {
+    const prog = `${boolDefs}\n≢ true true`;
+    const r = parseProgram(prog);
+    expect(r.ok).toBe(false);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+    expect(r.equivInfos[0].negated).toBe(true);
+  });
 });
