@@ -34,7 +34,7 @@
 * [x] Make alt-l insert unicode lambda (also alt-m for μ)
 * [x] Make interpreter also accept lambda or lambda as unicode
 * [x] Make beta reductions via [], i.e. let application `(\x . e)a` first evaluate to `e[x:=a]` in an extra step, then perform beta
-* [x] Maybe we need eta-reduction? ← yes; available via η-step button only, not automatic
+* [x] Maybe we need eta-reduction? ← yes; η-step button for manual step; `#! allow-eta` to enable automatically
 * [x] what about ; for multiline defs? ← yes; `;` is statement separator (same as newline)
 * [x] tool tips over buttons
 * [x] recheck all tests and coverage
@@ -96,20 +96,22 @@
 * [x] links in comments e.g. with [example/Bla], make clickable, load example bla, or tut/bla into scratch, user links load buffers ← [type/name] in line+block comments; underlined accent color; asks if dirty
 * [x] get rid of the inserts/snippets - we have includes, better: docs/tutorials/examples/maybe quizzes ← doc/example/tutorial namespaces as .txt files; toolbar dropdowns; [] link + #! include completion; doc/Welcome.txt as default scratch
 * [x] make the current line somewhat more prominent in the editor ← activeLine opacity 0.03→0.09
+* [x] expose eta-reduction via `#! allow-eta` pragma (etaStep already implemented in eval.ts) ← done; also threads through normalize/buildNormDefs/equiv/print
 
 ## Up next
 
-* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
-* [ ] expose eta-reduction via `#! allow-eta` pragma (etaStep already implemented in eval.ts)
-* [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
-* [ ] I want to have a text rewrap with ctrl+r in multiline comments
-* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
+* [ ] shall we have a non-equiv, too? could be useful* 
 * [ ] maybe ::= for redef or undef, for temp things
+* [ ] I want to have a text rewrap with ctrl+r in multiline comments
+* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
+* [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
+* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
   * [ ] what about undefining symbols, or marking as not for export, i.e. only local
 * [ ] think about the state and future of the eval panel...
   * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
   * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
+* [ ] weird: all white when last char is only an equiv, but when there's an error before, highlighting works
 
 ## Consider
 

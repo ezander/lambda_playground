@@ -61,6 +61,7 @@ Lines starting with `#!` set runtime options for that program run (override the 
 #! max-history=20        # max history entries stored (panel scrolls)
 #! max-size=5000         # max AST nodes before reduction halts
 #! no-normalize-defs     # disable definition body normalization at load time
+#! allow-eta             # enable η-reduction during normalization (default off)
 #! include "sys/Church Booleans"   # import from standard library
 #! include "example/Booleans"      # import from example
 #! include "tutorial/Basics"       # import from tutorial

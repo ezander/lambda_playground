@@ -298,4 +298,19 @@ describe("normalize", () => {
     const r = normalize(omega, { maxSteps: 100 });
     expect(r.kind).toBe("stepLimit");
   });
+
+  it("allowEta reduces eta-redex during normalize", () => {
+    // λx. f x  should reduce to f when allowEta is true
+    const term = Abs("x", App(Var("f"), Var("x")));
+    const r = normalize(term, { allowEta: true });
+    expect(r.kind).toBe("normalForm");
+    expect(r.term).toEqual(Var("f"));
+  });
+
+  it("without allowEta, eta-redex is left as normal form", () => {
+    const term = Abs("x", App(Var("f"), Var("x")));
+    const r = normalize(term);
+    expect(r.kind).toBe("normalForm");
+    expect(r.term).toEqual(term);
+  });
 });

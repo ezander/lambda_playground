@@ -155,6 +155,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>#! max-history=20</code></td><td>max history entries stored</td></tr>
             <tr><td><code>#! max-size=5000</code></td><td>max AST nodes before reduction halts</td></tr>
             <tr><td><code>#! normalize-defs</code></td><td>normalize defs at load time (default on); <code>no-normalize-defs</code> to disable</td></tr>
+            <tr><td><code>#! allow-eta</code></td><td>enable η-reduction during normalization (default off); <code>no-allow-eta</code> to disable</td></tr>
             <tr><td><code>#! include "sys/…"</code></td><td>import definitions from the standard library</td></tr>
             <tr><td><code>#! include "doc/…"</code></td><td>import from docs namespace</td></tr>
             <tr><td><code>#! include "example/…"</code></td><td>import definitions from an example</td></tr>

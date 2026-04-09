@@ -231,7 +231,7 @@ export type RunResult =
 const DEFAULT_STEP_LIMIT = 1000;
 const DEFAULT_SIZE_LIMIT = 10_000;
 
-export type EvalConfig = { maxSteps?: number; maxSize?: number };
+export type EvalConfig = { maxSteps?: number; maxSize?: number; allowEta?: boolean };
 
 export function termSize(term: Term): number {
   switch (term.kind) {
@@ -252,7 +252,7 @@ export function normalize(
   let current = term;
   let steps = 0;
   while (steps < stepLimit) {
-    const next = step(current);
+    const next = step(current) ?? (config.allowEta ? etaStep(current) : null);
     if (next === null) return { kind: "normalForm", term: current, steps };
     current = next;
     steps++;
@@ -260,6 +260,7 @@ export function normalize(
     if (sz > sizeLimit) return { kind: "sizeLimit", term: current, steps, size: sz };
   }
   // The last step may have produced a normal form — check before declaring step limit
-  if (step(current) === null) return { kind: "normalForm", term: current, steps };
+  const finalNext = step(current) ?? (config.allowEta ? etaStep(current) : null);
+  if (finalNext === null) return { kind: "normalForm", term: current, steps };
   return { kind: "stepLimit", term: current, steps };
 }

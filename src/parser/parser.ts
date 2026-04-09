@@ -471,6 +471,7 @@ export type PragmaConfig = {
   maxHistory?:     number;
   normalizeDefs?:  boolean;
   maxSize?:        number;
+  allowEta?:       boolean;
 };
 
 export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
@@ -480,9 +481,10 @@ export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
   "max-history":     ["maxHistory"],
   "normalize-defs":  ["normalizeDefs"],
   "max-size":        ["maxSize"],
+  "allow-eta":       ["allowEta"],
 };
 
-export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs"]);
+export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs", "allow-eta"]);
 
 export type EquivInfo = {
   src1: string; src2: string;
@@ -545,7 +547,7 @@ export type ProgramResult = {
   pragmaConfig: PragmaConfig;
 };
 
-export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number; maxSize?: number };
+export type ProgramRunConfig = { maxStepsPrint?: number; maxStepsIdent?: number; maxSize?: number; allowEta?: boolean };
 
 export type IncludeResolver = (path: string) => string | null;
 
@@ -840,7 +842,7 @@ export function parseProgram(
 
         // Normalize definition body (default: on)
         if (pragmaConfig.normalizeDefs ?? true) {
-          const { term: normalized, kind } = normalize(body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize });
+          const { term: normalized, kind } = normalize(body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           if (kind === "stepLimit")
             errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset, kind: "warning" });
           else if (kind === "sizeLimit")
@@ -868,7 +870,7 @@ export function parseProgram(
 
       case "print": {
         const merged = { ...defaultConfig, ...pragmaConfig };
-        const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize };
+        const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
 
         if (stmt.bindings) {
@@ -877,7 +879,7 @@ export function parseProgram(
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
           const expandedBase = expandDefs(stmt.term, defsFiltered);
           const baseSrc = prettyPrint(stmt.term);
-          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize });
+          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
@@ -916,7 +918,7 @@ export function parseProgram(
           const expanded = expandDefs(stmt.term, defs);
           const runResult = normalize(expanded, cfg);
           const { term: normalizedTerm, kind, steps } = runResult;
-          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize });
+          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           printInfos.push({
             src:    prettyPrint(stmt.term),
             result: prettyPrint(normalizedTerm),
@@ -934,7 +936,7 @@ export function parseProgram(
 
       case "equiv": {
         const merged = { ...defaultConfig, ...pragmaConfig };
-        const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize };
+        const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
 
         if (stmt.bindings) {
