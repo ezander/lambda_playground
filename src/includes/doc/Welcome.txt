@@ -32,11 +32,12 @@
   (*** NB: the links may not yet be working, I'm still working on it. ***)
 
   In the following you'll see a simple example of the so-called Church-encoded
-  booleans (if you don't know that is yet, you'll find out in the tutorials): It
-  just defines `true`, `false` and `not` in λ calculus and in the last line,
-  evaluates the expression `not true`. When you go to the eval panel (or just
-  hit F5) you can see how this expression is evaluated/reduced either in one go
-  or step by step. And in the end gives you - as expected - the value `false`.
+  booleans (if you don't know what that is yet, you'll find out in the
+  tutorials): It just defines `true`, `false` and `not` in λ calculus and in the
+  last line, evaluates the expression `not true`. When you go to the eval panel
+  (or just hit F5) you can see how this expression is evaluated/reduced either
+  in one go or step by step. And in the end gives you - as expected - the value
+  `false`.
 *#
 
 true  := λx y. x
