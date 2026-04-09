@@ -711,3 +711,35 @@ describe("error location attribution", () => {
     expect(err!.via).toBe("sys/Outer");
   });
 });
+
+describe("redef (::=)", () => {
+  it("::= silences the redef warning when a name is already defined", () => {
+    const r = parseProgram("I := \\x. x\nI ::= \\x. x x");
+    expect(r.ok).toBe(true);
+    expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
+  });
+
+  it("::= warns when the name was NOT previously defined", () => {
+    const r = parseProgram("I ::= \\x. x");
+    expect(r.ok).toBe(true);
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I") && e.message.includes("::="))).toBe(true);
+  });
+
+  it(":= still warns on redef with a different normal form", () => {
+    const r = parseProgram("I := \\x. x\nI := \\x. x x");
+    expect(r.ok).toBe(true);
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
+  });
+
+  it("::= without prior def still sets the definition", () => {
+    const r = parseProgram("I ::= \\x. x\n≡ I (\\x. x)");
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+  });
+
+  it("::= updates the definition and it takes effect afterward", () => {
+    const r = parseProgram("T := \\x y. x\nT ::= \\x y. y\n≡ T (\\x y. y)");
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+  });
+});

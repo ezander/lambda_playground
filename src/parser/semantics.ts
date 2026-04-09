@@ -339,11 +339,16 @@ export function parseProgram(
             body = normalized;
         }
 
-        if (defs.has(name)) {
-          const oldNorm = normalize(defs.get(name)!).term;
-          const newNorm = normalize(body).term;
-          if (!alphaEq(oldNorm, newNorm))
-            errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset, kind: "warning" });
+        if (stmt.redef) {
+          if (!defs.has(name))
+            errors.push({ message: `Warning: '${name}' is not defined before ::=`, offset, kind: "warning" });
+        } else {
+          if (defs.has(name)) {
+            const oldNorm = normalize(defs.get(name)!).term;
+            const newNorm = normalize(body).term;
+            if (!alphaEq(oldNorm, newNorm))
+              errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset, kind: "warning" });
+          }
         }
         defs.set(name, body);
 

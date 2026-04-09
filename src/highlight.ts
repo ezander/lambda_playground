@@ -13,6 +13,7 @@ import {
   Backslash,
   Pi,
   Equiv,
+  RedefAssign,
   DefAssign,
   Dot,
 } from "./parser/lexer";
@@ -68,7 +69,7 @@ function applyTokenDecorations(
     const to = (tok.endOffset ?? tok.startOffset) + 1;
     if (tok.tokenType === Pragma)
       tks.push({ from, to, m: mPragma });
-    else if (tokenMatcher(tok, DefAssign))
+    else if (tokenMatcher(tok, DefAssign) || tok.tokenType === RedefAssign)
       tks.push({ from, to, m: mOp });
     else if (tokenMatcher(tok, Backslash) || tokenMatcher(tok, Dot))
       tks.push({ from, to, m: mLambda });

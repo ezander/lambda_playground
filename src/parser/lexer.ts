@@ -48,7 +48,8 @@ export const Semi    = createToken({ name: "Semi",    pattern: /;/    });
 // Tokens — order matters: more specific / longer patterns first
 export const Backslash  = createToken({ name: "Backslash",  pattern: /\\|λ/ });
 export const Pi         = createToken({ name: "Pi",         pattern: /π/ });
-export const DefAssign  = createToken({ name: "DefAssign",  pattern: /:=/ }); // definition and substitution separator
+export const RedefAssign = createToken({ name: "RedefAssign", pattern: /::=/ }); // intentional redefinition
+export const DefAssign   = createToken({ name: "DefAssign",  pattern: /:=/  }); // definition and substitution separator
 export const Dot        = createToken({ name: "Dot",        pattern: /\./ }); // lambda body separator
 export const LParen     = createToken({ name: "LParen",     pattern: /\(/ });
 export const RParen     = createToken({ name: "RParen",     pattern: /\)/ });
@@ -98,6 +99,7 @@ export const allTokens = [
   WhiteSpace,               // skip spaces/tabs (not newlines)
   NewLine,                  // significant statement separator
   Semi,                     // significant statement separator
+  RedefAssign,              // ::= before := so longer match wins
   DefAssign,                // := before Dot so := isn't split into : + =
   Dot,
   Backslash,

@@ -7,6 +7,7 @@ import {
   Pi,
   Equiv,
   NEquiv,
+  RedefAssign,
   DefAssign,
   Dot,
   LParen,
@@ -109,7 +110,7 @@ class LambdaParser extends CstParser {
   private isDefinition(): boolean {
     let i = 1;
     while (tokenMatcher(this.LA(i), Identifier)) i++;
-    return tokenMatcher(this.LA(i), DefAssign);
+    return tokenMatcher(this.LA(i), DefAssign) || tokenMatcher(this.LA(i), RedefAssign);
   }
 
   printStmt = this.RULE("printStmt", () => {
@@ -134,7 +135,10 @@ class LambdaParser extends CstParser {
 
   definition = this.RULE("definition", () => {
     this.AT_LEAST_ONE(() => this.CONSUME(Identifier));
-    this.CONSUME(DefAssign);
+    this.OR([
+      { ALT: () => this.CONSUME(DefAssign) },
+      { ALT: () => this.CONSUME(RedefAssign) },
+    ]);
     this.SUBRULE(this.term);
   });
 
@@ -217,7 +221,7 @@ export const parser = new LambdaParser();
 export type RawBinding = { name: string; nameTok: IToken; termValues: Term[] };
 export type RawEmpty   = { kind: "empty" };
 export type RawPragma  = { kind: "pragma"; text: string; offset: number };
-export type RawDef     = { kind: "def"; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
+export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
 export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number };
 export type RawEquiv   = { kind: "equiv"; atom1: Term; atom2: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
 export type RawExpr    = { kind: "expr"; term: Term; offset: number };
@@ -317,7 +321,8 @@ export class AstBuilder extends BaseCstVisitor {
       this.positions.params.set(abs, this.pos(tok));
       rawBody = abs;
     }
-    return { kind: "def", name: tokenName(nameTok), nameTok, params, rawBody, bodyTerm, offset: nameTok.startOffset };
+    const redef = !!ctx.RedefAssign;
+    return { kind: "def", redef, name: tokenName(nameTok), nameTok, params, rawBody, bodyTerm, offset: nameTok.startOffset };
   }
 
   comprehensionSpec(ctx: any): RawBinding[] {
