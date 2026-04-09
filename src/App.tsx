@@ -52,6 +52,12 @@ function Panel({ label, open, onToggle, children, className, flush = false, head
 
 const TRUNCATE_LEN = 200;
 
+function offsetToLineCol(source: string, offset: number): string {
+  const line = (source.slice(0, offset).match(/\n/g)?.length ?? 0) + 1;
+  const col  = offset - source.lastIndexOf("\n", offset - 1);
+  return `${line}:${col}`;
+}
+
 function TruncatedText({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
   if (text.length <= TRUNCATE_LEN) return <>{text}</>;
@@ -575,7 +581,7 @@ export default function App() {
             e.offset !== undefined ? "parse-error-link" : "",
           ].join(" ").trim()}
           onClick={() => e.offset !== undefined && jumpTo(e.offset)}
-        >{e.source ? `In "${e.source}": ${e.message}` : e.message}</li>
+        >{`${e.source ? `In "${e.source}": ` : ""}${e.message}${e.offset !== undefined ? ` (${offsetToLineCol(source, e.offset)})` : ""}`}</li>
       ))}
       {roundTripError && <li>{roundTripError}</li>}
     </ul>
