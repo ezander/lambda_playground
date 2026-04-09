@@ -110,8 +110,9 @@
 
 ## Up next
 
-* [ ] Maybe: short-cut to return to editor from everywhere on the page
-* [ ] extend [ ] links for html links, in new tab or window
+* [x] shortcut to return to editor / leave editor: Escape toggles focus; lands on save button (if dirty) or buffer name field
+* [x] extend [ ] links for html links, in new tab or window ← [https://...] in comments opens new tab with ↗ indicator
+* [ ] review full tab order on rendered page and fix keyboard navigation
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
 * [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
