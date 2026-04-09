@@ -8,6 +8,11 @@ import { contentExists } from "./storage";
 
 const LINK_RE = /\[(doc|sys|example|tutorial|user)\/([^\]\n]+)\]/g;
 
+// ── Include pragma pattern ────────────────────────────────────────────────────
+// Matches the path inside #! include "..." and #! mixin "..." pragma lines.
+
+const INCLUDE_RE = /^[ \t]*#!\s*(?:include|mixin)\s+"([^"\n]+)"/gm;
+
 export type LinkHandler = (type: string, name: string) => void;
 
 // ── ViewPlugin ────────────────────────────────────────────────────────────────
@@ -31,6 +36,13 @@ class LinkViewPlugin {
     while ((m = LINK_RE.exec(text)) !== null)
       if (inComment(m.index, commentRanges))
         matches.push({ from: m.index + 1, to: m.index + m[0].length - 1, dead: !contentExists(`${m[1]}/${m[2]}`) });
+
+    INCLUDE_RE.lastIndex = 0;
+    while ((m = INCLUDE_RE.exec(text)) !== null) {
+      const quoteStart = text.indexOf('"', m.index) + 1;
+      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: !contentExists(m[1]) });
+    }
+
     matches.sort((a, b) => a.from - b.from);
     for (const { from, to, dead } of matches) builder.add(from, to, dead ? linkDeadMark : linkMark);
     return builder.finish();
