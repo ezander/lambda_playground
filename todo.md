@@ -97,11 +97,18 @@
 * [x] get rid of the inserts/snippets - we have includes, better: docs/tutorials/examples/maybe quizzes ← doc/example/tutorial namespaces as .txt files; toolbar dropdowns; [] link + #! include completion; doc/Welcome.txt as default scratch
 * [x] make the current line somewhat more prominent in the editor ← activeLine opacity 0.03→0.09
 * [x] expose eta-reduction via `#! allow-eta` pragma (etaStep already implemented in eval.ts) ← done; also threads through normalize/buildNormDefs/equiv/print
+* [x] shall we have a non-equiv, too? could be useful ← ≢ (Alt-N, \nequiv); passes when not equivalent; halts on failure; comprehension supported
+* [x] dead link detection in comments: dotted underline for links whose target doesn't exist ← cml-link-dead; muted red dotted underline; #! include/mixin paths also clickable + dead-link styled
+* [x] DRY refactor: extract shared storage.ts (SAVE_PREFIX, getSavedSlots, resolveContent, contentExists), config.ts (Config, DEFAULT_CONFIG), comment.ts (findCommentRanges, inComment); centralize all localStorage key constants (KEY_CONFIG, KEY_SOURCE, KEY_KINO, …)
+* [x] error/warning messages: show line:col position; structured source/location/via fields; direct vs transitive include attribution; clicking jumps to #! pragma line
+* [x] fix include: defs from included file now overwrite earlier local defs (same order as mixin)
+* [x] weird: all white when last char is only an equiv, but when there's an error before, highlighting works ← append \n to input in parseProgram; simplifies grammar (no EOF gate needed)
+* [x] split parser.ts (>1000 lines) into types.ts / grammar.ts / semantics.ts; parser.ts becomes a selective barrel re-export
+* [x] code review: formatError inline type → LambdaError; selective barrel (no Raw* leakage); includeCache invalidated on config change; +10 tests; fix autocomplete Extension import (@codemirror/view → @codemirror/state)
 
 ## Up next
 
-* [x] shall we have a non-equiv, too? could be useful ← ≢ (Alt-N, \nequiv); passes when not equivalent; halts on failure; comprehension supported
-* [ ] maybe ::= for redef or undef, for temp things
+* [x] maybe ::= for redef or undef, for temp things ← ::= redefines without warning; warns if name not yet defined; no undef for now
 * [ ] I want to have a text rewrap with ctrl+r in multiline comments
 * [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
 * [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
@@ -111,7 +118,6 @@
   * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
   * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
-* [x] weird: all white when last char is only an equiv, but when there's an error before, highlighting works ← append \\n to input in parseProgram; simplifies grammar (no EOF gate needed)
 
 ## Consider
 

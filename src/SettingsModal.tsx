@@ -17,6 +17,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxHistory,    setMaxHistory]    = useState(String(config.maxHistory));
   const [maxSize,           setMaxSize]           = useState(String(config.maxSize));
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
+  const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
 
   const apply = () => onApply({
     maxStepsPrint:    parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
@@ -25,6 +26,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
     maxHistory:       parsePositiveInt(maxHistory,    config.maxHistory),
     maxSize:          parsePositiveInt(maxSize,       config.maxSize),
     showPassingEquiv,
+    wrapWidth:        parsePositiveInt(wrapWidth,     config.wrapWidth),
   });
 
   useEffect(() => {
@@ -86,6 +88,15 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setMaxSize(e.target.value)} />
               </td>
               <td className="settings-hint">AST nodes before reduction halts (prevents memory overflow)</td>
+            </tr>
+            <tr>
+              <td>wrap width</td>
+              <td>
+                <input className="config-input" type="number" min={40} max={200}
+                  value={wrapWidth}
+                  onChange={e => setWrapWidth(e.target.value)} />
+              </td>
+              <td className="settings-hint">columns for Ctrl-R rewrap and ruler line</td>
             </tr>
             <tr>
               <td>show passing ≡</td>

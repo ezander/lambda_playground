@@ -11,6 +11,7 @@ import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
+import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
 import { lambdaHighlight, setParsed, parsedField } from "./highlight";
@@ -163,6 +164,11 @@ export default function App() {
   useEffect(() => {
     editorViewRef.current?.dispatch({ effects: setParsed.of(programResult) });
   }, [programResult]);
+
+  // Reconfigure wrap width (ruler + Ctrl-R keymap) when it changes
+  useEffect(() => {
+    editorViewRef.current?.dispatch({ effects: wrapCompartment.reconfigure(makeWrapExtensions(config.wrapWidth)) });
+  }, [config.wrapWidth]);
 
   let roundTripError: string | null = null;
   if (programResult.rawExpr) {
@@ -483,6 +489,7 @@ export default function App() {
       lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
       lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
       lambdaLinks(linkHandlerRef),
+      wrapCompartment.of(makeWrapExtensions(loadConfig().wrapWidth ?? DEFAULT_CONFIG.wrapWidth)),
     ];
     editorExtRef.current = exts;
     return exts;

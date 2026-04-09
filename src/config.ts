@@ -8,6 +8,7 @@ export type Config = {
   maxHistory:      number;
   maxSize:         number;
   showPassingEquiv: boolean;
+  wrapWidth:       number;
 };
 
 export const DEFAULT_CONFIG: Config = {
@@ -17,4 +18,5 @@ export const DEFAULT_CONFIG: Config = {
   maxHistory:      200,
   maxSize:         10000,
   showPassingEquiv: false,
+  wrapWidth:       80,
 };
