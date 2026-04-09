@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo } from "./parser/parser";
+import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
@@ -58,7 +58,7 @@ function offsetToLineCol(source: string, offset: number): string {
   return `${line}:${col}`;
 }
 
-function formatError(e: { message: string; offset?: number; source?: string; location?: string; via?: string }, source: string): string {
+function formatError(e: LambdaError, source: string): string {
   const pos = e.location ?? (e.offset !== undefined ? offsetToLineCol(source, e.offset) : null);
   return `${e.message}${e.source ? ` in "${e.source}"` : ""}${pos ? ` at (${pos})` : ""}${e.via ? `, via "${e.via}"` : ""}`;
 }

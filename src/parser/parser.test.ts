@@ -615,4 +615,99 @@ describe("comprehension", () => {
     expect(r.equivInfos[0].equivalent).toBe(true);
     expect(r.equivInfos[0].negated).toBe(true);
   });
+
+  it("≢ comprehension passes when all rows are non-equivalent", () => {
+    const notDefs = `${boolDefs}\nnot := λb. b false true`;
+    const r = parseProgram(`${notDefs}\n≢[a:={true,false}] a (not a)`);
+    expect(r.ok).toBe(true);
+    expect(r.equivComprehensionInfos[0].allPassed).toBe(true);
+    expect(r.equivComprehensionInfos[0].negated).toBe(true);
+  });
+});
+
+// ── #! allow-eta pragma ───────────────────────────────────────────────────────
+
+describe("allow-eta pragma", () => {
+  it("without pragma, eta-redex is left as normal form", () => {
+    const r = parseProgram("f := λx. g x\nπ f");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("λx. g x");
+  });
+
+  it("with #! allow-eta, eta-redex normalizes to g", () => {
+    const r = parseProgram("#! allow-eta\nf := λx. g x\nπ f");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("g");
+  });
+
+  it("allow-eta affects ≡ evaluation", () => {
+    // Without eta: λx. g x ≢ g. With eta: they are equivalent.
+    const withEta    = parseProgram("#! allow-eta\n≡ (λx. g x) g");
+    const withoutEta = parseProgram("≡ (λx. g x) g");
+    expect(withEta.ok).toBe(true);
+    expect(withoutEta.ok).toBe(false);
+  });
+});
+
+// ── Include overwrites local defs ─────────────────────────────────────────────
+
+describe("include def ordering", () => {
+  const resolver = (path: string) => {
+    const files: Record<string, string> = {
+      "sys/Booleans": "true := λx y. x\nfalse := λx y. y",
+    };
+    return files[path] ?? null;
+  };
+
+  it("include after local def overwrites it", () => {
+    const r = parseProgram("true := λx y. x y\n#! include \"sys/Booleans\"\n", {}, resolver);
+    const prettyTrue = r.defs.get("true");
+    expect(prettyTrue).toBeDefined();
+    // After include, true should be λx y. x (from Booleans), not λx y. x y
+    expect(prettyPrint(prettyTrue!)).toBe("λx y. x");
+  });
+
+  it("include overwrites warns when normal forms differ", () => {
+    const r = parseProgram("true := λx y. x y\n#! include \"sys/Booleans\"\n", {}, resolver);
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
+  });
+
+  it("local def after include overwrites included def", () => {
+    const r = parseProgram("#! include \"sys/Booleans\"\ntrue := λx y. x y z\n", {}, resolver);
+    // Local def comes after include — it should win, with a warning
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
+  });
+});
+
+// ── Error location and attribution ───────────────────────────────────────────
+
+describe("error location attribution", () => {
+  it("local error has offset but no source", () => {
+    const r = parseProgram("x\n(\n");
+    const err = r.errors.find(e => e.kind !== "warning");
+    expect(err).toBeDefined();
+    expect(err!.source).toBeUndefined();
+    expect(err!.offset).toBeDefined();
+  });
+
+  it("error from included file has source and location", () => {
+    const resolver = (path: string) => path === "sys/Bad" ? "f := (\n" : null;
+    const r = parseProgram("#! include \"sys/Bad\"\n", {}, resolver);
+    const err = r.errors.find(e => e.source === "sys/Bad");
+    expect(err).toBeDefined();
+    expect(err!.location).toBeDefined(); // pre-computed line:col from included file
+    expect(err!.offset).toBeDefined();   // jump target in current file (pragma line)
+  });
+
+  it("transitively included error has via set", () => {
+    const resolver = (path: string) => {
+      if (path === "sys/Outer") return "#! include \"sys/Inner\"\n";
+      if (path === "sys/Inner") return "f := (\n";
+      return null;
+    };
+    const r = parseProgram("#! include \"sys/Outer\"\n", {}, resolver);
+    const err = r.errors.find(e => e.source === "sys/Inner");
+    expect(err).toBeDefined();
+    expect(err!.via).toBe("sys/Outer");
+  });
 });

@@ -37,7 +37,11 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 
 // ── Include / mixin caches ────────────────────────────────────────────────────
 
-const includeCache = new Map<string, { content: string; result: ProgramResult }>();
+const includeCache = new Map<string, { content: string; configKey: string; result: ProgramResult }>();
+
+function configKey(cfg: ProgramRunConfig): string {
+  return JSON.stringify(cfg, Object.keys(cfg).sort());
+}
 
 function cachedParseInclude(
   path: string,
@@ -46,10 +50,11 @@ function cachedParseInclude(
   resolver: IncludeResolver,
   includeStack: string[],
 ): ProgramResult {
+  const ck = configKey(defaultConfig);
   const cached = includeCache.get(path);
-  if (cached && cached.content === content) return cached.result;
+  if (cached && cached.content === content && cached.configKey === ck) return cached.result;
   const result = parseProgram(content, defaultConfig, resolver, includeStack);
-  includeCache.set(path, { content, result });
+  includeCache.set(path, { content, configKey: ck, result });
   return result;
 }
 
