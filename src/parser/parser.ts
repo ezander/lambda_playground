@@ -695,9 +695,8 @@ function processPragma(
         const newNorm = normalize(term).term;
         if (!alphaEq(oldNorm, newNorm))
           errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
-      } else {
-        defs.set(name, term);
       }
+      defs.set(name, term);
     }
     return;
   }
