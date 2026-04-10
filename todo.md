@@ -135,7 +135,7 @@
   * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
   * [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers (primary audience: people getting a first grasp of LC)
-  * [ ] when someone hits "show subst" we should "reload", and maybe when the formula is changed, we should also automatically reload (makes the load button useless, or we rename it to "reset". then "load & run" would be "run" and "run" would be "continue")
+  * [x] when someone hits "show subst" we should "reload", and maybe when the formula is changed, we should also automatically reload (makes the load button useless, or we rename it to "reset". then "load & run" would be "run" and "run" would be "continue")
 
 
 

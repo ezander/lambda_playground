@@ -116,6 +116,8 @@ export default function App() {
   });
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
+  const loadedRef = useRef<Loaded>(null);
+  loadedRef.current = loaded;
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
@@ -223,6 +225,12 @@ export default function App() {
     setLoadedSource(source);
     setHistory([{ label: "0:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
+
+  // Auto-reload when source changes or showSubst toggles, once user has loaded at least once
+  useEffect(() => {
+    if (loadedRef.current === null) return;
+    handleLoad();
+  }, [handleLoad, showSubst]); // handleLoad changes when programResult/source changes
 
   const advance = useCallback((maxSteps: number) => {
     if (!loaded || loaded.done) return;
@@ -913,12 +921,12 @@ export default function App() {
           </div>
           <div className="eval-controls">
             <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
-              title="Load and beta-reduce to normal form (F5)">load &amp; run <kbd>F5</kbd></button>
+              title="Load and beta-reduce to normal form (F5)">run <kbd>F5</kbd></button>
             <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
-              title="Parse and load the current expression into the history (F6)">load <kbd>F6</kbd></button>
+              title="Reset to step 0 (F6)">reset <kbd>F6</kbd></button>
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-            <button onClick={handleRun}     disabled={!canStep}    title={`Beta-reduce up to ${loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun} steps (F9)`}>run <kbd>F9</kbd></button>
+            <button onClick={handleRun}     disabled={!canStep}    title={`Continue beta-reducing up to ${loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun} steps (F9)`}>continue <kbd>F9</kbd></button>
             <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
               <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
               {" "}show substitution

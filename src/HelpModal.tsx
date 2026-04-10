@@ -176,12 +176,12 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>controls</h3>
           <table className="help-table"><tbody>
-            <tr><td><strong>load &amp; run</strong></td><td>load and immediately reduce to normal form</td></tr>
-            <tr><td><strong>load</strong></td><td>parse and load the current expression</td></tr>
+            <tr><td><strong>run</strong></td><td>load and immediately reduce to normal form; auto-reloads on edit</td></tr>
+            <tr><td><strong>reset</strong></td><td>reload the current expression at step 0</td></tr>
             <tr><td><strong>β-step</strong></td><td>one beta-reduction step</td></tr>
             <tr><td><strong>η-step</strong></td><td>one eta step (λx. f x → f when x ∉ fv(f))</td></tr>
-            <tr><td><strong>run</strong></td><td>reduce up to step limit; press again to continue</td></tr>
-            <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta</td></tr>
+            <tr><td><strong>continue</strong></td><td>reduce up to step limit from current position</td></tr>
+            <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta; auto-reloads</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
             <tr><td><code>Ctrl-S</code></td><td>save current named buffer (no-op on scratch)</td></tr>
@@ -189,9 +189,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>keyboard shortcuts</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>F5</code></td><td>load &amp; run</td></tr>
-            <tr><td><code>F6</code></td><td>load</td></tr>
-            <tr><td><code>F9</code></td><td>run</td></tr>
+            <tr><td><code>F5</code></td><td>run</td></tr>
+            <tr><td><code>F6</code></td><td>reset</td></tr>
+            <tr><td><code>F9</code></td><td>continue</td></tr>
             <tr><td><code>F10</code></td><td>β-step</td></tr>
             <tr><td><code>F11</code></td><td>η-step</td></tr>
             <tr><td><code>Ctrl-/</code></td><td>toggle <code>#</code> comment on current / selected lines</td></tr>
