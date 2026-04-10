@@ -117,7 +117,8 @@
 * [ ] gimmick: at least in fullscreen: "copied" should start lower
 * [ ] escape should exit help
 * [ ] review full tab order on rendered page and fix keyboard navigation
-* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file. Important: lets us make syntax highlighting testable, that's important imho, and doable (don't check colors, check structure, insert e.g. semantic pseudo xml like <var>foo</var>, this can be checked)
+* [x] we reintroduced the bug with syntax highlighting of defs that are defs later in the file ← confirmed fixed; sequential semantics (forward refs = fv, back-refs = defu); extracted computeHighlightRanges() pure; tag-based tests + large file snapshot
+* [x] warning squiggles + hover tooltips for errors/warnings/assert-fails ← assert-fail is a distinct kind (red squiggle, no dim-after); tooltip shows message on hover
 * [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
 
 ## Eval panel

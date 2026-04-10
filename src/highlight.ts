@@ -16,6 +16,7 @@ import {
   RedefAssign,
   DefAssign,
   Dot,
+  NEquiv,
 } from "./parser/lexer";
 
 // ── StateField: receives ProgramResult from React on every parse ──────────────
@@ -53,7 +54,7 @@ function applyTokenRanges(
       out.push({ from, to, cls: "cml-op" });
     else if (tokenMatcher(tok, Backslash) || tokenMatcher(tok, Dot))
       out.push({ from, to, cls: "cml-lambda" });
-    else if (tok.tokenType === Pi || tok.tokenType === Equiv)
+    else if (tok.tokenType === Pi || tok.tokenType === Equiv || tok.tokenType === NEquiv)
       out.push({ from, to, cls: "cml-pi" });
   }
 }
@@ -131,12 +132,15 @@ export function computeHighlightRanges(
       const lineStart = fullText.lastIndexOf("\n", err.offset - 1) + 1;
       const lineEnd   = fullText.indexOf("\n", err.offset);
       const to = lineEnd === -1 ? fullText.length : lineEnd;
-      if (lineStart < to)
-        out.push({ from: lineStart, to, cls: err.kind === "warning" ? "cml-warning" : "cml-error" });
+      if (lineStart < to) {
+        const cls = err.kind === "warning" ? "cml-warning" : "cml-error";
+        out.push({ from: lineStart, to, cls });
+      }
     }
-    const firstError = parsed.errors.find(e => e.kind !== "warning" && e.offset != null);
-    if (firstError && firstError.offset != null && firstError.offset < fullText.length) {
-      out.push({ from: firstError.offset, to: fullText.length, cls: "cml-unparsed" });
+    // Dim only after a hard parse/semantic error — not after a failed assertion.
+    const firstHardError = parsed.errors.find(e => e.kind !== "warning" && e.kind !== "assert-fail" && e.offset != null);
+    if (firstHardError?.offset != null && firstHardError.offset < fullText.length) {
+      out.push({ from: firstHardError.offset, to: fullText.length, cls: "cml-unparsed" });
     }
   }
 

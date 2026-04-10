@@ -1,0 +1,28 @@
+<pg>#! max-steps 500</pg>
+<cm># Church booleans</cm>
+<defi>tru</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <lm>λ</lm><pm>y</pm><lm>.</lm> <bv>x</bv>
+<defi>fls</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <lm>λ</lm><pm>y</pm><lm>.</lm> <bv>y</bv>
+<defi>and</defi> <op>:=</op> <lm>λ</lm><pm>p</pm><lm>.</lm> <lm>λ</lm><pm>q</pm><lm>.</lm> <bv>p</bv> <bv>q</bv> <defu>fls</defu>
+<defi>or</defi>  <op>:=</op> <lm>λ</lm><pm>p</pm><lm>.</lm> <lm>λ</lm><pm>q</pm><lm>.</lm> <bv>p</bv> <defu>tru</defu> <bv>q</bv>
+<cm># multi-param shorthand</cm>
+<defi>apply</defi> <pm>f</pm> <pm>x</pm> <op>:=</op> <bv>f</bv> <bv>x</bv>
+<cm>#* block comment
+   spanning lines *#</cm>
+<cm># forward ref: missing not defined yet</cm>
+<defi>early</defi> <op>:=</op> <fv>missing</fv>
+<cm># back-ref: tru and fls already known</cm>
+<defi>both</defi> <op>:=</op> <defu>and</defu> <defu>tru</defu> <defu>fls</defu>
+<cm># define missing after early uses it</cm>
+<defi>missing</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <bv>x</bv>
+<cm># redef of existing name: no warning</cm>
+<defi>apply</defi> <op>::=</op> <lm>λ</lm><pm>f</pm><lm>.</lm> <lm>λ</lm><pm>x</pm><lm>.</lm> <bv>f</bv> <bv>x</bv>
+<cm># redef of new name: warning squiggle</cm>
+<defi>newname</defi><wn> </wn><op>::=</op><wn> </wn><lm>λ</lm><pm>x</pm><lm>.</lm><wn> </wn><bv>x</bv>
+<cm># backtick identifier</cm>
+<defi>`my func`</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <bv>x</bv>
+<cm># free variable: z is never defined</cm>
+<defi>strange</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <fv>z</fv>
+<cm># print and equiv</cm>
+<kw>π</kw> <defu>tru</defu>
+<kw>≡</kw> <defu>tru</defu> <defu>tru</defu>
+<kw>≢</kw> <defu>tru</defu> <defu>fls</defu>

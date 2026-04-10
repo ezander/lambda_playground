@@ -475,7 +475,11 @@ export function parseProgram(
             values: expandedBindings[bi].valueSrcs,
           }));
           equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, negated: stmt.negated, offset: stmt.offset, line: currentLine });
-          if (!allPassed) equivFailed.value = true;
+          if (!allPassed) {
+            equivFailed.value = true;
+            const sym = stmt.negated ? "≢" : "≡";
+            errors.push({ message: `${sym} assertion failed (some cases failed)`, offset: stmt.offset, kind: "assert-fail" });
+          }
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
@@ -497,7 +501,13 @@ export function parseProgram(
             offset: stmt.offset,
             line: currentLine,
           });
-          if (!passed) equivFailed.value = true;
+          if (!passed) {
+            equivFailed.value = true;
+            const sym = stmt.negated ? "≢" : "≡";
+            const detail = !terminated ? "(did not terminate)"
+              : `${prettyPrint(r1.term)} ${stmt.negated ? "=" : "≠"} ${prettyPrint(r2.term)}`;
+            errors.push({ message: `${sym} assertion failed: ${detail}`, offset: stmt.offset, kind: "assert-fail" });
+          }
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, offset: stmt.offset });
         }
         break;

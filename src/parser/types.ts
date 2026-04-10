@@ -5,7 +5,7 @@ import { Term, Var, Abs, Pos } from "./ast";
 export type LambdaError = {
   message:   string;
   offset?:   number;
-  kind?:     "error" | "warning";
+  kind?:     "error" | "warning" | "assert-fail";
   source?:   string;
   location?: string;  // pre-computed "line:col" for errors from included files
   via?:      string;  // direct include path when error is transitive
