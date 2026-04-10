@@ -22,6 +22,7 @@ import JSZip from "jszip";
 import { DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
 import { SAVE_PREFIX, getSavedSlots, resolveContent, KEY_CONFIG, KEY_SOURCE, KEY_KINO, KEY_KINO_SPLIT, KEY_PANEL_STEPS, KEY_PANEL_PRINT, KEY_PRINT_DESC } from "./storage";
 import { Config, DEFAULT_CONFIG } from "./config";
+import { useFocusTrap } from "./useFocusTrap";
 
 function loadConfig(): Config {
   try {
@@ -411,10 +412,12 @@ export default function App() {
 
   const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; loaded: boolean; checked: boolean }[]>([]);
   const [showImport, setShowImport]   = useState(false);
-  const showImportRef = useRef(false);
+  const showImportRef   = useRef(false);
   showImportRef.current = showImport;
   anyModalOpenRef.current = anyModalOpenRef.current || showImport;
   const importInputRef   = useRef<HTMLInputElement>(null);
+  const importModalRef   = useRef<HTMLDivElement>(null);
+  useFocusTrap(importModalRef, showImport);
   const saveNameInputRef = useRef<HTMLInputElement>(null);
   const saveBtnRef       = useRef<HTMLButtonElement>(null);
 
@@ -544,6 +547,7 @@ export default function App() {
         return;
       }
       if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
+      if (e.key === "s" && e.ctrlKey) { e.preventDefault(); handleSaveOverwrite(); }
       if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
@@ -552,7 +556,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun, toggleFullscreen]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen]);
 
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -642,7 +646,7 @@ export default function App() {
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showImport && (
         <div className="modal-backdrop" onClick={() => setShowImport(false)}>
-          <div className="modal import-modal" onClick={e => e.stopPropagation()}>
+          <div className="modal import-modal" ref={importModalRef} onClick={e => e.stopPropagation()}>
             <h2>IMPORT BUFFERS</h2>
             <div className="import-actions">
               <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: i.loaded ? false : true })))}>check all</button>
@@ -689,9 +693,9 @@ export default function App() {
             <label htmlFor="source">expression</label>
             <span className="editor-meta">
               {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
-              <button className="clear-btn" onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
-              <button className="clear-btn" onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
-              <button className="clear-btn" onClick={() => editorViewRef.current && openSearchPanel(editorViewRef.current)} title="Find and replace (Ctrl-F)">find</button>
+              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
+              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
+              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && openSearchPanel(editorViewRef.current)} title="Find and replace (Ctrl-F)">find</button>
               <button className="share-btn" onClick={handleShare} title="Copy share link to clipboard">
                 <Share2 size={16} />
                 {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
@@ -811,7 +815,7 @@ export default function App() {
               </span>
               <button className="ex-btn" ref={saveBtnRef} onClick={handleSaveOverwrite}
                 disabled={!loadedSlotName || !isDirty}
-                title="Save changes to current buffer">save</button>
+                title="Save changes to current buffer (Ctrl-S)">save</button>
               <span className="toolbar-sep" />
               <div className="storage-combo">
                 <input

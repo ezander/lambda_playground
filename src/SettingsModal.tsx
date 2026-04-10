@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Config } from "./config";
+import { useFocusTrap } from "./useFocusTrap";
 
 function parsePositiveInt(s: string, fallback: number): number {
   const v = parseInt(s, 10);
@@ -18,6 +19,9 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxSize,           setMaxSize]           = useState(String(config.maxSize));
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
   const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef);
 
   const apply = () => onApply({
     maxStepsPrint:    parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
@@ -40,7 +44,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
 
   return (
     <div className="modal-backdrop" onClick={apply}>
-      <div className="modal settings-modal" onClick={e => e.stopPropagation()}>
+      <div className="modal settings-modal" ref={modalRef} onClick={e => e.stopPropagation()}>
         <h2>settings</h2>
         <table className="settings-table">
           <tbody>

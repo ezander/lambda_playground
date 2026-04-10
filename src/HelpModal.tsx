@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFocusTrap } from "./useFocusTrap";
 import { createSyntaxDiagramsCode } from "chevrotain";
 import { parser } from "./parser/parser";
 
@@ -83,6 +84,8 @@ type Tab = "language" | "editing" | "grammar" | "credits";
 export function HelpModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("language");
   const [diagramHtml, setDiagramHtml] = useState<string | null>(null); // cached after first generation
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef);
 
   const handleShowDiagrams = () => {
     const html = diagramHtml ?? createSyntaxDiagramsCode(
@@ -99,7 +102,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal help-modal" onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown}>
+      <div className="modal help-modal" ref={modalRef} onClick={(e) => e.stopPropagation()} onKeyDown={onKeyDown}>
         <button className="modal-close" onClick={onClose}>✕</button>
 
         <h2>λ playground</h2>
@@ -185,6 +188,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
+            <tr><td><code>Ctrl-S</code></td><td>save current named buffer (no-op on scratch)</td></tr>
           </tbody></table>
 
           <h3>keyboard shortcuts</h3>
