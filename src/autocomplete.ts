@@ -1,5 +1,5 @@
-import { autocompletion, startCompletion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-import { keymap } from "@codemirror/view";
+import { autocompletion, startCompletion, moveCompletionSelection, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+import { keymap, ViewPlugin, EditorView } from "@codemirror/view";
 import { Prec, Extension } from "@codemirror/state";
 import { parsedField } from "./highlight";
 import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
@@ -83,6 +83,24 @@ function completionSource(context: CompletionContext): CompletionResult | null {
   return { from: word ? word.from : context.pos, options, filter: true };
 }
 
+// Redirect mouse wheel on the autocomplete tooltip to selection movement.
+// The tooltip lives outside the editor DOM so EditorView.domEventHandlers won't reach it.
+const autocompleteWheelPlugin = ViewPlugin.fromClass(class {
+  private view: EditorView;
+  private handler: (e: WheelEvent) => void;
+  constructor(view: EditorView) {
+    this.view = view;
+    this.handler = (e: WheelEvent) => {
+      const tooltip = document.querySelector(".cm-tooltip-autocomplete");
+      if (!tooltip?.contains(e.target as Node)) return;
+      e.preventDefault();
+      moveCompletionSelection(e.deltaY > 0)(this.view);
+    };
+    document.addEventListener("wheel", this.handler, { passive: false });
+  }
+  destroy() { document.removeEventListener("wheel", this.handler); }
+});
+
 export const lambdaComplete: Extension = autocompletion({
   override: [completionSource],
   activateOnTyping: false,
@@ -91,3 +109,5 @@ export const lambdaComplete: Extension = autocompletion({
 export const lambdaCompleteKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-Space", run: startCompletion },
 ]));
+
+export { autocompleteWheelPlugin };

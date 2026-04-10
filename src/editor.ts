@@ -51,9 +51,11 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-bound":    { color: "#4caf7d", fontStyle: "italic" },                     // bound variable use
   ".cml-free":     { color: "#7ab0c8", fontStyle: "italic" },                     // free variable
   ".cml-unparsed": { opacity: "0.35" },                      // region after first parse error
-  ".cml-link":      { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
-  ".cml-link-dead": { color: "#7ab0c8", textDecoration: "underline dotted #b05050", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
-  ".cml-link-ext":  { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
+  ".cml-link":             { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
+  ".cml-link-dead":        { color: "#7ab0c8", textDecoration: "underline dotted #b05050", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
+  ".cml-link-ext":         { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
+  ".cml-link-pragma":      { color: "#7ab0c8" },
+  ".cml-link-pragma-dead": { color: "#7ab0c8" },
   ".cml-link-ext::after": { content: '"↗"', fontSize: "1.1em" },
   ".cml-tooltip": {
     background: "#252525",

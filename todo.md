@@ -117,10 +117,15 @@
 * [x] Escape closes help and settings modals (previously only closed import)
 * [x] "copied!" toast in kino mode starts at toolbar level instead of floating above it
 * [x] import dialog: loaded buffer shown with red "(currently loaded — cannot import)", checkbox disabled; existing-but-not-loaded buffers keep accent "(exists — overwrite?)" tag
+* [x] focus trap in all modals (help, settings, import); auto-focus first element on open; Ctrl-S saves current named buffer
+* [x] Escape no longer exits editor when CM6 handled it first (autocomplete dropdown, search panel)
+* [x] fix syntax highlight reset when reloading scratch with same content (parsedField reset by view.setState)
+* [x] private symbols: _-prefixed defs not exported across include/mixin boundaries; excluded from ≡ match display
+* [x] ctrl-click for pragma include/mixin paths (plain click = editing intent); underline + pointer cursor only visible when Ctrl held
+* [x] autocomplete: scroll wheel moves selection; icon column shows "def"/"inc" instead of italic x/abc
 
 ## Up next
 
-* [ ] review full tab order on rendered page and fix keyboard navigation
 * [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
 
 ## Eval panel
@@ -131,25 +136,18 @@
   * [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers (primary audience: people getting a first grasp of LC)
   * [ ] when someone hits "show subst" we should "reload", and maybe when the formula is changed, we should also automatically reload (makes the load button useless, or we rename it to "reset". then "load & run" would be "run" and "run" would be "continue")
 
+
+
 ## Consider
 
-* [ ] local/private symbols: convention (leading _ or __ not exported) rather than new syntax; avoids language complexity, tutorials can still use helpers without polluting ≡ pools
-* [ ] Web Worker for reductions: indefinitely on hold — includes are cached so splitting scripts avoids long runs; too complex for the gain
 * [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; hold until eval panel direction is clearer
-* [ ] identification heuristic (apply free var to both sides): probably no — enabling η already handles most cases; unclear what we'd gain
-* [ ] literature tab: do as a doc/Literature.txt file instead, no code change needed
-* [ ] assert symbol defined: not useful — undefined symbols become free vars silently, but assertions should be on behaviour not existence (e.g. ≡ already covers "not (not true) = true")
 * [ ] fresh free variable syntax (equiv[a] scope idea): fringe, not yet necessary; park for now
 * [ ] evaluate after error: currently inconsistent (eval panel still runs); moot once eval panel is rethought
+* [ ] consider an auto-save option for saved buffers. either on a per buffer basis. or in the settings. or in settings as default and in the buffers
 
 ## For later
 
-* [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
-  * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
-  * [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
-* [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
-  * [ ] what about a markdown export?
-* [ ] make identified forms clickable and go to line
+* [ ] make identified forms clickable and go to line (clashes a bit with the current behavior of jumping to the source line)
 * [ ] introduce typed lambda calculus (τ for type inf?)
 * [ ] should we have line continuation with e.g. \ or next line starts with tab? maybe only when we have types lc, as lines get longer
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
@@ -180,6 +178,14 @@
  
 ## On hold
 
+* [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
+  * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first
+  * [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
+* [ ] maybe also have an markdown like format with lambda expressions in between in ```lambda ``` blocks...
+  * [ ] what about a markdown export?
+* [ ] Web Worker for reductions: indefinitely on hold — includes are cached so splitting scripts avoids long runs; too complex for the gain
+
+
 ## Don't do
 
 * [~] why still abs, app and only rename later??
@@ -187,4 +193,7 @@
 * [~] hbr uses 'where' clauses. shall we? dunno
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [~] test also the UI?
+* [~] identification heuristic (apply free var to both sides): probably no — enabling η already handles most cases; unclear what we'd gain
+* [~] literature tab: do as a doc/Literature.txt file instead, no code change needed
+* [~] assert symbol defined: not useful — undefined symbols become free vars silently, but assertions should be on behaviour not existence (e.g. ≡ already covers "not (not true) = true")
 

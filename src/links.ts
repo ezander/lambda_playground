@@ -18,9 +18,11 @@ export type LinkHandler = (type: string, name: string) => void;
 
 // ── ViewPlugin ────────────────────────────────────────────────────────────────
 
-const linkMark     = Decoration.mark({ class: "cml-link" });
-const linkDeadMark = Decoration.mark({ class: "cml-link-dead" });
-const linkExtMark  = Decoration.mark({ class: "cml-link-ext" });
+const linkMark          = Decoration.mark({ class: "cml-link" });
+const linkDeadMark      = Decoration.mark({ class: "cml-link-dead" });
+const linkExtMark       = Decoration.mark({ class: "cml-link-ext" });
+const linkPragmaMark     = Decoration.mark({ class: "cml-link-pragma" });
+const linkPragmaDeadMark = Decoration.mark({ class: "cml-link-pragma-dead" });
 
 class LinkViewPlugin {
   decorations: DecorationSet;
@@ -32,7 +34,7 @@ class LinkViewPlugin {
     const builder = new RangeSetBuilder<Decoration>();
     const text = view.state.doc.toString();
     const commentRanges = findCommentRanges(text);
-    const matches: { from: number; to: number; dead: boolean; ext?: boolean }[] = [];
+    const matches: { from: number; to: number; dead: boolean; ext?: boolean; pragma?: boolean }[] = [];
     LINK_RE.lastIndex = 0;
     let m;
     while ((m = LINK_RE.exec(text)) !== null)
@@ -47,12 +49,12 @@ class LinkViewPlugin {
     INCLUDE_RE.lastIndex = 0;
     while ((m = INCLUDE_RE.exec(text)) !== null) {
       const quoteStart = text.indexOf('"', m.index) + 1;
-      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: !contentExists(m[1]) });
+      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: !contentExists(m[1]), pragma: true });
     }
 
     matches.sort((a, b) => a.from - b.from);
-    for (const { from, to, dead, ext } of matches)
-      builder.add(from, to, ext ? linkExtMark : dead ? linkDeadMark : linkMark);
+    for (const { from, to, dead, ext, pragma } of matches)
+      builder.add(from, to, ext ? linkExtMark : pragma ? (dead ? linkPragmaDeadMark : linkPragmaMark) : dead ? linkDeadMark : linkMark);
     return builder.finish();
   }
 }
@@ -64,13 +66,14 @@ function shortenUrl(url: string, maxLen = 50): string {
   return display.length > maxLen ? display.slice(0, maxLen) + "…" : display;
 }
 
-function linkTooltipMessage(text: string, dead: boolean, ext: boolean): string {
+function linkTooltipMessage(text: string, dead: boolean, ext: boolean, pragma = false): string {
   if (ext)   return `Open in new tab: ${shortenUrl(text)}`;
   if (dead)  return `Link target '${text}' not found`;
   const slash = text.indexOf("/");
   if (slash < 1) return "";
   const type = text.slice(0, slash);
   const name = text.slice(slash + 1);
+  if (pragma) return `Ctrl-click to load '${name}'`;
   if (type === "user") return `Switch to buffer '${name}'`;
   return `Load '${name}' into scratch buffer`;
 }
@@ -121,11 +124,32 @@ function buildLinkTooltip(view: EditorView, pos: number) {
     const quoteStart = text.indexOf('"', m.index) + 1;
     const from = quoteStart, to = quoteStart + m[1].length;
     const dead = !contentExists(m[1]);
-    const hit = check(from, to, dead, false);
-    if (hit) return hit;
+    if (pos >= from && pos < to) {
+      const linkText = text.slice(from, to);
+      const msg = linkTooltipMessage(linkText, dead, false, true);
+      if (!msg) return null;
+      return { pos: from, above: true, create() { const dom = document.createElement("div"); dom.className = "cml-tooltip"; dom.textContent = msg; return { dom }; } };
+    }
   }
 
   return null;
+}
+
+// ── Ctrl-held tracker ────────────────────────────────────────────────────────
+// Toggles `ctrl-held` on document.body so CSS can reveal pragma link styling.
+
+class CtrlTrackerPlugin {
+  private onDown = (e: KeyboardEvent) => { if (e.key === "Control") document.body.classList.add("ctrl-held"); };
+  private onUp   = (e: KeyboardEvent) => { if (e.key === "Control") document.body.classList.remove("ctrl-held"); };
+  constructor() {
+    document.addEventListener("keydown", this.onDown);
+    document.addEventListener("keyup",   this.onUp);
+  }
+  destroy() {
+    document.removeEventListener("keydown", this.onDown);
+    document.removeEventListener("keyup",   this.onUp);
+    document.body.classList.remove("ctrl-held");
+  }
 }
 
 // ── Extension factory ─────────────────────────────────────────────────────────
@@ -133,16 +157,20 @@ function buildLinkTooltip(view: EditorView, pos: number) {
 export function lambdaLinks(handlerRef: { current: LinkHandler | null }) {
   return [
     ViewPlugin.fromClass(LinkViewPlugin, { decorations: p => p.decorations }),
+    ViewPlugin.fromClass(CtrlTrackerPlugin),
     hoverTooltip(buildLinkTooltip),
     EditorView.domEventHandlers({
       click(event) {
-        const target = (event.target as HTMLElement).closest(".cml-link, .cml-link-dead, .cml-link-ext");
+        const target = (event.target as HTMLElement).closest(".cml-link, .cml-link-dead, .cml-link-ext, .cml-link-pragma, .cml-link-pragma-dead");
         if (!target) return false;
         const text = target.textContent ?? "";
         if (target.classList.contains("cml-link-ext")) {
           window.open(text, "_blank", "noopener,noreferrer");
           event.preventDefault();
           return true;
+        }
+        if (target.classList.contains("cml-link-pragma") || target.classList.contains("cml-link-pragma-dead")) {
+          if (!event.ctrlKey) return false;
         }
         const slash = text.indexOf("/");
         if (slash < 1) return false;

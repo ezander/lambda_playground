@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # Start Vite dev server with hot reload
 npm run build    # TypeScript compile + production bundle to /dist
 npm test         # Run Vitest unit tests
-tsc --noEmit     # Type-check without emitting
+npx tsc --noEmit # Type-check without emitting
 ```
 
 ## Architecture
@@ -18,32 +18,56 @@ A React + TypeScript single-page app for interactively parsing and evaluating la
 ### Pipeline
 
 ```
-user input → lexer.ts → CST parser → AST visitor → ast.ts nodes → eval.ts → App.tsx display
+user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → App.tsx display
 ```
 
 ### Key modules
 
-- **`src/parser/ast.ts`** — Three node types: `Var`, `Abs` (lambda abstraction, always single-param), `App` (application). Factory functions for construction.
-- **`src/parser/lexer.ts`** — Chevrotain tokenizer for the custom syntax.
-- **`src/parser/parser.ts`** — Two-phase: Chevrotain CST parser + AST visitor. Desugars multi-param lambdas (`\x y := body` → nested `Abs`) and folds left-associative application.
+- **`src/parser/ast.ts`** — Three node types: `Var`, `Abs` (single-param), `App`. Factory functions.
+- **`src/parser/lexer.ts`** — Chevrotain tokenizer.
+- **`src/parser/grammar.ts`** — Chevrotain CST parser + AST visitor. Desugars multi-param lambdas, folds left-associative application.
+- **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates π/≡/≢, handles `#! include`/`mixin` pragmas with caching.
+- **`src/parser/types.ts`** — Shared types: `ProgramResult`, `LambdaError`, `PragmaConfig`, `ProgramRunConfig`, `PositionMap`, etc.
+- **`src/parser/parser.ts`** — Barrel re-export; `parseProgram(source, config, resolver)` entry point.
 - **`src/parser/pretty.ts`** — Serializes AST back to surface syntax.
-- **`src/evaluator/eval.ts`** — Normal-order beta reduction; `EvalConfig = { maxSteps?: number }` controls the step limit (default 1000).
-- **`src/App.tsx`** — Main UI. `Config = { maxSteps, maxHistory }` persisted in localStorage. `Loaded` state carries `effectiveConfig` (merged from `Config` + pragma overrides). `buildEntry` is a module-level helper for constructing history entries.
-- **`src/SettingsModal.tsx`** — Settings dialog (⚙): draft state, OK/Cancel, click-outside = accept.
-- **`src/parser/parser.ts`** — `PragmaConfig = { maxSteps?, maxHistory? }` parsed from `#!` lines before tokenisation; included in `ProgramResult`.
+- **`src/evaluator/eval.ts`** — Normal-order beta reduction. `EvalConfig = { maxSteps?, maxSize? }`. `RunResult` has kinds `normalForm | stepLimit | sizeLimit`. Also exports `termSize`, `buildNormDefs`, `findMatch` (skips `_`-prefixed names).
+- **`src/highlight.ts`** — `computeHighlightRanges(text, parsed)` pure function; CM6 `ViewPlugin` + `StateField` (`parsedField`) wiring; hover tooltips for errors/warnings.
+- **`src/links.ts`** — CM6 decorations for `[type/name]` comment links and `#! include/mixin` pragma paths. Pragma paths require Ctrl-click (underline/cursor only visible while Ctrl held via `CtrlTrackerPlugin`).
+- **`src/editor.ts`** — CM6 base theme, custom keymap (Alt-L/P/E/N, bracket wrapping, `\name`+Space expansion), line numbers.
+- **`src/autocomplete.ts`** — Alt-Space autocomplete: def names, pragma keys, include paths. Scroll wheel moves selection via global wheel listener.
+- **`src/rewrap.ts`** — Ctrl-R paragraph reflow for block comments; ruler line; wrap width from config.
+- **`src/storage.ts`** — `SAVE_PREFIX`, `getSavedSlots`, `resolveContent`, `contentExists`; all localStorage key constants.
+- **`src/config.ts`** — `Config = { maxStepsPrint, maxStepsRun, maxStepsIdent, maxHistory, maxSize, showPassingEquiv, wrapWidth }`, `DEFAULT_CONFIG`.
+- **`src/comment.ts`** — `findCommentRanges`, `inComment` utilities.
+- **`src/useFocusTrap.ts`** — `useFocusTrap(ref, active)` hook: auto-focuses first element, traps Tab/Shift-Tab.
+- **`src/App.tsx`** — Main UI. `Loaded` state carries `effectiveConfig` (merged `Config` + pragma overrides). `programResult` is a `useMemo`; dispatched to CM6 via `setParsed` effect on change and immediately after `resetEditorContent` (via `programResultRef`).
+- **`src/SettingsModal.tsx`** — Settings dialog; Enter = apply, Escape = cancel, click-outside = apply.
+- **`src/HelpModal.tsx`** — Tabbed help: Language / UI & editing / Grammar / Credits.
+- **`src/AstView.tsx`** — Expandable AST tree display.
 
-### Grammar
+### Grammar (surface syntax)
 
 ```
 program     ::= statement (('\n' | ';') statement)*
-statement   ::= definition | print | term
+statement   ::= definition | redef | print | print-comp | equiv | equiv-comp | nequiv | term | pragma
 definition  ::= identLike+ ':=' term
+redef       ::= identLike+ '::=' term
 print       ::= 'π' term
+print-comp  ::= 'π' '[' bindings ']' term
+equiv       ::= '≡' atom atom
+equiv-comp  ::= '≡' '[' bindings ']' atom atom
+nequiv      ::= '≢' atom atom
 term        ::= application
 application ::= atom+
 atom        ::= primary ('[' identLike ':=' term ']')*
 primary     ::= identLike | '(' term ')' | function
 function    ::= ('\' | 'λ') identLike+ '.' term
-identLike   ::= identifier | '`' [^`\n]+ '`'
-identifier  ::= [a-zA-Z0-9_\u0370-\u03FF]+  (excluding λ, π; α/β/η reserved)
+bindings    ::= identLike ':=' '{' term (',' term)* '}' (',' …)*
+identLike   ::= plainIdent | '`' [^`\n]+ '`'
+plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α β η ∀ ∃ ⊢ reserved
+pragma      ::= '#!' pragma-body    -- #! include/mixin "path", #! max-steps=N, etc.
 ```
+
+### Private symbols
+
+Definition names starting with `_` are private: they work locally but are not exported across `#! include`/`mixin` boundaries and are excluded from ≡ match display.

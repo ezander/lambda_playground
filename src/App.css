@@ -1065,3 +1065,20 @@ label {
   background: rgba(201, 168, 76, 0.15) !important;
   color: var(--accent) !important;
 }
+.cm-completionIcon                 { min-width: 2.2em !important; }
+.cm-completionIcon-variable::after { content: "def" !important; font-size: 0.7em !important; }
+.cm-completionIcon-text::after     { content: "inc" !important; font-size: 0.7em !important; }
+
+/* Pragma links (include/mixin paths) only activate visually when Ctrl is held */
+body.ctrl-held .cml-link-pragma {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer !important;
+}
+body.ctrl-held .cml-link-pragma-dead {
+  text-decoration: underline dotted #b05050;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer !important;
+}
