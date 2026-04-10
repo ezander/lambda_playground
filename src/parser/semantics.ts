@@ -215,7 +215,7 @@ export function parseProgram(
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
   const defInfos:   DefInfo[] = [];
-  const exprInfos:  { term: Term; positions: PositionMap }[] = [];
+  const exprInfos:  ProgramResult["exprInfos"] = [];
   const printInfos: ProgramResult["printInfos"] = [];
   const equivInfos: EquivInfo[] = [];
   const printComprehensionInfos: PrintComprehensionInfo[] = [];
@@ -295,15 +295,15 @@ export function parseProgram(
           defInfos.push({ name: stmt.name, namePos: { from: stmt.nameTok.startOffset, to: (stmt.nameTok.endOffset ?? stmt.nameTok.startOffset) + 1 }, body: stmt.rawBody, positions: globalPositions });
           break;
         case "print":
-          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
-          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           break;
         case "equiv":
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
-          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           break;
         case "expr":
-          exprInfos.push({ term: stmt.term, positions: globalPositions });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
           break;
       }
       continue;
@@ -403,8 +403,8 @@ export function parseProgram(
             values: expandedBindings[bi].valueSrcs,
           }));
           printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows, offset: stmt.offset, line: currentLine });
-          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
-          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
           const expanded = expandDefs(stmt.term, defs);
           const runResult = normalize(expanded, cfg);
@@ -420,7 +420,7 @@ export function parseProgram(
             offset: stmt.offset,
             line:   currentLine,
           });
-          exprInfos.push({ term: stmt.term, positions: globalPositions });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         }
         break;
       }
@@ -476,8 +476,8 @@ export function parseProgram(
           }));
           equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, negated: stmt.negated, offset: stmt.offset, line: currentLine });
           if (!allPassed) equivFailed.value = true;
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings) });
-          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions });
+          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+          for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
           const t1 = expandDefs(stmt.atom1, defs);
           const t2 = expandDefs(stmt.atom2, defs);
@@ -498,7 +498,7 @@ export function parseProgram(
             line: currentLine,
           });
           if (!passed) equivFailed.value = true;
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions });
+          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, offset: stmt.offset });
         }
         break;
       }
@@ -506,7 +506,7 @@ export function parseProgram(
       case "expr": {
         rawExpr = stmt.term;
         expr    = expandDefs(stmt.term, defs);
-        exprInfos.push({ term: stmt.term, positions: globalPositions });
+        exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         break;
       }
     }

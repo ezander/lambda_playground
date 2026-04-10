@@ -18,24 +18,6 @@ import {
   Dot,
 } from "./parser/lexer";
 
-// ── Decoration marks ──────────────────────────────────────────────────────────
-
-const mComment  = Decoration.mark({ class: "cml-comment" });
-const mPragma   = Decoration.mark({ class: "cml-pragma" });
-const mOp       = Decoration.mark({ class: "cml-op" });
-const mLambda   = Decoration.mark({ class: "cml-lambda" });
-const mPi       = Decoration.mark({ class: "cml-pi" });
-const mDefName  = Decoration.mark({ class: "cml-def-name" });
-const mDefUse   = Decoration.mark({ class: "cml-def-use" });
-const mBound    = Decoration.mark({ class: "cml-bound" });
-const mParam    = Decoration.mark({ class: "cml-param" });
-const mFree     = Decoration.mark({ class: "cml-free" });
-const mUnparsed = Decoration.mark({ class: "cml-unparsed" });
-const mError    = Decoration.mark({ class: "cml-error" });
-const mWarning  = Decoration.mark({ class: "cml-warning" });
-
-type Tk = { from: number; to: number; m: Decoration };
-
 // ── StateField: receives ProgramResult from React on every parse ──────────────
 
 export const setParsed = StateEffect.define<ProgramResult | null>();
@@ -49,65 +31,60 @@ export const parsedField = StateField.define<ProgramResult | null>({
   },
 });
 
-// ── Token-based structural highlighting ───────────────────────────────────────
-// Re-tokenises the document and applies decorations for comments, operators, λ, π, ≡.
-// All structural tokens are now proper lexer tokens — no regex scanning needed.
+// ── Pure highlight range computation (testable, no CM6 dependency) ────────────
 
-function applyTokenDecorations(
+export type HighlightRange = { from: number; to: number; cls: string };
+
+function applyTokenRanges(
   lexResult: { tokens: IToken[]; groups: Record<string, IToken[]> },
-  tks: Tk[],
+  out: HighlightRange[],
 ): void {
-  // Comments are in the "comment" group (LineComment, BlockComment, UnterminatedBlockComment)
   for (const tok of lexResult.groups["comment"] ?? []) {
     const from = tok.startOffset;
     const to = (tok.endOffset ?? tok.startOffset) + 1;
-    tks.push({ from, to, m: mComment });
+    out.push({ from, to, cls: "cml-comment" });
   }
-
-  // Structural tokens from the main token stream
   for (const tok of lexResult.tokens) {
     const from = tok.startOffset;
     const to = (tok.endOffset ?? tok.startOffset) + 1;
     if (tok.tokenType === Pragma)
-      tks.push({ from, to, m: mPragma });
+      out.push({ from, to, cls: "cml-pragma" });
     else if (tokenMatcher(tok, DefAssign) || tok.tokenType === RedefAssign)
-      tks.push({ from, to, m: mOp });
+      out.push({ from, to, cls: "cml-op" });
     else if (tokenMatcher(tok, Backslash) || tokenMatcher(tok, Dot))
-      tks.push({ from, to, m: mLambda });
+      out.push({ from, to, cls: "cml-lambda" });
     else if (tok.tokenType === Pi || tok.tokenType === Equiv)
-      tks.push({ from, to, m: mPi });
+      out.push({ from, to, cls: "cml-pi" });
   }
 }
-
-// ── AST walk — identifier classification ─────────────────────────────────────
 
 function walkTerm(
   term: Term,
   positions: PositionMap,
   defs: Set<string>,
   bound: Set<string>,
-  tks: Tk[],
+  out: HighlightRange[],
 ): void {
   switch (term.kind) {
     case "Var": {
       const pos = positions.vars.get(term as Var);
       if (pos) {
-        const m = bound.has(term.name) ? mBound
-                : defs.has(term.name)  ? mDefUse
-                :                        mFree;
-        tks.push({ from: pos.from, to: pos.to, m });
+        const cls = bound.has(term.name) ? "cml-bound"
+                  : defs.has(term.name)  ? "cml-def-use"
+                  :                        "cml-free";
+        out.push({ from: pos.from, to: pos.to, cls });
       }
       break;
     }
     case "Abs": {
       const paramPos = positions.params.get(term as Abs);
-      if (paramPos) tks.push({ from: paramPos.from, to: paramPos.to, m: mParam });
-      walkTerm(term.body, positions, defs, new Set([...bound, term.param]), tks);
+      if (paramPos) out.push({ from: paramPos.from, to: paramPos.to, cls: "cml-param" });
+      walkTerm(term.body, positions, defs, new Set([...bound, term.param]), out);
       break;
     }
     case "App": {
-      walkTerm(term.func, positions, defs, bound, tks);
-      walkTerm(term.arg,  positions, defs, bound, tks);
+      walkTerm(term.func, positions, defs, bound, out);
+      walkTerm(term.arg,  positions, defs, bound, out);
       break;
     }
     case "Subst":
@@ -115,57 +92,74 @@ function walkTerm(
   }
 }
 
-// ── ViewPlugin ────────────────────────────────────────────────────────────────
+export function computeHighlightRanges(
+  fullText: string,
+  parsed: ProgramResult | null,
+): HighlightRange[] {
+  const out: HighlightRange[] = [];
 
-function buildDecorations(view: EditorView): DecorationSet {
-  const { doc } = view.state;
-  const parsed = view.state.field(parsedField);
-  const tks: Tk[] = [];
-
-  const fullText = doc.toString();
   const lexResult = LambdaLexer.tokenize(fullText);
-  applyTokenDecorations(lexResult, tks);
+  applyTokenRanges(lexResult, out);
 
-  // AST-based identifier highlighting
   if (parsed) {
-    const allDefNames = new Set([...parsed.defs.keys(), ...parsed.defInfos.map(d => d.name)]);
+    // Process defs and expressions in source order so that only names defined
+    // BEFORE the current statement are highlighted as def-use (sequential semantics).
+    type DefEntry  = { kind: "def";  offset: number; name: string; namePos: { from: number; to: number }; body: import("./parser/ast").Term; positions: PositionMap };
+    type ExprEntry = { kind: "expr"; offset: number; term: import("./parser/ast").Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: { from: number; to: number }[] };
 
-    for (const { name, namePos, body, positions } of parsed.defInfos) {
-      tks.push({ from: namePos.from, to: namePos.to, m: mDefName });
-      walkTerm(body, positions, allDefNames, new Set(), tks);
+    const entries: (DefEntry | ExprEntry)[] = [
+      ...parsed.defInfos.map(d => ({ kind: "def" as const, offset: d.namePos.from, ...d })),
+      ...parsed.exprInfos.map(e => ({ kind: "expr" as const, ...e })),
+    ];
+    entries.sort((a, b) => a.offset - b.offset);
+
+    const knownDefs = new Set<string>();
+    for (const entry of entries) {
+      if (entry.kind === "def") {
+        out.push({ from: entry.namePos.from, to: entry.namePos.to, cls: "cml-def-name" });
+        walkTerm(entry.body, entry.positions, knownDefs, new Set(), out);
+        knownDefs.add(entry.name);
+      } else {
+        for (const pos of entry.paramPositions ?? [])
+          out.push({ from: pos.from, to: pos.to, cls: "cml-param" });
+        walkTerm(entry.term, entry.positions, knownDefs, entry.boundNames ?? new Set(), out);
+      }
     }
 
-    for (const { term, positions, boundNames, paramPositions } of parsed.exprInfos) {
-      for (const pos of paramPositions ?? [])
-        tks.push({ from: pos.from, to: pos.to, m: mParam });
-      walkTerm(term, positions, allDefNames, boundNames ?? new Set(), tks);
-    }
-  }
-
-  // Squiggles under each error/warning line, dim region after first hard error
-  if (parsed) {
     for (const err of parsed.errors) {
       if (err.offset == null) continue;
       const lineStart = fullText.lastIndexOf("\n", err.offset - 1) + 1;
       const lineEnd   = fullText.indexOf("\n", err.offset);
       const to = lineEnd === -1 ? fullText.length : lineEnd;
       if (lineStart < to)
-        tks.push({ from: lineStart, to, m: err.kind === "warning" ? mWarning : mError });
+        out.push({ from: lineStart, to, cls: err.kind === "warning" ? "cml-warning" : "cml-error" });
     }
     const firstError = parsed.errors.find(e => e.kind !== "warning" && e.offset != null);
     if (firstError && firstError.offset != null && firstError.offset < fullText.length) {
-      tks.push({ from: firstError.offset, to: fullText.length, m: mUnparsed });
+      out.push({ from: firstError.offset, to: fullText.length, cls: "cml-unparsed" });
     }
   }
 
-  tks.sort((a, b) => a.from - b.from || a.to - b.to);
+  out.sort((a, b) => a.from - b.from || a.to - b.to);
+  return out;
+}
 
-  const docLen = doc.length;
-  const builder = new RangeSetBuilder<Decoration>();
-  for (const { from, to, m } of tks)
+// ── CM6 ViewPlugin ────────────────────────────────────────────────────────────
+
+const clsToMark: Record<string, Decoration> = {};
+function mark(cls: string): Decoration {
+  return clsToMark[cls] ?? (clsToMark[cls] = Decoration.mark({ class: cls }));
+}
+
+function buildDecorations(view: EditorView): DecorationSet {
+  const fullText = view.state.doc.toString();
+  const parsed   = view.state.field(parsedField);
+  const ranges   = computeHighlightRanges(fullText, parsed);
+  const docLen   = view.state.doc.length;
+  const builder  = new RangeSetBuilder<Decoration>();
+  for (const { from, to, cls } of ranges)
     if (from >= 0 && to <= docLen && from < to)
-      builder.add(from, to, m);
-
+      builder.add(from, to, mark(cls));
   return builder.finish();
 }
 

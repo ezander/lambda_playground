@@ -116,7 +116,7 @@ export type ProgramResult = {
   expr:        Term | null;
   rawExpr:     Term | null;
   defInfos:    DefInfo[];
-  exprInfos:   { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[] }[];
+  exprInfos:   { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[]; offset: number }[];
   printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
