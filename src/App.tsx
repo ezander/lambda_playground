@@ -12,7 +12,7 @@ import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemir
 import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
-import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
+import { lambdaComplete, lambdaCompleteKeymap, autocompleteWheelPlugin } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
 import { lambdaHighlight, lambdaDiagnosticTooltip, setParsed, parsedField } from "./highlight";
 import { lambdaLinks, LinkHandler } from "./links";
@@ -512,7 +512,7 @@ export default function App() {
     const exts = [
       cmHistory(),
       lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
-      lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaDiagnosticTooltip, lambdaComplete,
+      lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaDiagnosticTooltip, lambdaComplete, autocompleteWheelPlugin,
       lambdaLinks(linkHandlerRef),
       wrapCompartment.of(makeWrapExtensions(loadConfig().wrapWidth ?? DEFAULT_CONFIG.wrapWidth)),
     ];
@@ -534,6 +534,7 @@ export default function App() {
         if (showImportRef.current)  { setShowImport(false);   return; }
         if (showHelpRef.current)    { setShowHelp(false);     return; }
         if (showSettingsRef.current){ setShowSettings(false); return; }
+        if (e.defaultPrevented) return; // CM6 handled it (e.g. closed autocomplete/search)
         if (!anyModalOpenRef.current) {
           const view = editorViewRef.current;
           if (view?.hasFocus) {
