@@ -125,26 +125,26 @@
 * [x] autocomplete: scroll wheel moves selection; icon column shows "def"/"inc" instead of italic x/abc
 * [x] auto-save setting: saves named buffers on every edit; "save" button replaced by "auto" indicator; turning on auto-save immediately flushes any dirty buffer
 
-## Up next
+## Roadmap
+
+* **RC1** — improve test quality (see below), fix minor issues
+* **1.0** — content: examples, demos, tutorials (by user); fix any RC bugs
+
+## Up next (RC1)
 
 * [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
 
-## Eval panel
-* [ ] think about the state and future of the eval panel...
-  * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
-  * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
-  * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
-  * [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers (primary audience: people getting a first grasp of LC)
-  * [x] when someone hits "show subst" we should "reload", and maybe when the formula is changed, we should also automatically reload (makes the load button useless, or we rename it to "reset". then "load & run" would be "run" and "run" would be "continue")
-  * [x] eval panel always live: auto-loads on any source change; unloads when no expression; enabled even when asserts fail (evals last expr before failure); hard parse errors fall back to previous expr
+## Eval panel (post-1.0 ideas)
+* [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers
+* [ ] tabbed panel: eval for scratch, output for named buffers
+* [ ] editor tabs like an IDE
 
 
 
 ## Consider
 
-* [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; hold until eval panel direction is clearer
+* [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; post-1.0
 * [ ] fresh free variable syntax (equiv[a] scope idea): fringe, not yet necessary; park for now
-* [ ] evaluate after error: currently inconsistent (eval panel still runs); moot once eval panel is rethought
 
 ## For later
 
@@ -161,9 +161,8 @@
  
 * [ ] ≢ renders smaller than ≡ in the editor — font fallback issue (U+2262 not in most monospace fonts)
 
-## UI development ideas
+## UI development ideas (post-1.0)
 
-* [ ] Shall we have editor tabs like an ide (for all files, but maybe also only a scratch/named buffers split?)
 * [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
   * [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
 
