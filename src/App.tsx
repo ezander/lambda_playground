@@ -116,8 +116,6 @@ export default function App() {
   });
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
-  const loadedRef = useRef<Loaded>(null);
-  loadedRef.current = loaded;
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
@@ -214,7 +212,7 @@ export default function App() {
     ({ ...config, ...pragma }), [config]);
 
   const handleLoad = useCallback(() => {
-    if (!programResult.ok || !programResult.expr) return;
+    if (!programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
@@ -226,9 +224,9 @@ export default function App() {
     setHistory([{ label: "0:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
 
-  // Auto-reload when source changes or showSubst toggles, once user has loaded at least once
+  // Auto-reload when source changes or showSubst toggles
   useEffect(() => {
-    if (loadedRef.current === null) return;
+    if (!programResult.expr) { setLoaded(null); setHistory([]); return; }
     handleLoad();
   }, [handleLoad, showSubst]); // handleLoad changes when programResult/source changes
 
@@ -483,7 +481,7 @@ export default function App() {
     setHistory(h => [entry, ...h].slice(0, loaded.effectiveConfig.maxHistory));
   }, [loaded, makeEntry, showSubst]);
   const handleLoadRun = useCallback(() => {
-    if (!programResult.ok || !programResult.expr) return;
+    if (!programResult.expr) return;
     const term = programResult.expr;
     const d = programResult.defs;
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
@@ -920,9 +918,9 @@ export default function App() {
             )}
           </div>
           <div className="eval-controls">
-            <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.ok || !programResult.expr}
+            <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.expr}
               title="Load and beta-reduce to normal form (F5)">run <kbd>F5</kbd></button>
-            <button className="load-btn" onClick={handleLoad} disabled={!programResult.ok || !programResult.expr}
+            <button className="load-btn" onClick={handleLoad} disabled={!programResult.expr}
               title="Reset to step 0 (F6)">reset <kbd>F6</kbd></button>
             <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
             <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
