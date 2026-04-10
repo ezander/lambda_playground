@@ -1109,7 +1109,7 @@ export default function App() {
 
       <header>
         <h1>λ playground</h1>
-        <p className="subtitle">an untyped lambda dialect</p>
+        <p className="subtitle">an interactive lambda calculus environment</p>
       </header>
 
       <main ref={mainRef} style={kinoActive ? { gridTemplateColumns: `${kinoSplitPct}% 6px 1fr` } : undefined}>
