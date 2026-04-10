@@ -135,6 +135,7 @@ function processPragma(
         errors.push({ message: `Assertion failed in mixin "${path}"`, offset });
     }
     for (const [name, term] of mixed.defs) {
+      if (name.startsWith("_")) continue; // private — does not cross mixin boundary
       if (defs.has(name)) {
         const oldNorm = normalize(defs.get(name)!).term;
         const newNorm = normalize(term).term;
@@ -170,6 +171,7 @@ function processPragma(
         errors.push({ message: `Assertion failed in included file "${path}"`, offset });
     }
     for (const [name, term] of included.defs) {
+      if (name.startsWith("_")) continue; // private — does not cross include boundary
       if (defs.has(name)) {
         const oldNorm = normalize(defs.get(name)!).term;
         const newNorm = normalize(term).term;

@@ -545,6 +545,22 @@ describe("include system", () => {
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].normal).toBe(true);
   });
+
+  it("_-prefixed defs are private and not exported across include boundary", () => {
+    const lib = "_helper := λx. x\npublic := _helper\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include \"lib\"\n", {}, res);
+    expect(r.defs.has("public")).toBe(true);
+    expect(r.defs.has("_helper")).toBe(false);
+  });
+
+  it("_-prefixed defs are private and not exported across mixin boundary", () => {
+    const lib = "_helper := λx. x\npublic := _helper\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! mixin \"lib\"\n", {}, res);
+    expect(r.defs.has("public")).toBe(true);
+    expect(r.defs.has("_helper")).toBe(false);
+  });
 });
 
 // ── comprehension ─────────────────────────────────────────────────────────────

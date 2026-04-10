@@ -217,7 +217,7 @@ export function findMatch(term: Term, nd: Map<string, string>): string | undefin
   const key = canonicalForm(term);
   const matches: string[] = [];
   for (const [name, canon] of nd)
-    if (key === canon) matches.push(name);
+    if (!name.startsWith("_") && key === canon) matches.push(name);
   return matches.length > 0 ? matches.join(", ") : undefined;
 }
 
