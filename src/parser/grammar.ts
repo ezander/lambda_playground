@@ -3,7 +3,7 @@ import {
   allTokens,
   LambdaLexer,
   Pragma,
-  Backslash,
+  Lambda,
   Pi,
   Equiv,
   NEquiv,
@@ -204,7 +204,7 @@ class LambdaParser extends CstParser {
   });
 
   func = this.RULE("func", () => {
-    this.CONSUME(Backslash);
+    this.CONSUME(Lambda);
     this.AT_LEAST_ONE(() => {
       this.CONSUME(Identifier);
     });

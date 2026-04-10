@@ -10,7 +10,7 @@ import {
   LineComment,
   BlockComment,
   UnterminatedBlockComment,
-  Backslash,
+  Lambda,
   Pi,
   Equiv,
   RedefAssign,
@@ -52,7 +52,7 @@ function applyTokenRanges(
       out.push({ from, to, cls: "cml-pragma" });
     else if (tokenMatcher(tok, DefAssign) || tok.tokenType === RedefAssign)
       out.push({ from, to, cls: "cml-op" });
-    else if (tokenMatcher(tok, Backslash) || tokenMatcher(tok, Dot))
+    else if (tokenMatcher(tok, Lambda) || tokenMatcher(tok, Dot))
       out.push({ from, to, cls: "cml-lambda" });
     else if (tok.tokenType === Pi || tok.tokenType === Equiv || tok.tokenType === NEquiv)
       out.push({ from, to, cls: "cml-pi" });

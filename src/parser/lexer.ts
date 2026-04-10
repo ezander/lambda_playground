@@ -46,7 +46,7 @@ export const NewLine = createToken({ name: "NewLine", pattern: /\r?\n/ });
 export const Semi    = createToken({ name: "Semi",    pattern: /;/    });
 
 // Tokens — order matters: more specific / longer patterns first
-export const Backslash  = createToken({ name: "Backslash",  pattern: /\\|λ/ });
+export const Lambda  = createToken({ name: "Lambda",  pattern: /λ/ });
 export const Pi         = createToken({ name: "Pi",         pattern: /π/ });
 export const RedefAssign = createToken({ name: "RedefAssign", pattern: /::=/ }); // intentional redefinition
 export const DefAssign   = createToken({ name: "DefAssign",  pattern: /:=/  }); // definition and substitution separator
@@ -79,7 +79,7 @@ export const BacktickIdent = createToken({
 });
 
 // Mixed charset: alphanumeric/Greek + operator chars + free logic symbols.
-// Excludes λ (\u03BB) and π (\u03C0) so those always lex as Backslash/Pi.
+// Excludes λ (\u03BB) and π (\u03C0) so those always lex as Lambda / Pi.
 const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 // Plain identifier: one or more characters from the mixed charset.
@@ -102,7 +102,7 @@ export const allTokens = [
   RedefAssign,              // ::= before := so longer match wins
   DefAssign,                // := before Dot so := isn't split into : + =
   Dot,
-  Backslash,
+  Lambda,
   Pi,
   Alpha, Beta, Eta,                       // reserved Greek — before PlainIdent (same-length tie → first wins)
   ForAll, Exists, Equiv, NEquiv, Turnstile, // reserved logic — same strategy

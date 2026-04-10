@@ -16,7 +16,7 @@ const TOKEN_LABELS: Record<string, string> = {
   NEquiv:       "'≢'",
   DefAssign:    "':='",
   Dot:          "'.'",
-  Backslash:    "'λ'|'\\\\'",
+  Lambda:       "'λ'",
   LParen:       "'('",
   RParen:       "')'",
   LBracket:     "'['",

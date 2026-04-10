@@ -12,13 +12,7 @@ describe("parse", () => {
     if (r.ok) expect(r.term).toEqual(Var("x"));
   });
 
-  it("parses a lambda with . separator", () => {
-    const r = parse("\\x. x");
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.term).toEqual(Abs("x", Var("x")));
-  });
-
-  it("parses a lambda with unicode λ", () => {
+  it("parses a lambda", () => {
     const r = parse("λx. x");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.term).toEqual(Abs("x", Var("x")));
@@ -29,7 +23,7 @@ describe("parse", () => {
   });
 
   it("desugars multi-param lambda", () => {
-    const r = parse("\\x y. x");
+    const r = parse("λx y. x");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.term).toEqual(Abs("x", Abs("y", Var("x"))));
   });
@@ -46,7 +40,7 @@ describe("parse", () => {
     if (r.ok) expect(r.term).toEqual(App(Var("f"), App(Var("g"), Var("x"))));
   });
 
-  it("desugars e[x:=a] to (\\x. e) a", () => {
+  it("desugars e[x:=a] to (λx. e) a", () => {
     const r = parse("e[x:=a]");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.term).toEqual(App(Abs("x", Var("e")), Var("a")));
@@ -269,21 +263,21 @@ describe("parseProgram", () => {
   });
 
   it("parses a definition and expression", () => {
-    const r = parseProgram("I := \\x. x\nI");
+    const r = parseProgram("I := λx. x\nI");
     expect(r.ok).toBe(true);
     // expr should be the expanded form (the body of I)
     expect(r.expr).toEqual(Abs("x", Var("x")));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
   });
 
-  it("desugars param shorthand  f x := e  →  f := \\x. e", () => {
+  it("desugars param shorthand  f x := e  →  f := λx. e", () => {
     const r = parseProgram("K x y := x\nK");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
   });
 
   it("expands definitions eagerly into later lines", () => {
-    const r = parseProgram("I := \\x. x\nf := I\nf");
+    const r = parseProgram("I := λx. x\nf := I\nf");
     expect(r.ok).toBe(true);
     // f should expand to I's body, not the symbol I
     expect(r.expr).toEqual(Abs("x", Var("x")));
@@ -302,13 +296,13 @@ describe("parseProgram", () => {
   });
 
   it("treats semicolons as statement separators", () => {
-    const r = parseProgram("I := \\x. x; I");
+    const r = parseProgram("I := λx. x; I");
     expect(r.ok).toBe(true);
     expect(r.expr).toEqual(Abs("x", Var("x")));
   });
 
   it("allows multiple definitions on one line with semicolons", () => {
-    const r = parseProgram("K := \\x y. x; I := \\x. x; K");
+    const r = parseProgram("K := λx y. x; I := λx. x; K");
     expect(r.ok).toBe(true);
     expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
     expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
@@ -328,14 +322,14 @@ describe("parseProgram", () => {
   });
 
   it("warns on redefinition with different normal form", () => {
-    const r = parseProgram("I := \\x. x\nI := \\x. x x");
+    const r = parseProgram("I := λx. x\nI := λx. x x");
     expect(r.ok).toBe(true); // warning doesn't block loading
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
   });
 
   it("does not warn on redefinition with the same normal form", () => {
     // \x y. x  and  \a b. a  are alpha-equivalent
-    const r = parseProgram("T := \\x y. x\nT := \\a b. a");
+    const r = parseProgram("T := λx y. x\nT := λa b. a");
     expect(r.ok).toBe(true);
     expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
   });
@@ -378,33 +372,33 @@ describe("parseProgram", () => {
 
 describe("block comments", () => {
   it("ignores a single-line block comment", () => {
-    const r = parseProgram("#* this is a comment *#\nf := \\x. x");
+    const r = parseProgram("#* this is a comment *#\nf := λx. x");
     expect(r.ok).toBe(true);
     expect(r.defs.has("f")).toBe(true);
   });
 
   it("ignores a multi-line block comment", () => {
-    const r = parseProgram("f := \\x. x\n#* start\nstill comment\nend *#\ng := \\x. x x");
+    const r = parseProgram("f := λx. x\n#* start\nstill comment\nend *#\ng := λx. x x");
     expect(r.ok).toBe(true);
     expect(r.defs.has("f")).toBe(true);
     expect(r.defs.has("g")).toBe(true);
   });
 
   it("does not process defs inside a block comment", () => {
-    const r = parseProgram("#*\nfake := \\x. x\n*#\nreal := \\x. x x");
+    const r = parseProgram("#*\nfake := λx. x\n*#\nreal := λx. x x");
     expect(r.ok).toBe(true);
     expect(r.defs.has("fake")).toBe(false);
     expect(r.defs.has("real")).toBe(true);
   });
 
   it("does not process pragmas inside a block comment", () => {
-    const r = parseProgram("#*\n#! max-steps = 1\n*#\nf := \\x. x");
+    const r = parseProgram("#*\n#! max-steps = 1\n*#\nf := λx. x");
     expect(r.ok).toBe(true);
     expect(r.errors).toHaveLength(0);
   });
 
   it("block comment extending to end of file ignores remaining content", () => {
-    const r = parseProgram("f := \\x. x\n#* unclosed\ng := \\x. x x");
+    const r = parseProgram("f := λx. x\n#* unclosed\ng := λx. x x");
     expect(r.ok).toBe(true);
     expect(r.defs.has("f")).toBe(true);
     expect(r.defs.has("g")).toBe(false); // swallowed by unterminated comment
@@ -445,7 +439,7 @@ describe("pragma value syntax", () => {
 
 describe("error offsets", () => {
   const cases: [string, string][] = [
-    ["incomplete lambda (EOF error)",      "foo \\lambda"],
+    ["incomplete lambda (EOF error)",      "foo λ"],
     ["unmatched paren",                    "(x"],
     ["bad definition body",                "f := ("],
     ["lex error",                          "@"],
@@ -453,7 +447,7 @@ describe("error offsets", () => {
     ["bad ≡ body (unmatched paren)",       "≡ (x (y"],
     ["stray token on second line",         "a\n)"],
     ["definition with paren on LHS",       "(x) := y"],
-    ["incomplete lambda in definition",    "f := \\x"],
+    ["incomplete lambda in definition",    "f := λx"],
   ];
 
   for (const [label, src] of cases) {
@@ -730,31 +724,31 @@ describe("error location attribution", () => {
 
 describe("redef (::=)", () => {
   it("::= silences the redef warning when a name is already defined", () => {
-    const r = parseProgram("I := \\x. x\nI ::= \\x. x x");
+    const r = parseProgram("I := λx. x\nI ::= λx. x x");
     expect(r.ok).toBe(true);
     expect(r.errors.filter(e => e.kind === "warning")).toHaveLength(0);
   });
 
   it("::= warns when the name was NOT previously defined", () => {
-    const r = parseProgram("I ::= \\x. x");
+    const r = parseProgram("I ::= λx. x");
     expect(r.ok).toBe(true);
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I") && e.message.includes("::="))).toBe(true);
   });
 
   it(":= still warns on redef with a different normal form", () => {
-    const r = parseProgram("I := \\x. x\nI := \\x. x x");
+    const r = parseProgram("I := λx. x\nI := λx. x x");
     expect(r.ok).toBe(true);
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("I"))).toBe(true);
   });
 
   it("::= without prior def still sets the definition", () => {
-    const r = parseProgram("I ::= \\x. x\n≡ I (\\x. x)");
+    const r = parseProgram("I ::= λx. x\n≡ I (λx. x)");
     expect(r.ok).toBe(true);
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
 
   it("::= updates the definition and it takes effect afterward", () => {
-    const r = parseProgram("T := \\x y. x\nT ::= \\x y. y\n≡ T (\\x y. y)");
+    const r = parseProgram("T := λx y. x\nT ::= λx y. y\n≡ T (λx y. y)");
     expect(r.ok).toBe(true);
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
