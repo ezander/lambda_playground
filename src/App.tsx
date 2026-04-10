@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError } from "./parser/parser";
+import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
 import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
 import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
-import CodeMirror, { EditorView, EditorState } from "@uiw/react-codemirror";
+import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
@@ -99,6 +99,427 @@ function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix
     status,
   };
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function EditorHeaderBar({ cursorPos, canUndo, canRedo, onUndo, onRedo, onFind, showCopied, copiedKey, onShare, onSettings, onHelp, kinoLayout, isFullscreen, onToggleTheater, onToggleFullscreen }: {
+  cursorPos: { line: number; col: number } | null;
+  canUndo: boolean; canRedo: boolean;
+  onUndo: () => void; onRedo: () => void; onFind: () => void;
+  showCopied: boolean; copiedKey: number; onShare: () => void;
+  onSettings: () => void; onHelp: () => void;
+  kinoLayout: boolean; isFullscreen: boolean;
+  onToggleTheater: () => void; onToggleFullscreen: () => void;
+}) {
+  return (
+    <div className="editor-label-row">
+      <label htmlFor="source">source</label>
+      <span className="editor-meta">
+        {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
+        <button className="clear-btn" tabIndex={-1} onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
+        <button className="clear-btn" tabIndex={-1} onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
+        <button className="clear-btn" tabIndex={-1} onClick={onFind} title="Find and replace (Ctrl-F)">find</button>
+        <button className="share-btn" onClick={onShare} title="Copy share link to clipboard">
+          <Share2 size={16} />
+          {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
+        </button>
+        <button className="help-btn" onClick={onSettings} title="Settings"><Settings size={16} /></button>
+        <button className="help-btn" onClick={onHelp} title="Show help">?</button>
+        <button className="help-btn" onClick={onToggleTheater} title={kinoLayout ? "Exit theater mode" : "Theater mode"}><span style={{ display: "inline-block", transform: "scale(1.3, 0.85)" }}>⛶</span></button>
+        <button className="help-btn" onClick={onToggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+          {isFullscreen ? <Minimize2 size={16}/> : <Maximize2 size={16}/>}
+        </button>
+      </span>
+    </div>
+  );
+}
+
+function LambdaEditor({ source, extensions, onChange, onCreateEditor, onUpdate }: {
+  source: string;
+  extensions: import("@codemirror/state").Extension[];
+  onChange: (val: string) => void;
+  onCreateEditor: (view: EditorView) => void;
+  onUpdate: (update: ViewUpdate) => void;
+}) {
+  return (
+    <CodeMirror
+      basicSetup={{ lineNumbers: false }}
+      value={source}
+      extensions={extensions}
+      onChange={onChange}
+      onCreateEditor={onCreateEditor}
+      onUpdate={onUpdate}
+    />
+  );
+}
+
+function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, saveBtnRef, saveNameInputRef, onSaveOverwrite, saveName, onSaveNameChange, onSaveNameKeyDown, slotPickerRef, slotOpen, onToggleSlotOpen, savedSlots, onSwitchToScratch, onSwitchToSlot, onSaveSlotAs, onNewBuffer, onDeleteSlot, onDownload, onExport, importInputRef, onImportPick }: {
+  loadedSlotName: string | null; showDirty: boolean; programResult: ProgramResult; autoSave: boolean;
+  saveBtnRef: React.RefObject<HTMLButtonElement | null>; saveNameInputRef: React.RefObject<HTMLInputElement | null>;
+  onSaveOverwrite: () => void; saveName: string;
+  onSaveNameChange: (v: string) => void; onSaveNameKeyDown: (e: React.KeyboardEvent) => void;
+  slotPickerRef: React.RefObject<HTMLDivElement | null>; slotOpen: boolean; onToggleSlotOpen: () => void;
+  savedSlots: string[]; onSwitchToScratch: () => void; onSwitchToSlot: (name: string) => void;
+  onSaveSlotAs: () => void; onNewBuffer: () => void; onDeleteSlot: () => void;
+  onDownload: () => void; onExport: () => void;
+  importInputRef: React.RefObject<HTMLInputElement | null>; onImportPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
+  const hasWarnings = programResult.errors.some(e => e.kind === "warning");
+  const dirtyCls = hasErrors ? "dirty-indicator dirty-indicator-error"
+    : hasWarnings ? "dirty-indicator dirty-indicator-warning" : "dirty-indicator dirty-indicator-ok";
+  return (
+    <div className="toolbar">
+      <div className="toolbar-group">
+        <span className="row-label">buffers</span>
+        <span className="current-buffer" title={loadedSlotName
+          ? (showDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
+          : "Scratch buffer (auto-saved)"}>
+          {loadedSlotName ?? "*scratch*"}{showDirty && <span className={dirtyCls}> ●</span>}
+        </span>
+        {autoSave && loadedSlotName
+          ? <span className="autosave-indicator" title="auto-save is on">auto</span>
+          : <button className="ex-btn" ref={saveBtnRef} onClick={onSaveOverwrite}
+              disabled={!loadedSlotName || !showDirty}
+              title="Save changes to current buffer (Ctrl-S)">save</button>}
+        <span className="toolbar-sep" />
+        <div className="storage-combo">
+          <input className="save-name-input" type="text" ref={saveNameInputRef} placeholder="name…"
+            value={saveName} onChange={e => onSaveNameChange(e.target.value)} onKeyDown={onSaveNameKeyDown} />
+          <div className="slot-picker" ref={slotPickerRef}>
+            <button className="tool-select slot-picker-btn" onClick={onToggleSlotOpen} title="Select a buffer">▾</button>
+            {slotOpen && (
+              <div className="slot-picker-menu">
+                <button className={`slot-picker-item${loadedSlotName === null ? " slot-picker-item-active" : ""}`}
+                  onClick={onSwitchToScratch}>*scratch*</button>
+                {savedSlots.map(name => (
+                  <button key={name} className={`slot-picker-item${name === loadedSlotName ? " slot-picker-item-active" : ""}`}
+                    onClick={() => onSwitchToSlot(name)}>{name}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="toolbar-group">
+        <button className="ex-btn" onClick={onSaveSlotAs}
+          disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
+          title="Save current content as a named buffer">save&nbsp;as</button>
+        <button className="ex-btn" onClick={onNewBuffer}
+          disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
+          title="Create a new empty buffer with this name">new</button>
+        <button className="ex-btn" onClick={onDeleteSlot}
+          disabled={!savedSlots.includes(saveName.trim())}
+          title="Delete this buffer">delete</button>
+      </div>
+      <div className="toolbar-group">
+        <button className="ex-btn" onClick={onDownload}
+          title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
+        <button className="ex-btn" onClick={onExport}
+          disabled={savedSlots.length === 0}
+          title="Export all named buffers to a zip file">export</button>
+        <button className="ex-btn" onClick={() => importInputRef.current?.click()}
+          title="Import buffers from a zip file">import</button>
+        <input ref={importInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={onImportPick} />
+      </div>
+    </div>
+  );
+}
+
+function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen, onInsertSym }: {
+  onLoadExample: (src: string) => void;
+  symPickerRef: React.RefObject<HTMLDivElement | null>; symOpen: boolean; onToggleSymOpen: () => void;
+  onInsertSym: (sym: string) => void;
+}) {
+  return (
+    <div className="toolbar">
+      {DOCS.length > 0 && <><div className="toolbar-group">
+        <span className="row-label">docs</span>
+        <div className="select-wrap">
+          <select className="tool-select" value="" onChange={e => { const d = DOCS.find(x => x.label === e.target.value); if (d) onLoadExample(d.src.trimStart()); }}>
+            <option value="" disabled>— pick —</option>
+            {DOCS.map(d => <option key={d.label} value={d.label}>{d.label}</option>)}
+          </select>
+        </div>
+      </div><span className="toolbar-sep" /></>}
+      {TUTORIALS.length > 0 && <><div className="toolbar-group">
+        <span className="row-label">tutorials</span>
+        <div className="select-wrap">
+          <select className="tool-select" value="" onChange={e => { const t = TUTORIALS.find(x => x.label === e.target.value); if (t) onLoadExample(t.src.trimStart()); }}>
+            <option value="" disabled>— pick —</option>
+            {TUTORIALS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+          </select>
+        </div>
+      </div><span className="toolbar-sep" /></>}
+      <div className="toolbar-group">
+        <span className="row-label">examples</span>
+        <div className="select-wrap">
+          <select className="tool-select" value="" onChange={e => { const ex = EXAMPLES.find(x => x.label === e.target.value); if (ex) onLoadExample(ex.src.trimStart()); }}>
+            <option value="" disabled>— pick —</option>
+            {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <span className="toolbar-sep" />
+      <div className="toolbar-group">
+        <span className="row-label">sym</span>
+        <div className="sym-picker" ref={symPickerRef}>
+          <button className="tool-select slot-picker-btn" onClick={onToggleSymOpen} title="Insert symbol (or type \name then Space)">Ω ▾</button>
+          {symOpen && (
+            <div className="sym-picker-menu">
+              <div className="sym-section-label">logic</div>
+              <div className="sym-row">
+                {LOGIC_SYMBOLS.map(g => (
+                  <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                    title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
+                    onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
+                ))}
+              </div>
+              <div className="sym-section-label">lowercase</div>
+              <div className="sym-row">
+                {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
+                  <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                    title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
+                    onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
+                ))}
+              </div>
+              <div className="sym-section-label">uppercase</div>
+              <div className="sym-row">
+                {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
+                  <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
+                    title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
+                    onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ParseErrors({ errors, roundTripError, source, onJumpTo }: {
+  errors: LambdaError[]; roundTripError: string | null;
+  source: string; onJumpTo: (offset: number) => void;
+}) {
+  if (errors.length === 0 && !roundTripError) return null;
+  return (
+    <ul className="parse-errors">
+      {errors.map((e, i) => (
+        <li key={i}
+          className={[e.kind === "warning" ? "parse-warning" : "", e.offset !== undefined ? "parse-error-link" : ""].join(" ").trim()}
+          onClick={() => e.offset !== undefined && onJumpTo(e.offset)}
+        >{formatError(e, source)}</li>
+      ))}
+      {roundTripError && <li>{roundTripError}</li>}
+    </ul>
+  );
+}
+
+function EvalPanel({ open, onToggle, view, onSetView, currentTerm, hasExpr, canStep, canEtaStep, onRun, onReset, onStep, onEtaStep, onContinue, showSubst, onSetShowSubst, history, maxStepsRun }: {
+  open: boolean; onToggle: () => void;
+  view: View; onSetView: (v: View) => void;
+  currentTerm: Term | null | undefined; hasExpr: boolean;
+  canStep: boolean; canEtaStep: boolean;
+  onRun: () => void; onReset: () => void; onStep: () => void; onEtaStep: () => void; onContinue: () => void;
+  showSubst: boolean; onSetShowSubst: (v: boolean) => void;
+  history: HistoryEntry[]; maxStepsRun: number;
+}) {
+  return (
+    <Panel label="eval" open={open} onToggle={onToggle}>
+      <div className="output-tabs">
+        <button className={view === "pretty" ? "active" : ""} onClick={() => onSetView("pretty")} title="Show pretty-printed term">pretty print</button>
+        <button className={view === "ast"    ? "active" : ""} onClick={() => onSetView("ast")}    title="Show abstract syntax tree">AST</button>
+      </div>
+      <div className="output">
+        {currentTerm
+          ? view === "pretty" ? <pre>{prettyPrint(currentTerm)}</pre> : <AstView term={currentTerm} />
+          : <span className="placeholder">parse result will appear here</span>}
+      </div>
+      <div className="eval-controls">
+        <button className="load-btn" onClick={onRun}      disabled={!hasExpr}   title="Load and beta-reduce to normal form (F5)">run <kbd>F5</kbd></button>
+        <button className="load-btn" onClick={onReset}    disabled={!hasExpr}   title="Reset to step 0 (F6)">reset <kbd>F6</kbd></button>
+        <button               onClick={onStep}     disabled={!canStep}   title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
+        <button               onClick={onEtaStep}  disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
+        <button               onClick={onContinue} disabled={!canStep}   title={`Continue beta-reducing up to ${maxStepsRun} steps (F9)`}>continue <kbd>F9</kbd></button>
+        <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
+          <input type="checkbox" checked={showSubst} onChange={e => onSetShowSubst(e.target.checked)} />
+          {" "}show substitution
+        </label>
+      </div>
+      {history.length > 0 && (
+        <div className="history-section">
+          {history.map((entry, i) => (
+            <div key={i} className="history-entry">
+              <code className="history-term">
+                <span className="history-label">{entry.label}</span>
+                {" "}{entry.text}
+              </code>
+              {entry.status && (
+                <span className="history-entry-status">
+                  {entry.status === "normalForm"
+                    ? <span className="eval-status normal-form">normal form</span>
+                    : entry.status === "sizeLimit"
+                      ? <span className="eval-status did-not-terminate">exceeded {entry.size} nodes after {entry.steps} steps</span>
+                      : <span className="eval-status paused">paused after {entry.steps} steps</span>}
+                  {entry.match && <span className="history-match"><span className="print-equiv">≡</span> {entry.match}</span>}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo }: {
+  open: boolean; onToggle: () => void;
+  printDesc: boolean; onTogglePrintDesc: () => void;
+  programResult: ProgramResult; showPassingEquiv: boolean;
+  onJumpTo: (offset: number) => void;
+}) {
+  const hasContent = programResult.printInfos.length > 0 || programResult.equivInfos.length > 0
+    || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0;
+  type PrintItem     = { kind: "print";      data: typeof programResult.printInfos[number] };
+  type EquivItem     = { kind: "equiv";      data: EquivInfo; passed: boolean; opSym: string };
+  type PrintCompItem = { kind: "print-comp"; data: PrintComprehensionInfo };
+  type EquivCompItem = { kind: "equiv-comp"; data: EquivComprehensionInfo };
+  const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem)[] = !hasContent ? [] : [
+    ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
+    ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d, passed: d.negated ? !d.equivalent : d.equivalent, opSym: d.negated ? "≢" : "≡" })).filter(d => showPassingEquiv || !d.passed),
+    ...programResult.printComprehensionInfos.map(d => ({ kind: "print-comp" as const, data: d })),
+    ...programResult.equivComprehensionInfos.filter(d => showPassingEquiv || !d.allPassed).map(d => ({ kind: "equiv-comp" as const, data: d })),
+  ].sort((a, b) => printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset);
+
+  return (
+    <Panel label="output" open={open} onToggle={onToggle}
+      headerExtra={<button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
+      {hasContent ? (
+        <div className="print-section">
+          {items.map((item, i) => item.kind === "print" ? (
+            <div key={i} className="print-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+              <code className="print-src">
+                <span className="print-index">{item.data.line}:</span>
+                {" π "}{item.data.src}
+              </code>
+              <code className="print-result">
+                <span className="print-result-text"><Truncated text={item.data.result} /></span>
+                <span className="print-result-status">
+                  {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
+                  {item.data.normal
+                    ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
+                    : item.data.size !== undefined
+                      ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
+                      : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
+                </span>
+              </code>
+            </div>
+          ) : item.kind === "equiv" ? (
+            <div key={i} className="print-entry equiv-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+              <code className="print-src">
+                <span className="print-index">{item.data.line}:</span>
+                {" "}{item.data.src1}
+                <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
+                {item.data.src2}
+              </code>
+              <code className="print-result">
+                <span className="print-result-text">
+                  <Truncated text={item.data.norm1} />
+                  <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
+                  <Truncated text={item.data.norm2} />
+                </span>
+                <span className="print-result-status">
+                  {item.data.equivalent
+                    ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
+                    : item.data.terminated
+                      ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
+                      : <span className="eval-status did-not-terminate">no normal form</span>}
+                </span>
+              </code>
+            </div>
+          ) : item.kind === "print-comp" ? (
+            <div key={i} className="print-entry print-comp-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+              <code className="print-src">
+                <span className="print-index">{item.data.line}:</span>
+                {" π "}{item.data.src}
+                <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+              </code>
+              <div className="comp-rows">
+                {item.data.rows.map((row, ri) => (
+                  <div key={ri} className="comp-row">
+                    <span className="comp-bullet">•</span>
+                    <div className="comp-row-content">
+                      <code className="comp-subst-expr">{row.substExpr}</code>
+                      <code className="print-result">
+                        <span className="print-result-text"><Truncated text={row.result} /></span>
+                        <span className="print-result-status">
+                          {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
+                          {row.normal
+                            ? <><span className="eval-status normal-form">normal form</span>{row.steps > 0 && <span className="eval-status normal-form">in {row.steps} steps</span>}</>
+                            : row.size !== undefined
+                              ? <span className="eval-status did-not-terminate">exceeded {row.size} nodes after {row.steps} steps</span>
+                              : <span className="eval-status did-not-terminate">did not terminate in {row.steps} steps</span>}
+                        </span>
+                      </code>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div key={i} className="print-entry equiv-comp-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+              <code className="print-src">
+                <span className="print-index">{item.data.line}:</span>
+                {" "}{item.data.src1}
+                <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
+                {item.data.src2}
+                <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+              </code>
+              <div className="comp-rows">
+                {item.data.rows.map((row, ri) => {
+                  const rowPassed = item.data.negated ? !row.equivalent : row.equivalent;
+                  const rowClass = `equiv-op ${rowPassed ? "equiv-pass" : "equiv-fail"}`;
+                  return (
+                    <div key={ri} className="comp-row">
+                      <span className="comp-bullet">•</span>
+                      <div className="comp-row-content">
+                        <code className="comp-subst-expr">
+                          {row.substExpr1}
+                          <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
+                          {row.substExpr2}
+                        </code>
+                        <code className="print-result">
+                          <span className="print-result-text">
+                            <Truncated text={row.norm1} />
+                            <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
+                            <Truncated text={row.norm2} />
+                          </span>
+                          <span className="print-result-status">
+                            {row.equivalent
+                              ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
+                              : row.terminated
+                                ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
+                                : <span className="eval-status did-not-terminate">no normal form</span>}
+                          </span>
+                        </code>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <span className="placeholder">no π or ≡ statements in current program</span>
+      )}
+    </Panel>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const editorViewRef   = useRef<EditorView | null>(null);
@@ -640,21 +1061,7 @@ export default function App() {
   const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
 
-  const parseErrorsBlock = (programResult.errors.length > 0 || roundTripError) ? (
-    <ul className="parse-errors">
-      {programResult.errors.map((e, i) => (
-        <li
-          key={i}
-          className={[
-            e.kind === "warning" ? "parse-warning" : "",
-            e.offset !== undefined ? "parse-error-link" : "",
-          ].join(" ").trim()}
-          onClick={() => e.offset !== undefined && jumpTo(e.offset)}
-        >{formatError(e, source)}</li>
-      ))}
-      {roundTripError && <li>{roundTripError}</li>}
-    </ul>
-  ) : null;
+
 
   return (
     <div className={kinoActive ? "app kino" : "app"}>
@@ -688,7 +1095,6 @@ export default function App() {
           </div>
         </div>
       )}
-
       {showSettings && (
         <SettingsModal
           config={config}
@@ -701,40 +1107,29 @@ export default function App() {
           onCancel={() => setShowSettings(false)}
         />
       )}
+
       <header>
         <h1>λ playground</h1>
         <p className="subtitle">an untyped lambda dialect</p>
       </header>
 
       <main ref={mainRef} style={kinoActive ? { gridTemplateColumns: `${kinoSplitPct}% 6px 1fr` } : undefined}>
-        {/* ── Editor ── */}
         <section className="editor-section">
-          <div className="editor-label-row">
-            <label htmlFor="source">expression</label>
-            <span className="editor-meta">
-              {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
-              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && undo(editorViewRef.current)} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>
-              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && redo(editorViewRef.current)} disabled={!canRedo} title="Redo (Ctrl+Y)">redo</button>
-              <button className="clear-btn" tabIndex={-1} onClick={() => editorViewRef.current && openSearchPanel(editorViewRef.current)} title="Find and replace (Ctrl-F)">find</button>
-              <button className="share-btn" onClick={handleShare} title="Copy share link to clipboard">
-                <Share2 size={16} />
-                {showCopied && <span key={copiedKey} className="share-copied">copied!</span>}
-              </button>
-              <button className="help-btn" onClick={() => setShowSettings(true)} title="Settings"><Settings size={16} /></button>
-              <button className="help-btn" onClick={() => setShowHelp(true)} title="Show help">?</button>
-              <button className="help-btn" onClick={toggleTheater} title={kinoLayout ? "Exit theater mode" : "Theater mode"}><span style={{ display: "inline-block", transform: "scale(1.3, 0.85)" }}>⛶</span></button>
-              <button className="help-btn" onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
-                {isFullscreen ? <Minimize2 size={16}/> : <Maximize2 size={16}/>}
-              </button>
-            </span>
-          </div>
-          <CodeMirror
-            basicSetup={{ lineNumbers: false }}
-            value={source}
-            extensions={editorExtensions}
-            onChange={(val) => setSourceAndSave(val)}
-            onCreateEditor={(view) => { editorViewRef.current = view; view.dispatch({ effects: setParsed.of(programResult) }); view.focus(); }}
-            onUpdate={(update) => {
+          <EditorHeaderBar
+            cursorPos={cursorPos} canUndo={canUndo} canRedo={canRedo}
+            onUndo={() => editorViewRef.current && undo(editorViewRef.current)}
+            onRedo={() => editorViewRef.current && redo(editorViewRef.current)}
+            onFind={() => editorViewRef.current && openSearchPanel(editorViewRef.current)}
+            showCopied={showCopied} copiedKey={copiedKey} onShare={handleShare}
+            onSettings={() => setShowSettings(true)} onHelp={() => setShowHelp(true)}
+            kinoLayout={kinoLayout} isFullscreen={isFullscreen}
+            onToggleTheater={toggleTheater} onToggleFullscreen={toggleFullscreen}
+          />
+          <LambdaEditor
+            source={source} extensions={editorExtensions}
+            onChange={val => setSourceAndSave(val)}
+            onCreateEditor={view => { editorViewRef.current = view; view.dispatch({ effects: setParsed.of(programResult) }); view.focus(); }}
+            onUpdate={update => {
               if (update.selectionSet) {
                 const pos = update.state.selection.main.head;
                 const line = update.state.doc.lineAt(pos);
@@ -744,351 +1139,45 @@ export default function App() {
               setCanRedo(redoDepth(update.state) > 0);
             }}
           />
-          <div className="toolbar">
-            {DOCS.length > 0 && <><div className="toolbar-group">
-              <span className="row-label">docs</span>
-              <div className="select-wrap">
-                <select className="tool-select" value="" onChange={e => {
-                  const d = DOCS.find(x => x.label === e.target.value);
-                  if (d) loadExample(d.src.trimStart());
-                }}>
-                  <option value="" disabled>— pick —</option>
-                  {DOCS.map(d => <option key={d.label} value={d.label}>{d.label}</option>)}
-                </select>
-              </div>
-            </div><span className="toolbar-sep" /></>}
-            {TUTORIALS.length > 0 && <><div className="toolbar-group">
-              <span className="row-label">tutorials</span>
-              <div className="select-wrap">
-                <select className="tool-select" value="" onChange={e => {
-                  const t = TUTORIALS.find(x => x.label === e.target.value);
-                  if (t) loadExample(t.src.trimStart());
-                }}>
-                  <option value="" disabled>— pick —</option>
-                  {TUTORIALS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
-                </select>
-              </div>
-            </div><span className="toolbar-sep" /></>}
-            <div className="toolbar-group">
-              <span className="row-label">examples</span>
-              <div className="select-wrap">
-                <select className="tool-select" value="" onChange={e => {
-                  const ex = EXAMPLES.find(x => x.label === e.target.value);
-                  if (ex) loadExample(ex.src.trimStart());
-                }}>
-                  <option value="" disabled>— pick —</option>
-                  {EXAMPLES.map(ex => <option key={ex.label} value={ex.label}>{ex.label}</option>)}
-                </select>
-              </div>
-            </div>
-            <span className="toolbar-sep" />
-            <div className="toolbar-group">
-              <span className="row-label">sym</span>
-              <div className="sym-picker" ref={symPickerRef}>
-                <button className="tool-select slot-picker-btn" onClick={() => setSymOpen(o => !o)}
-                  title="Insert symbol (or type \name then Space)">Ω ▾</button>
-                {symOpen && (
-                  <div className="sym-picker-menu">
-                    <div className="sym-section-label">logic</div>
-                    <div className="sym-row">
-                      {LOGIC_SYMBOLS.map(g => (
-                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
-                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
-                      ))}
-                    </div>
-                    <div className="sym-section-label">lowercase</div>
-                    <div className="sym-row">
-                      {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
-                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
-                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
-                      ))}
-                    </div>
-                    <div className="sym-section-label">uppercase</div>
-                    <div className="sym-row">
-                      {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
-                        <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
-                          title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
-                          onClick={() => { handleInsertSym(g.sym); setSymOpen(false); }}>{g.sym}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="toolbar">
-            <div className="toolbar-group">
-              <span className="row-label">buffers</span>
-              <span className="current-buffer" title={
-                loadedSlotName
-                  ? (showDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
-                  : "Scratch buffer (auto-saved)"
-              }>
-                {loadedSlotName ?? "*scratch*"}{showDirty ? (() => {
-                  const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
-                  const hasWarnings = programResult.errors.some(e => e.kind === "warning");
-                  const cls = hasErrors ? "dirty-indicator dirty-indicator-error" : hasWarnings ? "dirty-indicator dirty-indicator-warning" : "dirty-indicator dirty-indicator-ok";
-                  return <span className={cls}> ●</span>;
-                })() : ""}
-              </span>
-              {config.autoSave && loadedSlotName
-                ? <span className="autosave-indicator" title="auto-save is on">auto</span>
-                : <button className="ex-btn" ref={saveBtnRef} onClick={handleSaveOverwrite}
-                    disabled={!loadedSlotName || !showDirty}
-                    title="Save changes to current buffer (Ctrl-S)">save</button>
-              }
-              <span className="toolbar-sep" />
-              <div className="storage-combo">
-                <input
-                  className="save-name-input"
-                  type="text"
-                  ref={saveNameInputRef}
-                  placeholder="name…"
-                  value={saveName}
-                  onChange={e => setSaveName(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") handleSaveSlot(); }}
-                />
-                <div className="slot-picker" ref={slotPickerRef}>
-                  <button className="tool-select slot-picker-btn" onClick={() => setSlotOpen(o => !o)}
-                    title="Select a buffer">▾</button>
-                  {slotOpen && (
-                    <div className="slot-picker-menu">
-                      <button className={`slot-picker-item${loadedSlotName === null ? " slot-picker-item-active" : ""}`}
-                        onClick={() => { switchToScratch(); setSlotOpen(false); }}>
-                        *scratch*
-                      </button>
-                      {savedSlots.map(name => (
-                        <button key={name} className={`slot-picker-item${name === loadedSlotName ? " slot-picker-item-active" : ""}`}
-                          onClick={() => { switchToSlot(name); setSlotOpen(false); }}>
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="toolbar-group">
-              <button className="ex-btn" onClick={handleSaveSlot}
-                disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
-                title="Save current content as a named buffer">save&nbsp;as</button>
-              <button className="ex-btn" onClick={handleNewBuffer}
-                disabled={!saveName.trim() || saveName.trim() === loadedSlotName}
-                title="Create a new empty buffer with this name">new</button>
-              <button className="ex-btn" onClick={handleDeleteSlot}
-                disabled={!savedSlots.includes(saveName.trim())}
-                title="Delete this buffer">delete</button>
-            </div>
-            <div className="toolbar-group">
-              <button className="ex-btn" onClick={handleDownload}
-                title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
-              <button className="ex-btn" onClick={handleExport}
-                disabled={savedSlots.length === 0}
-                title="Export all named buffers to a zip file">export</button>
-              <button className="ex-btn" onClick={() => importInputRef.current?.click()}
-                title="Import buffers from a zip file">import</button>
-              <input ref={importInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={handleImportPick} />
-            </div>
-          </div>
-          {!kinoActive && parseErrorsBlock}
+          <BuffersToolbar
+            loadedSlotName={loadedSlotName} showDirty={showDirty} programResult={programResult}
+            autoSave={config.autoSave} saveBtnRef={saveBtnRef} saveNameInputRef={saveNameInputRef}
+            onSaveOverwrite={handleSaveOverwrite} saveName={saveName}
+            onSaveNameChange={setSaveName} onSaveNameKeyDown={e => { if (e.key === "Enter") handleSaveSlot(); }}
+            slotPickerRef={slotPickerRef} slotOpen={slotOpen} onToggleSlotOpen={() => setSlotOpen(o => !o)}
+            savedSlots={savedSlots} onSwitchToScratch={() => { switchToScratch(); setSlotOpen(false); }}
+            onSwitchToSlot={name => { switchToSlot(name); setSlotOpen(false); }}
+            onSaveSlotAs={handleSaveSlot} onNewBuffer={handleNewBuffer} onDeleteSlot={handleDeleteSlot}
+            onDownload={handleDownload} onExport={handleExport}
+            importInputRef={importInputRef} onImportPick={handleImportPick}
+          />
+          <ContentToolbar
+            onLoadExample={loadExample}
+            symPickerRef={symPickerRef} symOpen={symOpen} onToggleSymOpen={() => setSymOpen(o => !o)}
+            onInsertSym={handleInsertSym}
+          />
+          {!kinoActive && <ParseErrors errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
         </section>
 
         {kinoActive && <div className="kino-divider" onMouseDown={handleDividerMouseDown} />}
-        <div className="panels-right">
-          {kinoActive && parseErrorsBlock}
-        {/* ── Steps panel ── */}
-        <Panel label="eval" open={stepsOpen} onToggle={toggleSteps}>
-          <div className="output-tabs">
-            <button className={view === "pretty" ? "active" : ""} onClick={() => setView("pretty")} title="Show pretty-printed term">
-              pretty print
-            </button>
-            <button className={view === "ast" ? "active" : ""} onClick={() => setView("ast")} title="Show abstract syntax tree">
-              AST
-            </button>
-          </div>
-          <div className="output">
-            {currentTerm ? (
-              view === "pretty"
-                ? <pre>{prettyPrint(currentTerm)}</pre>
-                : <AstView term={currentTerm} />
-            ) : (
-              <span className="placeholder">parse result will appear here</span>
-            )}
-          </div>
-          <div className="eval-controls">
-            <button className="load-btn" onClick={handleLoadRun} disabled={!programResult.expr}
-              title="Load and beta-reduce to normal form (F5)">run <kbd>F5</kbd></button>
-            <button className="load-btn" onClick={handleLoad} disabled={!programResult.expr}
-              title="Reset to step 0 (F6)">reset <kbd>F6</kbd></button>
-            <button onClick={handleStep}    disabled={!canStep}    title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
-            <button onClick={handleEtaStep} disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
-            <button onClick={handleRun}     disabled={!canStep}    title={`Continue beta-reducing up to ${loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun} steps (F9)`}>continue <kbd>F9</kbd></button>
-            <label className="subst-toggle" title="Show substitution as an intermediate step before beta-reducing">
-              <input type="checkbox" checked={showSubst} onChange={e => setShowSubst(e.target.checked)} />
-              {" "}show substitution
-            </label>
-          </div>
-          {history.length > 0 && (
-            <div className="history-section">
-              {history.map((entry, i) => (
-                <div key={i} className="history-entry">
-                  <code className="history-term">
-                    <span className="history-label">{entry.label}</span>
-                    {" "}{entry.text}
-                  </code>
-                  {entry.status && (
-                    <span className="history-entry-status">
-                      {entry.status === "normalForm"
-                        ? <span className="eval-status normal-form">normal form</span>
-                        : entry.status === "sizeLimit"
-                          ? <span className="eval-status did-not-terminate">exceeded {entry.size} nodes after {entry.steps} steps</span>
-                          : <span className="eval-status paused">paused after {entry.steps} steps</span>}
-                      {entry.match && <span className="history-match"><span className="print-equiv">≡</span> {entry.match}</span>}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Panel>
 
-        {/* ── Print panel ── */}
-        <Panel label="output" open={printOpen} onToggle={togglePrint}
-          headerExtra={<button className="panel-sort-btn" onClick={() => setPrintDesc(d => { const n = !d; localStorage.setItem(KEY_PRINT_DESC, n ? "1" : "0"); return n; })} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
-          {(programResult.printInfos.length > 0 || programResult.equivInfos.length > 0 || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0) ? (() => {
-            type PrintItem      = { kind: "print";      data: typeof programResult.printInfos[number] };
-            type EquivItem      = { kind: "equiv";      data: EquivInfo; passed: boolean; opSym: string };
-            type PrintCompItem  = { kind: "print-comp"; data: PrintComprehensionInfo };
-            type EquivCompItem  = { kind: "equiv-comp"; data: EquivComprehensionInfo };
-            const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem)[] = [
-              ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
-              ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d, passed: d.negated ? !d.equivalent : d.equivalent, opSym: d.negated ? "≢" : "≡" })).filter(d => config.showPassingEquiv || !d.passed),
-              ...programResult.printComprehensionInfos.map(d => ({ kind: "print-comp" as const, data: d })),
-              ...programResult.equivComprehensionInfos.filter(d => config.showPassingEquiv || !d.allPassed).map(d => ({ kind: "equiv-comp" as const, data: d })),
-            ].sort((a, b) => (printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset));
-            return (
-              <div className="print-section">
-                {items.map((item, i) => item.kind === "print" ? (
-                  <div key={i} className="print-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
-                    <code className="print-src">
-                      <span className="print-index">{item.data.line}:</span>
-                      {" π "}{item.data.src}
-                    </code>
-                    <code className="print-result">
-                      <span className="print-result-text"><Truncated text={item.data.result} /></span>
-                      <span className="print-result-status">
-                        {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
-                        {item.data.normal
-                          ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
-                          : item.data.size !== undefined
-                            ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
-                            : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
-                      </span>
-                    </code>
-                  </div>
-                ) : item.kind === "equiv" ? (
-                  <div key={i} className="print-entry equiv-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
-                    <code className="print-src">
-                      <span className="print-index">{item.data.line}:</span>
-                      {" "}{item.data.src1}
-                      <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
-                      {item.data.src2}
-                    </code>
-                    <code className="print-result">
-                      <span className="print-result-text">
-                        <Truncated text={item.data.norm1} />
-                        <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
-                        <Truncated text={item.data.norm2} />
-                      </span>
-                      <span className="print-result-status">
-                        {item.data.equivalent
-                          ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
-                          : item.data.terminated
-                            ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
-                            : <span className="eval-status did-not-terminate">no normal form</span>}
-                      </span>
-                    </code>
-                  </div>
-                ) : item.kind === "print-comp" ? (
-                  <div key={i} className="print-entry print-comp-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
-                    <code className="print-src">
-                      <span className="print-index">{item.data.line}:</span>
-                      {" π "}{item.data.src}
-                      <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
-                    </code>
-                    <div className="comp-rows">
-                      {item.data.rows.map((row, ri) => (
-                        <div key={ri} className="comp-row">
-                          <span className="comp-bullet">•</span>
-                          <div className="comp-row-content">
-                            <code className="comp-subst-expr">{row.substExpr}</code>
-                            <code className="print-result">
-                              <span className="print-result-text"><Truncated text={row.result} /></span>
-                              <span className="print-result-status">
-                                {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
-                                {row.normal
-                                  ? <><span className="eval-status normal-form">normal form</span>{row.steps > 0 && <span className="eval-status normal-form">in {row.steps} steps</span>}</>
-                                  : row.size !== undefined
-                                    ? <span className="eval-status did-not-terminate">exceeded {row.size} nodes after {row.steps} steps</span>
-                                    : <span className="eval-status did-not-terminate">did not terminate in {row.steps} steps</span>}
-                              </span>
-                            </code>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div key={i} className="print-entry equiv-comp-entry" onClick={() => jumpTo(item.data.offset)} title="Go to source">
-                    <code className="print-src">
-                      <span className="print-index">{item.data.line}:</span>
-                      {" "}{item.data.src1}
-                      <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
-                      {item.data.src2}
-                      <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
-                    </code>
-                    <div className="comp-rows">
-                      {item.data.rows.map((row, ri) => {
-                        const rowPassed = item.data.negated ? !row.equivalent : row.equivalent;
-                        const rowClass = `equiv-op ${rowPassed ? "equiv-pass" : "equiv-fail"}`;
-                        return (
-                          <div key={ri} className="comp-row">
-                            <span className="comp-bullet">•</span>
-                            <div className="comp-row-content">
-                              <code className="comp-subst-expr">
-                                {row.substExpr1}
-                                <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
-                                {row.substExpr2}
-                              </code>
-                              <code className="print-result">
-                                <span className="print-result-text">
-                                  <Truncated text={row.norm1} />
-                                  <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
-                                  <Truncated text={row.norm2} />
-                                </span>
-                                <span className="print-result-status">
-                                  {row.equivalent
-                                    ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
-                                    : row.terminated
-                                      ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
-                                      : <span className="eval-status did-not-terminate">no normal form</span>}
-                                </span>
-                              </code>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })() : (
-            <span className="placeholder">no π or ≡ statements in current program</span>
-          )}
-        </Panel>
+        <div className="panels-right">
+          {kinoActive && <ParseErrors errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
+          <EvalPanel
+            open={stepsOpen} onToggle={toggleSteps}
+            view={view} onSetView={setView}
+            currentTerm={currentTerm} hasExpr={!!programResult.expr}
+            canStep={canStep} canEtaStep={canEtaStep}
+            onRun={handleLoadRun} onReset={handleLoad} onStep={handleStep} onEtaStep={handleEtaStep} onContinue={handleRun}
+            showSubst={showSubst} onSetShowSubst={setShowSubst}
+            history={history} maxStepsRun={loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun}
+          />
+          <PrintPanel
+            open={printOpen} onToggle={togglePrint}
+            printDesc={printDesc} onTogglePrintDesc={() => setPrintDesc(d => { const n = !d; localStorage.setItem(KEY_PRINT_DESC, n ? "1" : "0"); return n; })}
+            programResult={programResult} showPassingEquiv={config.showPassingEquiv}
+            onJumpTo={jumpTo}
+          />
         </div>
       </main>
 
