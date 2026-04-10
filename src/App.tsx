@@ -168,6 +168,8 @@ export default function App() {
   const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
   const programResult = useMemo(() => parseProgram(source, config, includeResolver), [source, config, includeResolver]);
+  const programResultRef = useRef(programResult);
+  programResultRef.current = programResult;
 
   // Push parse result into the CodeMirror StateField for syntax highlighting
   useEffect(() => {
@@ -263,7 +265,7 @@ export default function App() {
     const view = editorViewRef.current;
     if (!view) return;
     view.setState(EditorState.create({ doc: content, extensions: editorExtRef.current }));
-    view.dispatch({ effects: EditorView.scrollIntoView(0) });
+    view.dispatch({ effects: [EditorView.scrollIntoView(0), setParsed.of(programResultRef.current)] });
     view.focus();
   }, []);
 
