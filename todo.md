@@ -111,14 +111,16 @@
 * [x] extend [ ] links for html links, in new tab or window ← [https://...] in comments opens new tab with ↗ indicator
 * [x] link navigation (doc/example/tutorial) pushes onto undo stack so Ctrl-Z acts as go-back
 * [x] think about how to specify longer examples or tutorials, no fun in ts file ← done; .txt files in includes/
+* [x] syntax highlighting bug: forward refs shown as fv (sequential semantics), back-refs as defu; extracted computeHighlightRanges() pure function; tag-based tests + large file snapshot
+* [x] warning squiggles + hover tooltips ← yellow squiggle for warnings, red for errors; assert-fail is distinct kind (red, no dim-after); tooltip on hover for all three
+* [x] hover tooltips for links ← external: "Open in new tab: url"; dead: "Link target '...' not found"; doc/example/tutorial: "Load '...' into scratch buffer"; user: "Switch to buffer '...'"
+* [x] Escape closes help and settings modals (previously only closed import)
+* [x] "copied!" toast in kino mode starts at toolbar level instead of floating above it
+* [x] import dialog: loaded buffer shown with red "(currently loaded — cannot import)", checkbox disabled; existing-but-not-loaded buffers keep accent "(exists — overwrite?)" tag
 
 ## Up next
 
-* [ ] gimmick: at least in fullscreen: "copied" should start lower
-* [ ] escape should exit help
 * [ ] review full tab order on rendered page and fix keyboard navigation
-* [x] we reintroduced the bug with syntax highlighting of defs that are defs later in the file ← confirmed fixed; sequential semantics (forward refs = fv, back-refs = defu); extracted computeHighlightRanges() pure; tag-based tests + large file snapshot
-* [x] warning squiggles + hover tooltips for errors/warnings/assert-fails ← assert-fail is a distinct kind (red squiggle, no dim-after); tooltip shows message on hover
 * [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
 
 ## Eval panel
@@ -133,9 +135,7 @@
 
 * [ ] local/private symbols: convention (leading _ or __ not exported) rather than new syntax; avoids language complexity, tutorials can still use helpers without polluting ≡ pools
 * [ ] Web Worker for reductions: indefinitely on hold — includes are cached so splitting scripts avoids long runs; too complex for the gain
-* [ ] import dialog: show marker when incoming buffer would overwrite an open/modified buffer; what happens to the currently open buffer is still unclear
 * [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; hold until eval panel direction is clearer
-* [ ] warning/error hover tooltips: yellow squiggle underline on warning lines (like red on errors), tooltip on hover — consistent with error display, no new syntax ← new idea
 * [ ] identification heuristic (apply free var to both sides): probably no — enabling η already handles most cases; unclear what we'd gain
 * [ ] literature tab: do as a doc/Literature.txt file instead, no code change needed
 * [ ] assert symbol defined: not useful — undefined symbols become free vars silently, but assertions should be on behaviour not existence (e.g. ≡ already covers "not (not true) = true")

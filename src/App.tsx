@@ -135,6 +135,10 @@ export default function App() {
     source !== (localStorage.getItem(SAVE_PREFIX + loadedSlotName) ?? "");
   const isDirtyRef = useRef(isDirty);
   isDirtyRef.current = isDirty;
+  const showHelpRef = useRef(false);
+  showHelpRef.current = showHelp;
+  const showSettingsRef = useRef(false);
+  showSettingsRef.current = showSettings;
   anyModalOpenRef.current = showHelp || showSettings;
   const [slotOpen, setSlotOpen]       = useState(false);
   const [symOpen, setSymOpen]         = useState(false);
@@ -405,7 +409,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [savedSlots]);
 
-  const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; checked: boolean }[]>([]);
+  const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; loaded: boolean; checked: boolean }[]>([]);
   const [showImport, setShowImport]   = useState(false);
   const showImportRef = useRef(false);
   showImportRef.current = showImport;
@@ -426,14 +430,15 @@ export default function App() {
         const content = await entry.async("string");
         const name = path.slice(0, -4);
         const conflict = savedSlots.includes(name);
-        items.push({ name, content, conflict, checked: !conflict });
+        const loaded   = name === loadedSlotName;
+        items.push({ name, content, conflict, loaded, checked: !conflict && !loaded });
       }
       if (items.length === 0) { alert("No .txt files found in zip root."); return; }
       items.sort((a, b) => a.name.localeCompare(b.name));
       setImportItems(items);
       setShowImport(true);
     } catch { alert("Could not read zip file."); }
-  }, [savedSlots]);
+  }, [savedSlots, loadedSlotName]);
 
   const handleImportConfirm = useCallback(() => {
     for (const item of importItems) {
@@ -523,7 +528,9 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showImportRef.current) { setShowImport(false); return; }
+        if (showImportRef.current)  { setShowImport(false);   return; }
+        if (showHelpRef.current)    { setShowHelp(false);     return; }
+        if (showSettingsRef.current){ setShowSettings(false); return; }
         if (!anyModalOpenRef.current) {
           const view = editorViewRef.current;
           if (view?.hasFocus) {
@@ -638,16 +645,18 @@ export default function App() {
           <div className="modal import-modal" onClick={e => e.stopPropagation()}>
             <h2>IMPORT BUFFERS</h2>
             <div className="import-actions">
-              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: true })))}>check all</button>
+              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: i.loaded ? false : true })))}>check all</button>
               <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: false })))}>uncheck all</button>
             </div>
             <ul className="import-list">
               {importItems.map((item, i) => (
-                <li key={item.name} className={item.conflict ? "import-conflict" : ""}>
-                  <label>
-                    <input type="checkbox" checked={item.checked}
+                <li key={item.name}>
+                  <label style={item.loaded ? { cursor: "default", opacity: 0.6 } : undefined}>
+                    <input type="checkbox" checked={item.checked} disabled={item.loaded}
                       onChange={e => setImportItems(items => items.map((it, j) => j === i ? { ...it, checked: e.target.checked } : it))} />
-                    {" "}{item.name}{item.conflict ? <span className="import-conflict-tag"> (exists — overwrite?)</span> : ""}
+                    {" "}{item.name}
+                    {item.loaded   ? <span className="import-loaded-tag"> (currently loaded — cannot import)</span> :
+                     item.conflict ? <span className="import-conflict-tag"> (exists — overwrite?)</span> : ""}
                   </label>
                 </li>
               ))}
