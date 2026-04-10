@@ -113,7 +113,6 @@ function EditorHeaderBar({ cursorPos, canUndo, canRedo, onUndo, onRedo, onFind, 
 }) {
   return (
     <div className="editor-label-row">
-      <label htmlFor="source">source</label>
       <span className="editor-meta">
         {cursorPos && <span className="cursor-pos">{cursorPos.line}:{cursorPos.col}</span>}
         <button className="clear-btn" tabIndex={-1} onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">undo</button>

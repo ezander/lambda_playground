@@ -215,10 +215,9 @@ label {
 .editor-label-row {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 0.4rem;
+  justify-content: flex-end;
+  margin-bottom: 0.15rem;
 }
-.editor-label-row label { margin-bottom: 0; }
 
 .editor-meta {
   display: flex;
