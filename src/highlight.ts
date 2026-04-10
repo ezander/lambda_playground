@@ -1,6 +1,6 @@
-import { ViewPlugin, ViewUpdate, Decoration, DecorationSet } from "@codemirror/view";
+import { ViewPlugin, ViewUpdate, Decoration, DecorationSet, hoverTooltip } from "@codemirror/view";
 import { EditorView } from "@codemirror/view";
-import { RangeSetBuilder, StateField, StateEffect } from "@codemirror/state";
+import { RangeSetBuilder, StateField, StateEffect, Extension } from "@codemirror/state";
 import { IToken, tokenMatcher } from "chevrotain";
 import { ProgramResult, PositionMap } from "./parser/parser";
 import { Term, Var, Abs } from "./parser/ast";
@@ -32,6 +32,7 @@ const mParam    = Decoration.mark({ class: "cml-param" });
 const mFree     = Decoration.mark({ class: "cml-free" });
 const mUnparsed = Decoration.mark({ class: "cml-unparsed" });
 const mError    = Decoration.mark({ class: "cml-error" });
+const mWarning  = Decoration.mark({ class: "cml-warning" });
 
 type Tk = { from: number; to: number; m: Decoration };
 
@@ -141,14 +142,15 @@ function buildDecorations(view: EditorView): DecorationSet {
     }
   }
 
-  // Squiggles under each error token (to end of line), dim region after first hard error
+  // Squiggles under each error/warning line, dim region after first hard error
   if (parsed) {
     for (const err of parsed.errors) {
-      if (err.kind === "warning" || err.offset == null) continue;
+      if (err.offset == null) continue;
       const lineStart = fullText.lastIndexOf("\n", err.offset - 1) + 1;
       const lineEnd   = fullText.indexOf("\n", err.offset);
       const to = lineEnd === -1 ? fullText.length : lineEnd;
-      if (lineStart < to) tks.push({ from: lineStart, to, m: mError });
+      if (lineStart < to)
+        tks.push({ from: lineStart, to, m: err.kind === "warning" ? mWarning : mError });
     }
     const firstError = parsed.errors.find(e => e.kind !== "warning" && e.offset != null);
     if (firstError && firstError.offset != null && firstError.offset < fullText.length) {
@@ -166,6 +168,36 @@ function buildDecorations(view: EditorView): DecorationSet {
 
   return builder.finish();
 }
+
+// ── Hover tooltips for errors and warnings ────────────────────────────────────
+
+export const lambdaDiagnosticTooltip: Extension = hoverTooltip((view, pos) => {
+  const parsed = view.state.field(parsedField);
+  if (!parsed) return null;
+  const fullText = view.state.doc.toString();
+
+  const messages: string[] = [];
+  for (const err of parsed.errors) {
+    if (err.offset == null) continue;
+    const lineStart = fullText.lastIndexOf("\n", err.offset - 1) + 1;
+    const lineEnd   = fullText.indexOf("\n", err.offset);
+    const to = lineEnd === -1 ? fullText.length : lineEnd;
+    if (pos >= lineStart && pos <= to)
+      messages.push(err.message);
+  }
+  if (messages.length === 0) return null;
+
+  return {
+    pos,
+    above: true,
+    create() {
+      const dom = document.createElement("div");
+      dom.className = "cml-tooltip";
+      dom.textContent = messages.join("\n");
+      return { dom };
+    },
+  };
+});
 
 export const lambdaHighlight = ViewPlugin.fromClass(
   class {

@@ -110,35 +110,39 @@
 * [x] shortcut to return to editor / leave editor: Escape toggles focus; lands on save button (if dirty) or buffer name field
 * [x] extend [ ] links for html links, in new tab or window ← [https://...] in comments opens new tab with ↗ indicator
 * [x] link navigation (doc/example/tutorial) pushes onto undo stack so Ctrl-Z acts as go-back
+* [x] think about how to specify longer examples or tutorials, no fun in ts file ← done; .txt files in includes/
 
 ## Up next
 
+* [ ] gimmick: at least in fullscreen: "copied" should start lower
+* [ ] escape should exit help
 * [ ] review full tab order on rendered page and fix keyboard navigation
-* [ ] run reductions in a Web Worker so UI stays responsive and long/infinite reductions can be cancelled
-* [ ] what happens in import when the current buffer is overwritten and/or in modified state (check)
-* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file
-  * [ ] what about undefining symbols, or marking as not for export, i.e. only local
+* [ ] we reintroduced the bug with syntax highlighting of defs that are defs later in the file. Important: lets us make syntax highlighting testable, that's important imho, and doable (don't check colors, check structure, insert e.g. semantic pseudo xml like <var>foo</var>, this can be checked)
+* [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
+
+## Eval panel
 * [ ] think about the state and future of the eval panel...
   * [ ] the expression thing is useful for evaluating and looking at singular expressions, the output for long lambda scripts, maybe we need a divide here?
   * [ ] or maybe a tabbed panel: eval for scratch, and output for named buffers, hmm...
   * [ ] or only output, and you can load the eval into a modal and to the step by step thing there?
+  * [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers (primary audience: people getting a first grasp of LC)
+  * [ ] when someone hits "show subst" we should "reload", and maybe when the formula is changed, we should also automatically reload (makes the load button useless, or we rename it to "reset". then "load & run" would be "run" and "run" would be "continue")
 
 ## Consider
 
-* [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
-
-* [ ] output expressions: term highlighting (like in the editor), possibility for inline output (as "widgets" directly in the editor via codemirror plugins), manual reductions (just a thought)
-
-* [ ] consider marking disallowed identifiers like lambda or beta in red... (could be in parser: mark first disallowed token read in red)
-* [ ] Q: for identification: as long as at least one is an abstraction, apply new var to both sides? switched on/off via a flag
-* [ ] make a literature tab in help
-* [ ] in our current framework, can we make sure that a symbol is defined? 
-* [ ] maybe have equiv[a] with a def for a, just make a new free variable in the expressions to come, without possiblity of being defined at outer scope
-* [ ] what about evaluating expression when error occurred before
+* [ ] local/private symbols: convention (leading _ or __ not exported) rather than new syntax; avoids language complexity, tutorials can still use helpers without polluting ≡ pools
+* [ ] Web Worker for reductions: indefinitely on hold — includes are cached so splitting scripts avoids long runs; too complex for the gain
+* [ ] import dialog: show marker when incoming buffer would overwrite an open/modified buffer; what happens to the currently open buffer is still unclear
+* [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; hold until eval panel direction is clearer
+* [ ] warning/error hover tooltips: yellow squiggle underline on warning lines (like red on errors), tooltip on hover — consistent with error display, no new syntax ← new idea
+* [ ] identification heuristic (apply free var to both sides): probably no — enabling η already handles most cases; unclear what we'd gain
+* [ ] literature tab: do as a doc/Literature.txt file instead, no code change needed
+* [ ] assert symbol defined: not useful — undefined symbols become free vars silently, but assertions should be on behaviour not existence (e.g. ≡ already covers "not (not true) = true")
+* [ ] fresh free variable syntax (equiv[a] scope idea): fringe, not yet necessary; park for now
+* [ ] evaluate after error: currently inconsistent (eval panel still runs); moot once eval panel is rethought
 
 ## For later
 
-* [ ] remember when a term is copied, when it is then reduced apply the reduction to all copies, i.e. "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
 * [ ] we need a syntax for annotating stuff, like which kind of reductions to use (none, alpha, beta, eta, by-value), or how many (+,\*,1,-), or precedence. we had this idea already, but need to make it clearer (idea: maybe epsilon means empty statement or no reduction, because it's also the empty word, idea: enclose reductions in {}), pi implies default reduction mode {\beta*} or (\beta*=} (wow this get's complicated, but can be quite neat, and clean)
   * [ ] explicit normalizations: e.g. `foo = \beta (\ x y . y) x`, could put beta also in exprs, could later add also \eta, or \eta*, \beta*, \alpha(M/x) or something and explicit reductions are carried out first  
   * [ ] maybe the \beta would be good to force immediate beta reduction on a term before the usual leftmost-outermost kicks in
@@ -149,23 +153,32 @@
 * [ ] should we have line continuation with e.g. \ or next line starts with tab? maybe only when we have types lc, as lines get longer
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
 
-## Questionable
+## Possible performance enhancements
+
+* [ ] remember when a term is copied, when it is then reduced apply the reduction to all copies, i.e. "referential term expansions" ? say (\ x . x x)((\y . a) b) -> ((\y . a)b) ((\y . a)b) -> a a (last in one steps because both terms are "the same")
+
+## Minor issues
  
 * [ ] ≢ renders smaller than ≡ in the editor — font fallback issue (U+2262 not in most monospace fonts)
-* [ ] Shall we have editor tabs like an ide
-* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
+
+## UI development ideas
+
+* [ ] Shall we have editor tabs like an ide (for all files, but maybe also only a scratch/named buffers split?)
 * [ ] think about a leetcode-like layout of the ui (maybe only if I have a tutorial or when i'm at it...)
-* [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
+  * [ ] with the leetcode-like layout, maybe introduce exercises (or have two tabs, one for normal programming, one for tuts with exercises)
+
+## Questionable
+ 
+* [ ] is pi a bit pointless? shall we print each expr to output if it's not the last? I mean, otherwise it has no effect at all, and if we don't want that, we could just comment it out...
 
 ## For me todo
 
-* [x] think about how to specify longer examples or tutorials, no fun in ts file ← done; .txt files in includes/
-* [ ] again, improve examples (I will specify them, for bool, numbers, data structures)
-* [ ] make a small lisp demo
-* [ ] make a demo with church numerals, and scott numerals
+* [ ] improve examples (I will specify them, for bool, numbers, data structures)
+* [ ] make a demo with church numerals, and scott numerals; make a small lisp demo
 * [ ] make more demos and connect to a tutorial (basics, booleans, numerals, combinators)
-* [ ] let's think whether we should use 0, 1, 2 per default for the church numerals
  
+## On hold
+
 ## Don't do
 
 * [~] why still abs, app and only rename later??
@@ -173,3 +186,4 @@
 * [~] hbr uses 'where' clauses. shall we? dunno
 * [~] Create grammar display from real grammar (?) — not worth it, update manually
 * [~] test also the UI?
+

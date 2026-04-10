@@ -40,6 +40,7 @@ export const lambdaTheme: Extension = EditorView.theme({
   // ── Syntax highlighting ──
   ".cml-comment":  { color: "#8a9090", fontStyle: "italic" },
   ".cml-error":    { textDecoration: "underline wavy #b03030", textDecorationThickness: "1px", textUnderlineOffset: "4px" },
+  ".cml-warning":  { textDecoration: "underline wavy #c9a84c", textDecorationThickness: "1px", textUnderlineOffset: "4px" },
   ".cml-pragma":   { color: "#7a8fa8", fontStyle: "italic" },
   ".cml-op":       { color: "#9a8860" },
   ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
@@ -54,6 +55,17 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-link-dead": { color: "#7ab0c8", textDecoration: "underline dotted #b05050", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
   ".cml-link-ext":  { color: "#7ab0c8", textDecoration: "underline", textDecorationThickness: "1px", textUnderlineOffset: "2px", cursor: "pointer !important" },
   ".cml-link-ext::after": { content: '"↗"', fontSize: "1.1em" },
+  ".cml-tooltip": {
+    background: "#252525",
+    border: "1px solid #3a3a3a",
+    borderRadius: "3px",
+    padding: "4px 8px",
+    fontSize: "0.85em",
+    color: "#e8e4dc",
+    maxWidth: "500px",
+    whiteSpace: "pre-wrap",
+    lineHeight: "1.5",
+  },
 }, { dark: true });
 
 // ── Bracket-wrap keymap ───────────────────────────────────────────────────────

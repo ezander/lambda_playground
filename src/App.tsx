@@ -14,7 +14,7 @@ import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./edito
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
-import { lambdaHighlight, setParsed, parsedField } from "./highlight";
+import { lambdaHighlight, lambdaDiagnosticTooltip, setParsed, parsedField } from "./highlight";
 import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
 import LZString from "lz-string";
@@ -504,7 +504,7 @@ export default function App() {
     const exts = [
       cmHistory(),
       lineNumbers({ formatNumber: n => String(n).padStart(4, "\u00a0") }),
-      lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaComplete,
+      lambdaTheme, lambdaKeymap, lambdaCompleteKeymap, parsedField, lambdaHighlight, lambdaDiagnosticTooltip, lambdaComplete,
       lambdaLinks(linkHandlerRef),
       wrapCompartment.of(makeWrapExtensions(loadConfig().wrapWidth ?? DEFAULT_CONFIG.wrapWidth)),
     ];
