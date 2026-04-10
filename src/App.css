@@ -468,6 +468,15 @@ label {
 .dirty-indicator-ok      { color: #4caf50; }
 .dirty-indicator-warning { color: var(--accent); }
 .dirty-indicator-error   { color: var(--warn); }
+.autosave-indicator {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.2rem 0.6rem;
+  opacity: 0.6;
+}
 
 /* ── Symbol picker ── */
 .sym-picker { position: relative; }

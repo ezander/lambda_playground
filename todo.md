@@ -123,6 +123,7 @@
 * [x] private symbols: _-prefixed defs not exported across include/mixin boundaries; excluded from ≡ match display
 * [x] ctrl-click for pragma include/mixin paths (plain click = editing intent); underline + pointer cursor only visible when Ctrl held
 * [x] autocomplete: scroll wheel moves selection; icon column shows "def"/"inc" instead of italic x/abc
+* [x] auto-save setting: saves named buffers on every edit; "save" button replaced by "auto" indicator; turning on auto-save immediately flushes any dirty buffer
 
 ## Up next
 
@@ -143,7 +144,6 @@
 * [ ] output term highlighting: not convinced yet — could be cool, but significant CM6 work; hold until eval panel direction is clearer
 * [ ] fresh free variable syntax (equiv[a] scope idea): fringe, not yet necessary; park for now
 * [ ] evaluate after error: currently inconsistent (eval panel still runs); moot once eval panel is rethought
-* [ ] consider an auto-save option for saved buffers. either on a per buffer basis. or in the settings. or in settings as default and in the buffers
 
 ## For later
 

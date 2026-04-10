@@ -156,11 +156,17 @@ export default function App() {
   const toggleSteps = useCallback(() => setStepsOpen(o => { const n = !o; localStorage.setItem(KEY_PANEL_STEPS, n ? "1" : "0"); return n; }), []);
   const togglePrint = useCallback(() => setPrintOpen(o => { const n = !o; localStorage.setItem(KEY_PANEL_PRINT, n ? "1" : "0"); return n; }), []);
 
+  const autoSaveRef = useRef(config.autoSave);
+  autoSaveRef.current = config.autoSave;
+  const showDirty = isDirty && !config.autoSave;
+
   const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
     setSource(prev => {
       const next = typeof s === "function" ? s(prev) : s;
       if (loadedSlotRef.current === null)
-        localStorage.setItem(KEY_SOURCE, next); // only auto-save scratch
+        localStorage.setItem(KEY_SOURCE, next); // always auto-save scratch
+      else if (autoSaveRef.current)
+        localStorage.setItem(SAVE_PREFIX + loadedSlotRef.current, next);
       return next;
     });
   }, []);
@@ -680,7 +686,12 @@ export default function App() {
       {showSettings && (
         <SettingsModal
           config={config}
-          onApply={c => { updateConfig(c); setShowSettings(false); }}
+          onApply={c => {
+            if (c.autoSave && !config.autoSave && loadedSlotName && isDirty)
+              localStorage.setItem(SAVE_PREFIX + loadedSlotName, source);
+            updateConfig(c);
+            setShowSettings(false);
+          }}
           onCancel={() => setShowSettings(false)}
         />
       )}
@@ -806,19 +817,22 @@ export default function App() {
               <span className="row-label">buffers</span>
               <span className="current-buffer" title={
                 loadedSlotName
-                  ? (isDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
+                  ? (showDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
                   : "Scratch buffer (auto-saved)"
               }>
-                {loadedSlotName ?? "*scratch*"}{isDirty ? (() => {
+                {loadedSlotName ?? "*scratch*"}{showDirty ? (() => {
                   const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
                   const hasWarnings = programResult.errors.some(e => e.kind === "warning");
                   const cls = hasErrors ? "dirty-indicator dirty-indicator-error" : hasWarnings ? "dirty-indicator dirty-indicator-warning" : "dirty-indicator dirty-indicator-ok";
                   return <span className={cls}> ●</span>;
                 })() : ""}
               </span>
-              <button className="ex-btn" ref={saveBtnRef} onClick={handleSaveOverwrite}
-                disabled={!loadedSlotName || !isDirty}
-                title="Save changes to current buffer (Ctrl-S)">save</button>
+              {config.autoSave && loadedSlotName
+                ? <span className="autosave-indicator" title="auto-save is on">auto</span>
+                : <button className="ex-btn" ref={saveBtnRef} onClick={handleSaveOverwrite}
+                    disabled={!loadedSlotName || !showDirty}
+                    title="Save changes to current buffer (Ctrl-S)">save</button>
+              }
               <span className="toolbar-sep" />
               <div className="storage-combo">
                 <input

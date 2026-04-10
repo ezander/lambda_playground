@@ -9,6 +9,7 @@ export type Config = {
   maxSize:         number;
   showPassingEquiv: boolean;
   wrapWidth:       number;
+  autoSave:        boolean;
 };
 
 export const DEFAULT_CONFIG: Config = {
@@ -19,4 +20,5 @@ export const DEFAULT_CONFIG: Config = {
   maxSize:         10000,
   showPassingEquiv: false,
   wrapWidth:       80,
+  autoSave:        false,
 };

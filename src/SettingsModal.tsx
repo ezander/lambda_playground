@@ -19,6 +19,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxSize,           setMaxSize]           = useState(String(config.maxSize));
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
   const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
+  const [autoSave,          setAutoSave]          = useState(config.autoSave);
 
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef);
@@ -31,6 +32,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
     maxSize:          parsePositiveInt(maxSize,       config.maxSize),
     showPassingEquiv,
     wrapWidth:        parsePositiveInt(wrapWidth,     config.wrapWidth),
+    autoSave,
   });
 
   useEffect(() => {
@@ -109,6 +111,14 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setShowPassingEquiv(e.target.checked)} />
               </td>
               <td className="settings-hint">show passing assertions in output (default: only failures)</td>
+            </tr>
+            <tr>
+              <td>auto-save</td>
+              <td>
+                <input type="checkbox" checked={autoSave}
+                  onChange={e => setAutoSave(e.target.checked)} />
+              </td>
+              <td className="settings-hint">save named buffers automatically on every edit</td>
             </tr>
           </tbody>
         </table>
