@@ -49,7 +49,7 @@ class LinkViewPlugin {
     INCLUDE_RE.lastIndex = 0;
     while ((m = INCLUDE_RE.exec(text)) !== null) {
       const quoteStart = text.indexOf('"', m.index) + 1;
-      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: !contentExists(m[1]), pragma: true });
+      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: false, pragma: true });
     }
 
     matches.sort((a, b) => a.from - b.from);
@@ -123,10 +123,10 @@ function buildLinkTooltip(view: EditorView, pos: number) {
   while ((m = INCLUDE_RE.exec(text)) !== null) {
     const quoteStart = text.indexOf('"', m.index) + 1;
     const from = quoteStart, to = quoteStart + m[1].length;
-    const dead = !contentExists(m[1]);
     if (pos >= from && pos < to) {
+      if (!contentExists(m[1])) return null; // parser already reports the error
       const linkText = text.slice(from, to);
-      const msg = linkTooltipMessage(linkText, dead, false, true);
+      const msg = linkTooltipMessage(linkText, false, false, true);
       if (!msg) return null;
       return { pos: from, above: true, create() { const dom = document.createElement("div"); dom.className = "cml-tooltip"; dom.textContent = msg; return { dom }; } };
     }
