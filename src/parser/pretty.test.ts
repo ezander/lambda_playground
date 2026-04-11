@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Var, Abs, App } from "./ast";
+import { Var, Abs, App, Subst } from "./ast";
 import { prettyPrint } from "./pretty";
 
 describe("prettyPrint — backtick quoting", () => {
@@ -33,6 +33,18 @@ describe("prettyPrint — backtick quoting", () => {
     expect(prettyPrint(Var("β"))).toBe("`β`");
   });
 
+  it("quotes reserved Greek letter η", () => {
+    expect(prettyPrint(Var("η"))).toBe("`η`");
+  });
+
+  it("quotes λ when used as a variable name", () => {
+    expect(prettyPrint(Var("λ"))).toBe("`λ`");
+  });
+
+  it("quotes π when used as a variable name", () => {
+    expect(prettyPrint(Var("π"))).toBe("`π`");
+  });
+
 });
 
 describe("prettyPrint — structure", () => {
@@ -54,5 +66,19 @@ describe("prettyPrint — structure", () => {
 
   it("parenthesises application in argument position", () => {
     expect(prettyPrint(App(Var("f"), App(Var("g"), Var("x"))))).toBe("f (g x)");
+  });
+
+  it("compresses triple-param lambda", () => {
+    expect(prettyPrint(Abs("x", Abs("y", Abs("z", Var("x")))))).toBe("λx y z. x");
+  });
+
+  it("prints Subst with a complex arg", () => {
+    // x[y:=f z]
+    expect(prettyPrint(Subst(Var("x"), "y", App(Var("f"), Var("z"))))).toBe("x[y:=f z]");
+  });
+
+  it("prints Subst with a lambda arg", () => {
+    // x[y:=λz. z]
+    expect(prettyPrint(Subst(Var("x"), "y", Abs("z", Var("z"))))).toBe("x[y:=λz. z]");
   });
 });

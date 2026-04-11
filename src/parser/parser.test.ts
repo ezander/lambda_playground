@@ -366,6 +366,51 @@ describe("parseProgram", () => {
     const r = parseProgram("π a := b");
     expect(r.ok).toBe(false);
   });
+
+  it("returns null expr for an empty program", () => {
+    const r = parseProgram("");
+    expect(r.expr).toBeNull();
+    expect(r.ok).toBe(true);
+  });
+
+  it("returns null expr for a defs-only program", () => {
+    const r = parseProgram("I := λx. x");
+    expect(r.expr).toBeNull();
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("I")).toBe(true);
+  });
+
+  it("parses a backtick identifier in an expression", () => {
+    const r = parse("`a b`");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Var("a b"));
+  });
+
+  it("backtick identifier can be a definition name", () => {
+    const r = parseProgram("`my func` := λx. x");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("my func")).toBe(true);
+  });
+
+  it("π records result and normal=true for a normalizing term", () => {
+    const r = parseProgram("I := λx. x\nπ I");
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].result).toBe("λx. x");
+    expect(r.printInfos[0].normal).toBe(true);
+  });
+
+  it("π records normal=false when step limit is hit", () => {
+    const r = parseProgram("#! max-steps = 5\nπ (λx. x x)(λx. x x)");
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].normal).toBe(false);
+  });
+
+  it("≡ with identical normal forms sets equivalent=true", () => {
+    const r = parseProgram("≡ (λx. x) (λy. y)");
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos).toHaveLength(1);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+  });
 });
 
 // ── Block comments (#* ... *#) ────────────────────────────────────────────────
@@ -431,6 +476,37 @@ describe("pragma value syntax", () => {
   it("accepts boolean pragma with space value: #! normalize-defs true", () => {
     const r = parseProgram("#! normalize-defs true\n");
     expect(r.pragmaConfig.normalizeDefs).toBe(true);
+  });
+
+  it("accepts max-size pragma", () => {
+    const r = parseProgram("#! max-size = 5000\n");
+    expect(r.pragmaConfig.maxSize).toBe(5000);
+  });
+
+  it("max-steps-print and max-steps-ident can be set independently", () => {
+    const r = parseProgram("#! max-steps-print = 100\n#! max-steps-ident = 200\n");
+    expect(r.pragmaConfig.maxStepsPrint).toBe(100);
+    expect(r.pragmaConfig.maxStepsIdent).toBe(200);
+  });
+
+  it("unknown pragma key produces a warning", () => {
+    const r = parseProgram("#! unknown-thing = 42\n");
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("unknown-thing"))).toBe(true);
+  });
+
+  it("boolean pragma with a non-boolean value produces a warning", () => {
+    const r = parseProgram("#! normalize-defs = 42\n");
+    expect(r.errors.some(e => e.kind === "warning" && e.message.includes("normalize-defs"))).toBe(true);
+  });
+
+  it("no-normalize-defs stores definition bodies without normalizing", () => {
+    // f x := (λy. y) x — body has a redex that normalizeDefs=true would reduce
+    const withNorm    = parseProgram("f x := (λy. y) x");
+    const withoutNorm = parseProgram("#! no-normalize-defs\nf x := (λy. y) x");
+    // With normalization: f = λx. x
+    expect(prettyPrint(withNorm.defs.get("f")!)).toBe("λx. x");
+    // Without: f = λx. (λy. y) x (redex preserved)
+    expect(prettyPrint(withoutNorm.defs.get("f")!)).not.toBe("λx. x");
   });
 });
 

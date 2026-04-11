@@ -163,6 +163,46 @@ describe("computeHighlightRanges", () => {
       expect(fail).toBeDefined();
       expect(fail?.message).toContain("≡ assertion failed");
     });
+
+    it("passing ≡ assertion has no error squiggle", () => {
+      const out = tagged("≡ (λx. x) (λy. y)\n");
+      expect(out).not.toContain("<er>");
+    });
+
+    it("passing ≢ assertion has no error squiggle", () => {
+      const out = tagged("t := λx y. x\nf := λx y. y\n≢ t f\n");
+      expect(out).not.toContain("<er>");
+    });
+
+    it("failing ≢ assertion (terms are equivalent) gets er squiggle", () => {
+      // ≢ (λx. x) (λy. y) fails because they ARE equivalent
+      const out = tagged("≢ (λx. x) (λy. y)\n");
+      expect(out).toContain("<er>");
+    });
+  });
+
+  describe("identifiers", () => {
+    it("backtick identifier as def name is tagged as defi", () => {
+      const out = tagged("`my func` := λx. x\n");
+      expect(out).toContain("<defi>`my func`</defi>");
+    });
+
+    it("all params in multi-param lambda are tagged as pm", () => {
+      const out = tagged("a := λx y. x\n");
+      expect(out).toContain("<pm>x</pm>");
+      expect(out).toContain("<pm>y</pm>");
+      expect(out).toContain("<bv>x</bv>");
+    });
+
+    it("bare undefined variable is tagged as fv", () => {
+      const out = tagged("z\n");
+      expect(out).toContain("<fv>z</fv>");
+    });
+
+    it("bare back-reference to defined name is tagged as defu", () => {
+      const out = tagged("I := λx. x\nI\n");
+      expect(out).toContain("<defu>I</defu>");
+    });
   });
 
   describe("large regression", () => {

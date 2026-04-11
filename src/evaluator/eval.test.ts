@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { Var, Abs, App, Subst } from "../parser/ast";
-import { substitute, step, etaStep, freeVars, alphaEq, normalize, canonicalForm } from "./eval";
+import { Var, Abs, App, Subst, Term } from "../parser/ast";
+import { substitute, step, etaStep, freeVars, alphaEq, normalize, canonicalForm, termSize, buildNormDefs, findMatch } from "./eval";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -244,6 +244,13 @@ describe("alphaEq", () => {
     // \x := y  is NOT alpha-eq to  \x := x  (y is free, x is bound)
     expect(alphaEq(Abs("x", Var("y")), Abs("x", Var("x")))).toBe(false);
   });
+
+  it("Subst is alpha-eq to its App(Abs,...) equivalent", () => {
+    // x[x:=a]  is semantically App(Abs("x", Var("x")), Var("a"))
+    const subst  = Subst(Var("x"), "x", Var("a"));
+    const appAbs = App(Abs("x", Var("x")), Var("a"));
+    expect(alphaEq(subst, appAbs)).toBe(true);
+  });
 });
 
 // ── normalize ─────────────────────────────────────────────────────────────────
@@ -312,5 +319,129 @@ describe("normalize", () => {
     const r = normalize(term);
     expect(r.kind).toBe("normalForm");
     expect(r.term).toEqual(term);
+  });
+
+  it("hits size limit on a growing term", () => {
+    // (λx. x x x)(λx. x x x) — after one beta step the term has 20 nodes, > 15
+    const tri = Abs("x", App(App(Var("x"), Var("x")), Var("x")));
+    const r = normalize(App(tri, tri), { maxSize: 15 });
+    expect(r.kind).toBe("sizeLimit");
+    if (r.kind === "sizeLimit") expect(r.size).toBeGreaterThan(15);
+  });
+
+  it("returns normalForm when term reaches normal form exactly at the step limit", () => {
+    // App(App(I, I), Var("a")) takes exactly 2 steps: I I a → I a → a
+    const r = normalize(App(App(I, I), Var("a")), { maxSteps: 2 });
+    expect(r.kind).toBe("normalForm");
+    expect(r.term).toEqual(Var("a"));
+    expect(r.steps).toBe(2);
+  });
+});
+
+// ── termSize ──────────────────────────────────────────────────────────────────
+
+describe("termSize", () => {
+  it("Var counts as 1", () => {
+    expect(termSize(Var("x"))).toBe(1);
+  });
+
+  it("Abs counts as 1 + body size", () => {
+    // λx. x = Abs("x", Var("x")) → 1 + 1 = 2
+    expect(termSize(Abs("x", Var("x")))).toBe(2);
+  });
+
+  it("App counts as 1 + func size + arg size", () => {
+    // f x = App(Var("f"), Var("x")) → 1 + 1 + 1 = 3
+    expect(termSize(App(Var("f"), Var("x")))).toBe(3);
+  });
+
+  it("Subst counts as 1 + body size + arg size", () => {
+    // x[p:=a] = Subst(Var("x"), "p", Var("a")) → 1 + 1 + 1 = 3
+    expect(termSize(Subst(Var("x"), "p", Var("a")))).toBe(3);
+  });
+
+  it("I combinator has size 2", () => {
+    expect(termSize(I)).toBe(2);
+  });
+
+  it("K combinator has size 3", () => {
+    // λx. λy. x → 1 + (1 + 1) = 3
+    expect(termSize(K)).toBe(3);
+  });
+
+  it("nested App has correct size", () => {
+    // f x y = App(App(Var("f"), Var("x")), Var("y")) → 1 + (1+1+1) + 1 = 5
+    expect(termSize(App(App(Var("f"), Var("x")), Var("y")))).toBe(5);
+  });
+});
+
+// ── buildNormDefs ─────────────────────────────────────────────────────────────
+
+describe("buildNormDefs", () => {
+  it("builds a map from names to canonical forms of their normal forms", () => {
+    const defs = new Map([["I", I], ["K", K]]);
+    const nd = buildNormDefs(defs);
+    expect(nd.has("I")).toBe(true);
+    expect(nd.has("K")).toBe(true);
+    expect(nd.get("I")).toBe(canonicalForm(I));
+    expect(nd.get("K")).toBe(canonicalForm(K));
+  });
+
+  it("alpha-equivalent definitions produce the same canonical form", () => {
+    const defs = new Map([
+      ["I1", Abs("x", Var("x"))],
+      ["I2", Abs("y", Var("y"))],
+    ]);
+    const nd = buildNormDefs(defs);
+    expect(nd.get("I1")).toBe(nd.get("I2"));
+  });
+
+  it("normalizes redex defs before storing", () => {
+    // (λx. x) a is not in normal form; buildNormDefs should store canonical(a)
+    const defs = new Map([["r", App(I, Var("a"))]]);
+    const nd = buildNormDefs(defs);
+    expect(nd.get("r")).toBe(canonicalForm(Var("a")));
+  });
+});
+
+// ── findMatch ─────────────────────────────────────────────────────────────────
+
+describe("findMatch", () => {
+  const defs = new Map<string, Term>([
+    ["I",        I],
+    ["K",        K],
+    ["_private", Abs("x", Var("x"))],   // same normal form as I, but private
+  ]);
+  const nd = buildNormDefs(defs);
+
+  it("finds a matching definition by name", () => {
+    expect(findMatch(Abs("x", Var("x")), nd)).toBe("I");
+  });
+
+  it("returns undefined when no definition matches", () => {
+    expect(findMatch(Var("z"), nd)).toBeUndefined();
+    expect(findMatch(Abs("x", Abs("y", Abs("z", Var("x")))), nd)).toBeUndefined();
+  });
+
+  it("excludes _-prefixed (private) names from matches", () => {
+    // I and _private have the same form; only I should appear
+    const result = findMatch(Abs("x", Var("x")), nd);
+    expect(result).toBe("I");
+    expect(result).not.toContain("_private");
+  });
+
+  it("matches alpha-equivalent terms", () => {
+    // λa. a  is alpha-eq to I = λx. x
+    expect(findMatch(Abs("a", Var("a")), nd)).toBe("I");
+  });
+
+  it("returns multiple matches joined with ', '", () => {
+    const defs2 = new Map<string, Term>([["I", I], ["id", Abs("y", Var("y"))]]);
+    const nd2 = buildNormDefs(defs2);
+    const result = findMatch(Abs("z", Var("z")), nd2);
+    expect(result).toBeDefined();
+    expect(result).toContain("I");
+    expect(result).toContain("id");
+    expect(result).toContain(", ");
   });
 });

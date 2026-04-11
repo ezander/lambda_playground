@@ -74,4 +74,15 @@ describe("rewrapAt", () => {
     const text = "#*\n  short line\n*#\n";
     expect(rewrapAt(text, cur(text, "short"), 80)).toBeNull();
   });
+
+  it("places a word longer than wrap width on its own line without breaking it", () => {
+    const text = "#*\n  short superlongwordthatexceedswidth more\n*#\n";
+    const result = apply(text, cur(text, "short"), 10);
+    // All words still present
+    expect(result).toContain("short");
+    expect(result).toContain("superlongwordthatexceedswidth");
+    expect(result).toContain("more");
+    // The long word must appear intact (not split across lines)
+    expect(result).toMatch(/\bsuperlongwordthatexceedswidth\b/);
+  });
 });
