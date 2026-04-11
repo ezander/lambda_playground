@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG: Config = {
   maxStepsRun:     1000,
   maxStepsIdent:   1000,
   maxHistory:      200,
-  maxSize:         10000,
+  maxSize:         3000,
   showPassingEquiv: false,
   wrapWidth:       80,
   autoSave:        false,

@@ -229,7 +229,7 @@ export type RunResult =
   | { kind: "sizeLimit"; term: Term; steps: number; size: number };
 
 const DEFAULT_STEP_LIMIT = 1000;
-const DEFAULT_SIZE_LIMIT = 10_000;
+const DEFAULT_SIZE_LIMIT = 3_000;
 
 export type EvalConfig = { maxSteps?: number; maxSize?: number; allowEta?: boolean };
 

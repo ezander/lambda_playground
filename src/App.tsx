@@ -87,7 +87,7 @@ function Truncated({ text }: { text: string }) {
 }
 
 type View = "pretty" | "ast";
-type Loaded = { term: Term; done: boolean; stepNum: number; effectiveConfig: Config } | null;
+type Loaded = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: number; effectiveConfig: Config } | null;
 type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
 
 
@@ -681,7 +681,7 @@ export default function App() {
         entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: stepNum };
       }
     }
-    setLoaded({ term: current, done, stepNum, effectiveConfig: loaded.effectiveConfig });
+    setLoaded({ term: current, done, sizeLimited: sizeLimitHit || undefined, stepNum, effectiveConfig: loaded.effectiveConfig });
     const maxHistory = loaded.effectiveConfig.maxHistory;
     setHistory(h => [...entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
   }, [loaded, makeEntry, showSubst]);
@@ -890,7 +890,7 @@ export default function App() {
   const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, loaded, config.maxStepsRun]);
 
   const handleEtaStep = useCallback(() => {
-    if (!loaded) return;
+    if (!loaded || loaded.sizeLimited) return;
     const next = etaStep(loaded.term);
     if (next === null) return;
     const stepNum = loaded.stepNum + 1;
@@ -938,7 +938,7 @@ export default function App() {
       }
     }
     const stepNum = entries.length - 1;
-    setLoaded({ term: current, done, stepNum, effectiveConfig });
+    setLoaded({ term: current, done, sizeLimited: sizeLimitHit || undefined, stepNum, effectiveConfig });
     setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
   }, [programResult, source, showSubst, mergeConfig]);
 
@@ -1057,7 +1057,7 @@ export default function App() {
 
 
   const canStep    = loaded !== null && !loaded.done && source === loadedSource;
-  const canEtaStep = loaded !== null && source === loadedSource && etaStep(loaded.term) !== null;
+  const canEtaStep = loaded !== null && !loaded.sizeLimited && source === loadedSource && etaStep(loaded.term) !== null;
   const currentTerm = programResult.expr;
 
 
