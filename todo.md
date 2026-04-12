@@ -162,6 +162,7 @@
 ## Minor issues
  
 * [ ] ≢ renders smaller than ≡ in the editor — font fallback issue (U+2262 not in most monospace fonts)
+* [ ] autocomplete: backtick identifiers should be inserted with backticks when needed, without when not; handle case where opening backtick already typed
 
 ## UI development ideas (post-1.0)
 

@@ -268,12 +268,21 @@ export class AstBuilder extends BaseCstVisitor {
 
   statementSep(_ctx: any): void { /* separator only — no AST contribution */ }
 
+  private termStart(term: Term): number {
+    switch (term.kind) {
+      case "Var":   return this.positions.vars.get(term as import("./ast").Var)?.from ?? 0;
+      case "Abs":   return this.positions.params.get(term as import("./ast").Abs)?.from ?? 0;
+      case "App":   return this.termStart(term.func);
+      case "Subst": return 0;
+    }
+  }
+
   statement(ctx: any): RawStmt {
     if (ctx.printStmt)  return this.visit(ctx.printStmt[0])  as RawStmt;
     if (ctx.equivStmt)  return this.visit(ctx.equivStmt[0])  as RawStmt;
     if (ctx.nequivStmt) return this.visit(ctx.nequivStmt[0]) as RawStmt;
     if (ctx.definition) return this.visit(ctx.definition[0]) as RawStmt;
-    if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: 0 }; }
+    if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: this.termStart(term) }; }
     return { kind: "empty" };
   }
 

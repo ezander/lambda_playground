@@ -267,13 +267,13 @@ describe("parseProgram", () => {
     expect(r.ok).toBe(true);
     // expr should be the expanded form (the body of I)
     expect(r.expr).toEqual(Abs("x", Var("x")));
-    expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
+    expect(r.defs.get("I")?.term).toEqual(Abs("x", Var("x")));
   });
 
   it("desugars param shorthand  f x := e  →  f := λx. e", () => {
     const r = parseProgram("K x y := x\nK");
     expect(r.ok).toBe(true);
-    expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
+    expect(r.defs.get("K")?.term).toEqual(Abs("x", Abs("y", Var("x"))));
   });
 
   it("expands definitions eagerly into later lines", () => {
@@ -304,8 +304,8 @@ describe("parseProgram", () => {
   it("allows multiple definitions on one line with semicolons", () => {
     const r = parseProgram("K := λx y. x; I := λx. x; K");
     expect(r.ok).toBe(true);
-    expect(r.defs.get("K")).toEqual(Abs("x", Abs("y", Var("x"))));
-    expect(r.defs.get("I")).toEqual(Abs("x", Var("x")));
+    expect(r.defs.get("K")?.term).toEqual(Abs("x", Abs("y", Var("x"))));
+    expect(r.defs.get("I")?.term).toEqual(Abs("x", Var("x")));
     expect(r.expr).toEqual(Abs("x", Abs("y", Var("x"))));
   });
 
@@ -504,9 +504,9 @@ describe("pragma value syntax", () => {
     const withNorm    = parseProgram("f x := (λy. y) x");
     const withoutNorm = parseProgram("#! no-normalize-defs\nf x := (λy. y) x");
     // With normalization: f = λx. x
-    expect(prettyPrint(withNorm.defs.get("f")!)).toBe("λx. x");
+    expect(prettyPrint(withNorm.defs.get("f")!.term)).toBe("λx. x");
     // Without: f = λx. (λy. y) x (redex preserved)
-    expect(prettyPrint(withoutNorm.defs.get("f")!)).not.toBe("λx. x");
+    expect(prettyPrint(withoutNorm.defs.get("f")!.term)).not.toBe("λx. x");
   });
 });
 
@@ -638,8 +638,8 @@ describe("include system", () => {
     const r = parseProgram("#! include-quiet \"lib\"\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.has("bar")).toBe(true);
-    expect(r.quietDefs.has("foo")).toBe(true);
-    expect(r.quietDefs.has("bar")).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(true);
+    expect(r.defs.get("bar")?.quiet).toBe(true);
   });
 
   it("normal include preserves quiet=false", () => {
@@ -647,7 +647,7 @@ describe("include system", () => {
     const res = (path: string) => path === "lib" ? lib : null;
     const r = parseProgram("#! include \"lib\"\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
-    expect(r.quietDefs.has("foo")).toBe(false);
+    expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("local redefinition clears quiet flag", () => {
@@ -655,21 +655,21 @@ describe("include system", () => {
     const res = (path: string) => path === "lib" ? lib : null;
     const r = parseProgram("#! include-quiet \"lib\"\nfoo ::= λy. y\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
-    expect(r.quietDefs.has("foo")).toBe(false);
+    expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("latter import wins: quiet then normal → visible", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
     const r = parseProgram("#! include-quiet \"lib\"\n#! include \"lib\"\n", {}, res);
-    expect(r.quietDefs.has("foo")).toBe(false);
+    expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("latter import wins: normal then quiet → quiet", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
     const r = parseProgram("#! include \"lib\"\n#! include-quiet \"lib\"\n", {}, res);
-    expect(r.quietDefs.has("foo")).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(true);
   });
 
   it("quiet flag propagates through include chain", () => {
@@ -681,8 +681,8 @@ describe("include system", () => {
     const r = parseProgram("#! include \"outer\"\n", {}, res);
     expect(r.defs.has("bar")).toBe(true);
     expect(r.defs.has("foo")).toBe(true);
-    expect(r.quietDefs.has("bar")).toBe(true);
-    expect(r.quietDefs.has("foo")).toBe(false);
+    expect(r.defs.get("bar")?.quiet).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("include-quiet forces transitive names quiet regardless of chain", () => {
@@ -692,8 +692,8 @@ describe("include system", () => {
     // outer includes inner normally → bar is visible in outer
     // parent include-quiets outer → both bar and foo become quiet
     const r = parseProgram("#! include-quiet \"outer\"\n", {}, res);
-    expect(r.quietDefs.has("bar")).toBe(true);
-    expect(r.quietDefs.has("foo")).toBe(true);
+    expect(r.defs.get("bar")?.quiet).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(true);
   });
 
   it("quiet defs are excluded from match list in π output", () => {
@@ -828,10 +828,10 @@ describe("include def ordering", () => {
 
   it("include after local def overwrites it", () => {
     const r = parseProgram("true := λx y. x y\n#! include \"sys/Booleans\"\n", {}, resolver);
-    const prettyTrue = r.defs.get("true");
-    expect(prettyTrue).toBeDefined();
+    const entry = r.defs.get("true");
+    expect(entry).toBeDefined();
     // After include, true should be λx y. x (from Booleans), not λx y. x y
-    expect(prettyPrint(prettyTrue!)).toBe("λx y. x");
+    expect(prettyPrint(entry!.term)).toBe("λx y. x");
   });
 
   it("include overwrites warns when normal forms differ", () => {

@@ -70,14 +70,13 @@ function completionSource(context: CompletionContext): CompletionResult | null {
   if (!word && !context.explicit) return null;
 
   const seen = new Set<string>();
-  const quiet = parsed.quietDefs ?? new Set<string>();
   const options = parsed.defInfos
     .filter(({ namePos }) => namePos.from < context.pos)
-    .filter(({ name }) => !quiet.has(name) && !seen.has(name) && !!seen.add(name))
+    .filter(({ name }) => !parsed.defs.get(name)?.quiet && !seen.has(name) && !!seen.add(name))
     .map(({ name }) => ({ label: name, type: "variable" as const }));
 
-  for (const name of parsed.defs.keys()) {
-    if (!seen.has(name) && !quiet.has(name)) options.push({ label: name, type: "variable" as const });
+  for (const [name, entry] of parsed.defs) {
+    if (!seen.has(name) && !entry.quiet) options.push({ label: name, type: "variable" as const });
   }
 
   if (options.length === 0) return null;

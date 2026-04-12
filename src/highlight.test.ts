@@ -257,5 +257,41 @@ describe("computeHighlightRanges", () => {
       // foo after π should be defu (defined-use), not fv (free variable)
       expect(tags).toContain("<defu>foo</defu>");
     });
+
+    it("sequential includes: names only available after their include line", () => {
+      const boolLib = "true := λx y. x\nfalse := λx y. y\n";
+      const numLib  = "one := λf x. f x\ntwo := λf x. f (f x)\n";
+      const res = (p: string) =>
+        p === "bool" ? boolLib : p === "num" ? numLib : null;
+
+      const src = [
+        "π true one two",
+        "true one two",
+        "#! include \"bool\"",
+        "π true one two",
+        "true one two",
+        "≢ (true one two) xyz",
+        "#! include \"num\"",
+        "π true one two",
+        "true one two",
+        "≢ (true one two) xyz",
+      ].join("\n") + "\n";
+
+      const parsed = parseProgram(src, {}, res);
+      const ranges = computeHighlightRanges(src, parsed);
+      const tags = tag(src, ranges);
+
+      // Before any includes — all free variables (π, bare expr)
+      expect(tags).toMatch(/<kw>π<\/kw> <fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n/);
+      expect(tags).toMatch(/\n<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<pg>/);
+      // After bool include — true is def-use, one/two still free (π, bare expr, ≢)
+      expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n/);
+      expect(tags).toMatch(/\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>≢<\/kw>/);
+      expect(tags).toMatch(/<kw>≢<\/kw>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<fv>xyz<\/fv>\n<pg>/);
+      // After both includes — all def-use (π, bare expr, ≢); xyz always free
+      expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n/);
+      expect(tags).toMatch(/\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>≢<\/kw>/);
+      expect(tags).toMatch(/<kw>≢<\/kw>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<fv>xyz<\/fv>\n$/m);
+    });
   });
 });

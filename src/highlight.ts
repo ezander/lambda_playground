@@ -2,7 +2,7 @@ import { ViewPlugin, ViewUpdate, Decoration, DecorationSet, hoverTooltip } from 
 import { EditorView } from "@codemirror/view";
 import { RangeSetBuilder, StateField, StateEffect, Extension } from "@codemirror/state";
 import { IToken, tokenMatcher } from "chevrotain";
-import { ProgramResult, PositionMap } from "./parser/parser";
+import { ProgramResult, PositionMap, DefEntry } from "./parser/parser";
 import { Term, Var, Abs } from "./parser/ast";
 import {
   LambdaLexer,
@@ -59,10 +59,16 @@ function applyTokenRanges(
   }
 }
 
+function isDefAvailable(name: string, defs: Map<string, DefEntry>, beforeOffset: number): boolean {
+  const entry = defs.get(name);
+  return entry !== undefined && entry.offset < beforeOffset;
+}
+
 function walkTerm(
   term: Term,
   positions: PositionMap,
-  defs: Set<string>,
+  defs: Map<string, DefEntry>,
+  stmtOffset: number,
   bound: Set<string>,
   out: HighlightRange[],
 ): void {
@@ -70,9 +76,9 @@ function walkTerm(
     case "Var": {
       const pos = positions.vars.get(term as Var);
       if (pos) {
-        const cls = bound.has(term.name) ? "cml-bound"
-                  : defs.has(term.name)  ? "cml-def-use"
-                  :                        "cml-free";
+        const cls = bound.has(term.name)                          ? "cml-bound"
+                  : isDefAvailable(term.name, defs, stmtOffset)   ? "cml-def-use"
+                  :                                                  "cml-free";
         out.push({ from: pos.from, to: pos.to, cls });
       }
       break;
@@ -80,12 +86,12 @@ function walkTerm(
     case "Abs": {
       const paramPos = positions.params.get(term as Abs);
       if (paramPos) out.push({ from: paramPos.from, to: paramPos.to, cls: "cml-param" });
-      walkTerm(term.body, positions, defs, new Set([...bound, term.param]), out);
+      walkTerm(term.body, positions, defs, stmtOffset, new Set([...bound, term.param]), out);
       break;
     }
     case "App": {
-      walkTerm(term.func, positions, defs, bound, out);
-      walkTerm(term.arg,  positions, defs, bound, out);
+      walkTerm(term.func, positions, defs, stmtOffset, bound, out);
+      walkTerm(term.arg,  positions, defs, stmtOffset, bound, out);
       break;
     }
     case "Subst":
@@ -103,29 +109,26 @@ export function computeHighlightRanges(
   applyTokenRanges(lexResult, out);
 
   if (parsed) {
-    // Process defs and expressions in source order so that only names defined
-    // BEFORE the current statement are highlighted as def-use (sequential semantics).
-    type DefEntry  = { kind: "def";  offset: number; name: string; namePos: { from: number; to: number }; body: import("./parser/ast").Term; positions: PositionMap };
-    type ExprEntry = { kind: "expr"; offset: number; term: import("./parser/ast").Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: { from: number; to: number }[] };
+    // Process defs and expressions in source order. Variable classification
+    // (def-use vs free) is determined by checking parsed.defs offset — a name
+    // is def-use only if its DefEntry.offset < the current statement's offset.
+    type HlDefEntry  = { kind: "def";  offset: number; name: string; namePos: { from: number; to: number }; body: import("./parser/ast").Term; positions: PositionMap };
+    type HlExprEntry = { kind: "expr"; offset: number; term: import("./parser/ast").Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: { from: number; to: number }[] };
 
-    const entries: (DefEntry | ExprEntry)[] = [
+    const entries: (HlDefEntry | HlExprEntry)[] = [
       ...parsed.defInfos.map(d => ({ kind: "def" as const, offset: d.namePos.from, ...d })),
       ...parsed.exprInfos.map(e => ({ kind: "expr" as const, ...e })),
     ];
     entries.sort((a, b) => a.offset - b.offset);
 
-    // Seed with imported names (in defs but not locally defined) — available from include line onward
-    const localDefNames = new Set(parsed.defInfos.map(d => d.name));
-    const knownDefs = new Set([...parsed.defs.keys()].filter(n => !localDefNames.has(n)));
     for (const entry of entries) {
       if (entry.kind === "def") {
         out.push({ from: entry.namePos.from, to: entry.namePos.to, cls: "cml-def-name" });
-        walkTerm(entry.body, entry.positions, knownDefs, new Set(), out);
-        knownDefs.add(entry.name);
+        walkTerm(entry.body, entry.positions, parsed.defs, entry.offset, new Set(), out);
       } else {
         for (const pos of entry.paramPositions ?? [])
           out.push({ from: pos.from, to: pos.to, cls: "cml-param" });
-        walkTerm(entry.term, entry.positions, knownDefs, entry.boundNames ?? new Set(), out);
+        walkTerm(entry.term, entry.positions, parsed.defs, entry.offset, entry.boundNames ?? new Set(), out);
       }
     }
 

@@ -32,6 +32,12 @@ export type ParseResult =
 
 // ── Program result types ──────────────────────────────────────────────────────
 
+export type DefEntry = {
+  term:   Term;       // normalized/expanded body
+  offset: number;     // source offset where name becomes available (def line or #! include line)
+  quiet:  boolean;    // hidden from autocomplete and match list
+};
+
 export type DefInfo = {
   name:      string;
   namePos:   Pos;
@@ -112,8 +118,7 @@ export type EquivComprehensionInfo = {
 export type ProgramResult = {
   ok:          boolean;
   errors:      LambdaError[];
-  defs:        Map<string, Term>;
-  quietDefs:   Set<string>;
+  defs:        Map<string, DefEntry>;
   expr:        Term | null;
   rawExpr:     Term | null;
   defInfos:    DefInfo[];
