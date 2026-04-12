@@ -114,7 +114,9 @@ export function computeHighlightRanges(
     ];
     entries.sort((a, b) => a.offset - b.offset);
 
-    const knownDefs = new Set<string>();
+    // Seed with imported names (in defs but not locally defined) — available from include line onward
+    const localDefNames = new Set(parsed.defInfos.map(d => d.name));
+    const knownDefs = new Set([...parsed.defs.keys()].filter(n => !localDefNames.has(n)));
     for (const entry of entries) {
       if (entry.kind === "def") {
         out.push({ from: entry.namePos.from, to: entry.namePos.to, cls: "cml-def-name" });

@@ -246,4 +246,16 @@ describe("computeHighlightRanges", () => {
       );
     });
   });
+
+  describe("included definitions", () => {
+    it("included def name is highlighted as def-use, not free var", () => {
+      const lib = "foo := λx. x\n";
+      const res = (p: string) => p === "lib" ? lib : null;
+      const parsed = parseProgram("#! include \"lib\"\nπ foo\n", {}, res);
+      const ranges = computeHighlightRanges("#! include \"lib\"\nπ foo\n", parsed);
+      const tags = tag("#! include \"lib\"\nπ foo\n", ranges);
+      // foo after π should be defu (defined-use), not fv (free variable)
+      expect(tags).toContain("<defu>foo</defu>");
+    });
+  });
 });
