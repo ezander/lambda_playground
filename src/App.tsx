@@ -634,7 +634,7 @@ export default function App() {
   const handleLoad = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
-    const d = programResult.defs;
+    const d = new Map([...programResult.defs].filter(([k]) => !programResult.quietDefs.has(k)));
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
     const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);
@@ -903,7 +903,7 @@ export default function App() {
   const handleLoadRun = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
-    const d = programResult.defs;
+    const d = new Map([...programResult.defs].filter(([k]) => !programResult.quietDefs.has(k)));
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
     const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);

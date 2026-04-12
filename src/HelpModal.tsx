@@ -162,6 +162,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>#! normalize-defs</code></td><td>normalize defs at load time (default on); <code>no-normalize-defs</code> to disable</td></tr>
             <tr><td><code>#! allow-eta</code></td><td>enable η-reduction during normalization (default off); <code>no-allow-eta</code> to disable</td></tr>
             <tr><td><code>#! include "ns/…"</code></td><td>import definitions from <code>sys/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
+            <tr><td><code>#! include-quiet "…"</code></td><td>like include, but imported names are hidden from match list and autocomplete</td></tr>
           </tbody></table>
         </>}
 

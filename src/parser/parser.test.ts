@@ -631,6 +631,87 @@ describe("include system", () => {
     expect(r.defs.has("public")).toBe(true);
     expect(r.defs.has("_helper")).toBe(false);
   });
+
+  it("include-quiet marks all imported names as quiet", () => {
+    const lib = "foo := λx. x\nbar := λy. y\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include-quiet \"lib\"\n", {}, res);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.defs.has("bar")).toBe(true);
+    expect(r.quietDefs.has("foo")).toBe(true);
+    expect(r.quietDefs.has("bar")).toBe(true);
+  });
+
+  it("normal include preserves quiet=false", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include \"lib\"\n", {}, res);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.quietDefs.has("foo")).toBe(false);
+  });
+
+  it("local redefinition clears quiet flag", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include-quiet \"lib\"\nfoo ::= λy. y\n", {}, res);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.quietDefs.has("foo")).toBe(false);
+  });
+
+  it("latter import wins: quiet then normal → visible", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include-quiet \"lib\"\n#! include \"lib\"\n", {}, res);
+    expect(r.quietDefs.has("foo")).toBe(false);
+  });
+
+  it("latter import wins: normal then quiet → quiet", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include \"lib\"\n#! include-quiet \"lib\"\n", {}, res);
+    expect(r.quietDefs.has("foo")).toBe(true);
+  });
+
+  it("quiet flag propagates through include chain", () => {
+    const inner = "bar := λx. x\n";
+    const outer = "#! include-quiet \"inner\"\nfoo := λy. y\n";
+    const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
+    // outer include-quiets inner → bar is quiet in outer
+    // parent includes outer normally → bar stays quiet, foo is visible
+    const r = parseProgram("#! include \"outer\"\n", {}, res);
+    expect(r.defs.has("bar")).toBe(true);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.quietDefs.has("bar")).toBe(true);
+    expect(r.quietDefs.has("foo")).toBe(false);
+  });
+
+  it("include-quiet forces transitive names quiet regardless of chain", () => {
+    const inner = "bar := λx. x\n";
+    const outer = "#! include \"inner\"\nfoo := λy. y\n";
+    const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
+    // outer includes inner normally → bar is visible in outer
+    // parent include-quiets outer → both bar and foo become quiet
+    const r = parseProgram("#! include-quiet \"outer\"\n", {}, res);
+    expect(r.quietDefs.has("bar")).toBe(true);
+    expect(r.quietDefs.has("foo")).toBe(true);
+  });
+
+  it("quiet defs are excluded from match list in π output", () => {
+    const lib = "id := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include-quiet \"lib\"\nπ λx. x\n", {}, res);
+    expect(r.printInfos).toHaveLength(1);
+    // id is quiet → should NOT appear in match
+    expect(r.printInfos[0].match).toBeUndefined();
+  });
+
+  it("visible defs still appear in match list", () => {
+    const lib = "id := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram("#! include \"lib\"\nπ λx. x\n", {}, res);
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].match).toBe("id");
+  });
 });
 
 // ── comprehension ─────────────────────────────────────────────────────────────

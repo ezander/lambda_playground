@@ -108,6 +108,7 @@ function processPragma(
   defaultConfig: ProgramRunConfig,
   resolver: IncludeResolver,
   defs: Map<string, Term>,
+  quietDefs: Set<string>,
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
@@ -143,13 +144,19 @@ function processPragma(
           errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
       }
       defs.set(name, term);
+      // Propagate quiet flags from mixin
+      if (mixed.quietDefs.has(name))
+        quietDefs.add(name);
+      else
+        quietDefs.delete(name);  // latter-import wins
     }
     return;
   }
 
-  const incMatch = text.match(/^include\s+"([^"]+)"\s*$/);
+  const incMatch = text.match(/^(include-quiet|include)\s+"([^"]+)"\s*$/);
   if (incMatch) {
-    const path = incMatch[1];
+    const quiet = incMatch[1] === "include-quiet";
+    const path = incMatch[2];
     if (includeStack.includes(path)) {
       errors.push({ message: `Circular include: "${path}"`, offset });
       return;
@@ -179,6 +186,12 @@ function processPragma(
           errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
       }
       defs.set(name, term);
+      // Propagate quiet flags: include-quiet forces all names quiet;
+      // normal include preserves quiet status from the included file
+      if (quiet || included.quietDefs.has(name))
+        quietDefs.add(name);
+      else
+        quietDefs.delete(name);  // latter-import wins
     }
     return;
   }
@@ -213,6 +226,7 @@ export function parseProgram(
   initialDefs: Map<string, Term> = new Map(),
 ): ProgramResult {
   const defs = new Map(initialDefs);
+  const quietDefs = new Set<string>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
   const errors: LambdaError[] = [];
@@ -316,7 +330,7 @@ export function parseProgram(
         break;
 
       case "pragma": {
-        processPragma(stmt.text, stmt.offset, pragmaConfig, errors, defaultConfig, resolver, defs, _includeStack, equivFailed);
+        processPragma(stmt.text, stmt.offset, pragmaConfig, errors, defaultConfig, resolver, defs, quietDefs, _includeStack, equivFailed);
         break;
       }
 
@@ -353,6 +367,7 @@ export function parseProgram(
           }
         }
         defs.set(name, body);
+        quietDefs.delete(name);  // local definition is always visible
 
         defInfos.push({
           name,
@@ -373,7 +388,8 @@ export function parseProgram(
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
           const expandedBase = expandDefs(stmt.term, defsFiltered);
           const baseSrc = prettyPrint(stmt.term);
-          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
+          const visibleDefs = new Map([...defs].filter(([k]) => !quietDefs.has(k)));
+          const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
@@ -411,7 +427,8 @@ export function parseProgram(
           const expanded = expandDefs(stmt.term, defs);
           const runResult = normalize(expanded, cfg);
           const { term: normalizedTerm, kind, steps } = runResult;
-          const nd = buildNormDefs(defs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
+          const visibleDefs = new Map([...defs].filter(([k]) => !quietDefs.has(k)));
+          const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           printInfos.push({
             src:    prettyPrint(stmt.term),
             result: prettyPrint(normalizedTerm),
@@ -528,6 +545,7 @@ export function parseProgram(
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,
     errors,
     defs,
+    quietDefs,
     expr,
     rawExpr,
     defInfos,

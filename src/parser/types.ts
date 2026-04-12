@@ -113,6 +113,7 @@ export type ProgramResult = {
   ok:          boolean;
   errors:      LambdaError[];
   defs:        Map<string, Term>;
+  quietDefs:   Set<string>;
   expr:        Term | null;
   rawExpr:     Term | null;
   defInfos:    DefInfo[];

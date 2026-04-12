@@ -10,9 +10,9 @@ const LINK_RE    = /\[(doc|sys|example|tutorial|user)\/([^\]\n]+)\]/g;
 const URL_LINK_RE = /\[https?:\/\/[^\]\n]+\]/g;
 
 // ── Include pragma pattern ────────────────────────────────────────────────────
-// Matches the path inside #! include "..." and #! mixin "..." pragma lines.
+// Matches the path inside #! include[-quiet] "..." and #! mixin "..." pragma lines.
 
-const INCLUDE_RE = /^[ \t]*#!\s*(?:include|mixin)\s+"([^"\n]+)"/gm;
+const INCLUDE_RE = /^[ \t]*#!\s*(?:include-quiet|include|mixin)\s+"([^"\n]+)"/gm;
 
 export type LinkHandler = (type: string, name: string) => void;
 

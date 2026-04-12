@@ -71,3 +71,7 @@ pragma      ::= '#!' pragma-body    -- #! include/mixin "path", #! max-steps=N, 
 ### Private symbols
 
 Definition names starting with `_` are private: they work locally but are not exported across `#! include`/`mixin` boundaries and are excluded from ≡ match display.
+
+### Quiet imports
+
+`#! include-quiet "path"` imports all non-private names but marks them as *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through include chains (if B include-quiets C, and A includes B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.

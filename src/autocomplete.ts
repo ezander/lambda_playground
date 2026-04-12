@@ -18,6 +18,7 @@ const PRAGMA_OPTIONS = [
   ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
   ...([...BOOLEAN_PRAGMAS]).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
   { label: "include", type: "keyword" as const },
+  { label: "include-quiet", type: "keyword" as const },
 ];
 
 function getAllIncludePaths(): string[] {
@@ -32,7 +33,7 @@ function completionSource(context: CompletionContext): CompletionResult | null {
 
   // ── Pragma context: #! line ──────────────────────────────────────────────────
   if (line.text.trimStart().startsWith("#!")) {
-    const incMatch = line.text.match(/^\s*#!\s*(?:include|mixin)\s*"([^"]*)/);
+    const incMatch = line.text.match(/^\s*#!\s*(?:include-quiet|include|mixin)\s*"([^"]*)/);
     if (incMatch) {
       const quotePos = line.from + line.text.indexOf('"') + 1;
       if (context.pos >= quotePos) {
@@ -69,13 +70,14 @@ function completionSource(context: CompletionContext): CompletionResult | null {
   if (!word && !context.explicit) return null;
 
   const seen = new Set<string>();
+  const quiet = parsed.quietDefs ?? new Set<string>();
   const options = parsed.defInfos
     .filter(({ namePos }) => namePos.from < context.pos)
-    .filter(({ name }) => !seen.has(name) && !!seen.add(name))
+    .filter(({ name }) => !quiet.has(name) && !seen.has(name) && !!seen.add(name))
     .map(({ name }) => ({ label: name, type: "variable" as const }));
 
   for (const name of parsed.defs.keys()) {
-    if (!seen.has(name)) options.push({ label: name, type: "variable" as const });
+    if (!seen.has(name) && !quiet.has(name)) options.push({ label: name, type: "variable" as const });
   }
 
   if (options.length === 0) return null;
