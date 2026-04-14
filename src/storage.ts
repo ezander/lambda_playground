@@ -32,7 +32,12 @@ export function getUserIncludePaths(): string[] {
 export function resolveContent(path: string): string | null {
   if (path.startsWith("user/"))
     return localStorage.getItem(SAVE_PREFIX + path.slice("user/".length)) ?? null;
-  return BUNDLED_CONTENT[path] ?? null;
+  const bundled = BUNDLED_CONTENT[path] ?? null;
+  if (bundled !== null) return bundled;
+  // Localhost fallback: resolve e.g. "doc/Foo" from user buffer named "doc/Foo"
+  if (window.location.hostname === "localhost")
+    return localStorage.getItem(SAVE_PREFIX + path) ?? null;
+  return null;
 }
 
 export function contentExists(path: string): boolean {
