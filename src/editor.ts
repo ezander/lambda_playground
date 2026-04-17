@@ -195,6 +195,21 @@ const GREEK_MAP: Record<string, string> = Object.fromEntries(
   [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS].map(({ sym, name }) => [name, sym])
 );
 
+// Auto-close block comment: typing * immediately after # inserts #* *# with cursor
+// between the two markers.
+function autoCloseBlockComment(view: EditorView): boolean {
+  const { from, to } = view.state.selection.main;
+  if (from !== to) return false;                       // has selection — let default handle it
+  if (from === 0) return false;                        // nothing before cursor
+  const charBefore = view.state.doc.sliceString(from - 1, from);
+  if (charBefore !== "#") return false;
+  view.dispatch({
+    changes: { from, insert: "* *#" },
+    selection: { anchor: from + 2 },                   // cursor right after "#* "
+  });
+  return true;
+}
+
 // Space-expand \name → symbol + space (e.g. \omega → ω ). Returns false if no match,
 // so Space falls through to normal insertion.
 function expandSymbol(view: EditorView): boolean {
@@ -215,6 +230,7 @@ function expandSymbol(view: EditorView): boolean {
 
 export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: " ",     run: expandSymbol },
+  { key: "*",     run: autoCloseBlockComment },
   { key: "Ctrl-/", run: toggleLineComment },
   { key: "(", run: v => wrapSelection(v, "(", ")") },
   { key: "[", run: v => wrapSelection(v, "[", "]") },
