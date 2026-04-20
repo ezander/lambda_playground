@@ -1,7 +1,7 @@
 # Some standard combinators
 
-K := λx y. x
 I := λx. x
+K := λx y. x
 S f g x := f x (g x)
 B f g x := f (g x)
 C f x y := f y x
@@ -27,3 +27,9 @@ Y := λf. (λx. f (x x)) (λx. f (x x))
 ≡ (S (K f) g x) (f (g x))
 ≡ (S (K f) I x) (f x)
 ≡ (K I x) I
+
+# Fixed-point property: Y f = f (Y f)
+_F := K I
+≡ (Y _F) (_F (Y _F))
+≡ (Y _F) I
+≡ (Y (K K)) K
