@@ -863,14 +863,14 @@ export default function App() {
       const zip = await JSZip.loadAsync(file);
       const items: typeof importItems = [];
       for (const [path, entry] of Object.entries(zip.files)) {
-        if (entry.dir || path.includes("/") || !path.endsWith(".txt")) continue;
+        if (entry.dir || !path.endsWith(".txt")) continue;
         const content = await entry.async("string");
-        const name = path.slice(0, -4);
+        const name = path.slice(0, -4);  // "foo/bar.txt" → "foo/bar"
         const conflict = savedSlots.includes(name);
         const loaded   = name === loadedSlotName;
         items.push({ name, content, conflict, loaded, checked: !conflict && !loaded });
       }
-      if (items.length === 0) { alert("No .txt files found in zip root."); return; }
+      if (items.length === 0) { alert("No .txt files found in zip."); return; }
       items.sort((a, b) => a.name.localeCompare(b.name));
       setImportItems(items);
       setShowImport(true);
