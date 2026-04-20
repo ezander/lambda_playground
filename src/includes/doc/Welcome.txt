@@ -26,9 +26,9 @@
   in the toolbar.
 
   Some docs to start with:
-    [doc/Basics]           — How this system works
-    [tutorial/Basics]      — The history and basics of the λ calculus
-    [example/Booleans]     — An example on different types of booleans
+    [doc/Content]       — Documentation overview
+    [tutorial/Start]    — A short introduction to the λ calculus
+    [example/Booleans]  — An example on different types of booleans
   (NB: red underlined links are not yet working, this is still work in progress.)
 
   In the following you'll see a simple example of the so-called Church-encoded
