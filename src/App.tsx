@@ -298,21 +298,27 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
   );
 }
 
-function ParseErrors({ errors, roundTripError, source, onJumpTo }: {
+function IssuesPanel({ errors, roundTripError, source, onJumpTo }: {
   errors: LambdaError[]; roundTripError: string | null;
   source: string; onJumpTo: (offset: number) => void;
 }) {
-  if (errors.length === 0 && !roundTripError) return null;
+  const count = errors.length + (roundTripError ? 1 : 0);
+  if (count === 0) return null;
   return (
-    <ul className="parse-errors">
-      {errors.map((e, i) => (
-        <li key={i}
-          className={[e.kind === "warning" ? "parse-warning" : "", e.offset !== undefined ? "parse-error-link" : ""].join(" ").trim()}
-          onClick={() => e.offset !== undefined && onJumpTo(e.offset)}
-        >{formatError(e, source)}</li>
-      ))}
-      {roundTripError && <li>{roundTripError}</li>}
-    </ul>
+    <section className="panel issues-panel">
+      <div className="issues-header">
+        <span className="panel-label">issues ({count})</span>
+      </div>
+      <ul className="issues-list">
+        {errors.map((e, i) => (
+          <li key={i}
+            className={[e.kind === "warning" ? "issue-warning" : "", e.offset !== undefined ? "issue-link" : ""].join(" ").trim()}
+            onClick={() => e.offset !== undefined && onJumpTo(e.offset)}
+          >{formatError(e, source)}</li>
+        ))}
+        {roundTripError && <li>{roundTripError}</li>}
+      </ul>
+    </section>
   );
 }
 
@@ -1155,13 +1161,13 @@ export default function App() {
             symPickerRef={symPickerRef} symOpen={symOpen} onToggleSymOpen={() => setSymOpen(o => !o)}
             onInsertSym={handleInsertSym}
           />
-          {!kinoActive && <ParseErrors errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
+          {!kinoActive && <IssuesPanel errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
         </section>
 
         {kinoActive && <div className="kino-divider" onMouseDown={handleDividerMouseDown} />}
 
         <div className="panels-right">
-          {kinoActive && <ParseErrors errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
+          {kinoActive && <IssuesPanel errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
           <EvalPanel
             open={stepsOpen} onToggle={toggleSteps}
             view={view} onSetView={setView}

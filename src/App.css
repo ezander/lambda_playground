@@ -84,7 +84,7 @@ body {
 .app.kino .cm-editor { flex: 1; min-height: 0; max-height: none; overflow: hidden; }
 .app.kino .cm-scroller { min-height: 0 !important; overflow: auto !important; }
 .app.kino .cm-content { min-height: 0 !important; }
-.app.kino .editor-section .parse-errors {
+.app.kino .editor-section .issues-panel {
   max-height: 7rem;
   overflow-y: auto;
 }
@@ -538,25 +538,32 @@ label {
 .load-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .load-btn:not(:disabled):hover { opacity: 0.85; }
 
-/* ── Parse errors ── */
-.parse-errors {
+/* ── Issues panel ── */
+.issues-header {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+.issues-list {
   list-style: none;
-  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--warn);
   line-height: 1.7;
 }
-.parse-errors li {
+.issues-list li {
   padding-left: 1.2em;
   text-indent: -1.2em;
 }
-.parse-warning { color: var(--accent); }
-.parse-error-link {
+.issue-warning { color: var(--accent); }
+.issue-link {
   cursor: pointer;
   text-decoration: underline dotted;
 }
-.parse-error-link:hover { text-decoration: underline; }
+.issue-link:hover { text-decoration: underline; }
 
 /* ── Eval controls ── */
 .eval-controls {
