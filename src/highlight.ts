@@ -207,8 +207,10 @@ export const lambdaHighlight = ViewPlugin.fromClass(
     decorations: DecorationSet;
     constructor(view: EditorView) { this.decorations = buildDecorations(view); }
     update(update: ViewUpdate) {
-      if (update.docChanged || update.state.field(parsedField) !== update.startState.field(parsedField))
+      if (update.state.field(parsedField) !== update.startState.field(parsedField))
         this.decorations = buildDecorations(update.view);
+      else if (update.docChanged)
+        this.decorations = this.decorations.map(update.changes);
     }
   },
   { decorations: (v) => v.decorations },

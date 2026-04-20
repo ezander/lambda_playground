@@ -52,7 +52,9 @@ function Panel({ label, open, onToggle, children, className, flush = false, head
   );
 }
 
-const TRUNCATE_LEN = 200;
+const TRUNCATE_LEN      = 200;
+const PARSE_DEBOUNCE_MS = 250;
+const SAVE_DEBOUNCE_MS  = 1000;
 
 function offsetToLineCol(source: string, offset: number): string {
   const line = (source.slice(0, offset).match(/\n/g)?.length ?? 0) + 1;
@@ -174,7 +176,7 @@ function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, sa
         <span className="current-buffer" title={loadedSlotName
           ? (showDirty ? `${loadedSlotName} (modified)` : loadedSlotName)
           : "Scratch buffer (auto-saved)"}>
-          {loadedSlotName ?? "*scratch*"}{showDirty && <span className={dirtyCls}> ●</span>}
+          {loadedSlotName ?? "*scratch*"}<span className={showDirty ? dirtyCls : "dirty-indicator dirty-indicator-hidden"}> ●</span>
         </span>
         {autoSave && loadedSlotName
           ? <span className="autosave-indicator" title="auto-save is on">auto</span>
@@ -540,6 +542,12 @@ export default function App() {
     if (p) try { return LZString.decompressFromEncodedURIComponent(p) ?? undefined; } catch {}
     return localStorage.getItem(KEY_SOURCE) ?? DEFAULT_SCRATCH;
   });
+  // Debounced copy of source — drives parsing so it doesn't run on every keystroke.
+  const [debouncedSource, setDebouncedSource] = useState(source);
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSource(source), PARSE_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [source]);
   const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
@@ -557,7 +565,7 @@ export default function App() {
   const [saveName, setSaveName]       = useState("");
   const [savedSlots, setSavedSlots]   = useState<string[]>(getSavedSlots);
   const [loadedSlotName, setLoadedSlotName] = useState<string | null>(null);
-  const loadedSlotRef = useRef<string | null>(null); // ref copy for use in setSourceAndSave closure
+  const loadedSlotRef = useRef<string | null>(null);
   const isDirty = loadedSlotName !== null &&
     source !== (localStorage.getItem(SAVE_PREFIX + loadedSlotName) ?? "");
   const isDirtyRef = useRef(isDirty);
@@ -584,22 +592,24 @@ export default function App() {
 
   const autoSaveRef = useRef(config.autoSave);
   autoSaveRef.current = config.autoSave;
-  const showDirty = isDirty && !config.autoSave;
+  const showDirty = isDirty;
 
-  const setSourceAndSave = useCallback((s: string | ((prev: string) => string)) => {
-    setSource(prev => {
-      const next = typeof s === "function" ? s(prev) : s;
+  // Auto-save with its own longer debounce — triggers re-render so dirty indicator clears
+  const [saveGen, setSaveGen] = useState(0);
+  useEffect(() => {
+    const id = setTimeout(() => {
       if (loadedSlotRef.current === null)
-        localStorage.setItem(KEY_SOURCE, next); // always auto-save scratch
+        localStorage.setItem(KEY_SOURCE, source);
       else if (autoSaveRef.current)
-        localStorage.setItem(SAVE_PREFIX + loadedSlotRef.current, next);
-      return next;
-    });
-  }, []);
+        localStorage.setItem(SAVE_PREFIX + loadedSlotRef.current, source);
+      setSaveGen(g => g + 1);
+    }, SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [source]);
 
   const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
-  const programResult = useMemo(() => parseProgram(source, config, includeResolver), [source, config, includeResolver]);
+  const programResult = useMemo(() => parseProgram(debouncedSource, config, includeResolver), [debouncedSource, config, includeResolver]);
   const programResultRef = useRef(programResult);
   programResultRef.current = programResult;
 
@@ -1132,7 +1142,7 @@ export default function App() {
           />
           <LambdaEditor
             source={source} extensions={editorExtensions}
-            onChange={val => setSourceAndSave(val)}
+            onChange={setSource}
             onCreateEditor={view => { editorViewRef.current = view; view.dispatch({ effects: setParsed.of(programResult) }); view.focus(); }}
             onUpdate={update => {
               if (update.selectionSet) {
