@@ -1,6 +1,16 @@
-true    := λx y. x
-false   := λx y. y
-not p   := p false true
-and p q := p q false
-or  p q := p true q
-if  p t f := p t f
+# Church booleans
+true := λx y. x
+false := λx y. y
+if pred then else := pred then else
+
+# Boolean operators/junctors (can be defined generally)
+not p := if p false true
+and p q := if p q p
+or p q := if p p q
+implies p q := if p q true
+iff p q := if p q (not q)
+nand p q := not (and p q)
+nor p q := not (or p q)
+xor p q := not (iff p q)
+
+#! mixin "sys/Boolean Tests"

@@ -1,0 +1,22 @@
+#*
+  Defines some utilities used in the tutorials e.g. on letting the user go 
+  through the tutorial step by step. 
+*#
+
+#*
+  The following definition let's you write in a tutorial
+  
+    ≡ `Continue ?` no
+    
+  and the last evaluated expression is the one just before that line. Since the
+  assertion fails, the script evaluation will not continue. When the user
+  changes the "no" into a "yes", the assertion succeeds and evaluation
+  continues. The whole thing is no new syntax, but just a trick using the
+  identifier system (backticks, see [doc/Identifier] ), and cleverly naming
+  things. Note that the definitions for "yes" and "no" would not have been
+  necessary, but make things show up nicer in the output panel.
+*#
+
+no := `_no, please wait`
+yes := `_yes, continue`
+`Continue ?` := yes

@@ -1,0 +1,20 @@
+# This is a mixin for boolean implementations. On itself it will fail
+# since boolean values and operators are not defined in this file. Include
+# as mixin after some bool implementation.
+
+# Check basic assertions on true, false, if
+≡ (if true a b) a
+≡ (if false a b) b
+
+
+# Test some basic relations (double negation, de Morgan, ...)
+≡[p:={true,false}] (not(not p)) p
+≡[p:={true,false},q:={true,false}] (not (and p q)) (or (not p) (not q))
+≡[p:={true,false},q:={true,false}] (implies p q) (or (not p) q)
+≡[p:={true,false},q:={true,false}] (iff p q) (and (implies p q) (implies q p))
+≡[p:={true,false},q:={true,false}] (xor (iff p q) (xor p q)) true
+≡[p:={true,false},q:={true,false}] (xor (nand p q) (and p q)) true
+≡[p:={true,false},q:={true,false}] (xor (nor p q) (or p q)) true
+
+≡[p:={true,false},q:={true,false}] (implies p (implies q p)) true
+≡[p:={true,false},q:={true,false}] (implies p (implies p q)) (implies p q)
