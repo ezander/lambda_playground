@@ -1,5 +1,29 @@
-I     := λx. x
-K     := λx y. x
+# Some standard combinators
+
+K := λx y. x
+I := λx. x
 S f g x := f x (g x)
 B f g x := f (g x)
 C f x y := f y x
+
+# The Y combinator (used for recursion) has no terminating normal form
+#! no-normalize-defs
+Y := λf. (λx. f (x x)) (λx. f (x x))
+#! normalize-defs
+
+# SKI basis equivalences
+≡ (S K K) I
+≡ (S K S) I
+≡ (S (K S) K) B
+
+# Behavioral identities
+≡ (I x) x
+≡ (K x y) x
+≡ (B f g x) (f (g x))
+≡ (C f x y) (f y x)
+≡ (S f g x) (f x (g x))
+
+# Derived equivalences
+≡ (S (K f) g x) (f (g x))
+≡ (S (K f) I x) (f x)
+≡ (K I x) I

@@ -1,3 +1,8 @@
-pair  a b f := f a b
-fst   p     := p (λa b. a)
-snd   p     := p (λa b. b)
+# Define the Church pair
+pair a b := λ f . f a b
+first p := p (λa b. a)
+second p := p (λa b. b)
+
+# Test implementation of pair, first, and second
+≡ (first (pair x y)) x
+≡ (second (pair x y)) y

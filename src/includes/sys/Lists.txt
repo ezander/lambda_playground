@@ -1,6 +1,0 @@
-#! include "sys/Church Booleans"
-
-nil           := λc n. n
-cons  h t c n := c h (t c n)
-isnil l       := l (λh t. false) true
-head  l       := l (λh t. h) false

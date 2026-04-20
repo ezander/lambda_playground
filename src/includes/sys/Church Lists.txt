@@ -1,0 +1,56 @@
+#! include "sys/Pairs"
+#! include "sys/Church Booleans"
+
+#*
+  Original definition from wikipedia:
+  [https://en.wikipedia.org/wiki/Church_encoding#Church_lists_%E2%80%93_right_fold_representation]
+
+  nil := λ c n.n
+  isnil := λ l.l (λ h r.false) true
+  cons := λ h t.λ c n.c h (t c n)
+  singleton := λ h.λ c n.c h n
+  append := λ l t.λ c n.l c (t c n)
+  nonempty := λ l.l (λ h r.true) false
+  head := λ l.l (λ h r.h) false
+  safeHead := λl e s.l (λ h r.s h) e
+  fold := λc n l.l c n
+  map := λ f l.λ c n.l (λ h r.c (f h) r) n # ≡ λ f l c.l (c ∘ f)
+  tail := λ l.λ c n.l (λ h r g.g h (r c)) (λ g.n) (λ h t.t)
+*#
+
+
+# Made somewhat more readable
+nil := λ c n.n
+isnil l := l (λ h r.false) true
+nonempty l := l (λ h r.true) false # not isnil
+cons h t := λ c n.c h (t c n)
+singleton h := λ c n.c h n
+append l t := λ c n.l c (t c n)
+head l := l (λ h r.h) false
+tail l := λ c n.l (λ h r g.g h (r c)) (λ g.n) (λ h t.t)
+safeHead l e s := l (λ h r.s h) e
+fold := λc n l.l c n
+map f l := λ c n.l (λ h r.c (f h) r) n # ≡ λ f l c.l (c ∘ f)
+
+# Check list implementation
+
+≡ (isnil nil) true
+≡ (nonempty nil) false
+≡ (head nil) false
+≡ (safeHead nil a b) a
+≡ (map f nil) nil
+
+≡ (singleton h) (cons h nil)
+≡ (nonempty (singleton h)) true
+≡ (append (singleton h1) (singleton h2)) (cons h1 (cons h2 nil))
+
+≡ (head (singleton h1)) h1
+≡ (tail (singleton h1)) nil
+≡ (tail (cons h1 (cons h2 nil))) (cons h2 nil)
+≡ (safeHead (singleton h1) 0 f) (f h1)
+
+_l := append (cons el3 nil) (cons el2 (cons el1 nil))
+_ll := map (λx . pair x x) _l
+≡ (head _ll) (pair el3 el3)
+≡ (head (tail _ll)) (pair el2 el2)
+≡ (head (tail (tail _ll))) (pair el1 el1)
