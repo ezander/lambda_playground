@@ -1,9 +1,75 @@
-zero      := λf x. x
-succ  n f x := f (n f x)
-plus  m n f x := m f (n f x)
-mult  m n f   := m (n f)
-one   := succ zero
-two   := succ one
-three := succ two
-four  := succ three
-five  := succ four
+# Church numerals
+
+# Define basis for naturals, i.e. successor and zero
+succ n := λs z. s (n s z)
+zero := λs z. z
+
+# Define numbers up to ten
+one := succ zero; two := succ one; three := succ two
+four := succ three; five := succ four; six := succ five
+seven := succ six; eight := succ seven; nine := succ eight
+ten := succ nine
+
+# Test powers of two
+≡ one (λ s z . s z)
+≡ two (λ s z . s (s z))
+≡ four (λ s z . two (λ z . s (s z)) z)
+≡ eight (λ s z . four (λ z . s (s z)) z)
+
+# Define basic operators
+
+#*
+  Define plus. We have (at least) two alternatives:
+    1) Apply succ n times to m, i.e. `succ^(n+m)(z) = succ^n(succ^m(z))`,
+       therefore `plus n m := n succ m`. However, this costs 3*n+4
+       substitutions while...
+    2) Note that "n s z = s^n(z)", therefore "s^(n+m)(z) = s^n( s^m(z))",
+       which is "n s (s^m(z))" which is "n s (m s z)", costs only a
+       constant 6 steps
+*#
+# plus n m := n succ m # intuitive, but slow
+plus n m := λ s z . n s (m s z)
+
+# Test for some numbers
+≡ zero (plus zero zero)
+≡ two (plus one one)
+≡ ten (plus four six)
+
+#*
+  Define times. We have (at least) two alternatives:
+    1) Apply (plus m) n times to zero, i.e. `(plus m)^n(zero)`, therefore
+       `times n m := n (plus m) zero`. This costs approx 5n+10
+       substitutions (depending on plus).
+    2) Note that "n s z = s^n(z)", therefore "s^(n*m)(z) = (s^m)^n(z)",
+       which is "n (s^m(z))" which is "n (m s z)", costs only 5*n+4 steps
+*#
+# times n m := n (plus m) zero # more intuitive, but a bit slower
+times n m := λ s . n (m s)
+
+# Test with some numbers
+≡ (times two four) eight
+≡ (times zero one) zero
+
+#*
+  Define power (n^m, note the order of operands here):
+    1) Apply (times n) m times to one, therefore
+       `pow n m := m (times n) one`. This costs approx. proportional
+       to n^m substitutions.
+    2) Note that "m s z = s^m(z)", therefore "m n s = n^m(s) = s^(n^m)".
+       Cost is also proportional to n^m, but with much lower constant.
+       However, note that we need to keep the args s and z explicitly,
+       because otherwise for m=zero, the "m n" gives "λz. z" which is
+       only η-convertible to one ("λs z. s z").
+*#
+# pow n m := m (times n) one # intuitive, but slow
+# pow n m := m n # fastest, but problematic for m=zero
+pow n m := λ s z. m n s z
+
+# Test power on some numbers
+≡ (pow two three) eight
+≡ (pow three two) nine
+≡ (pow three one) three
+≡ (pow three zero) one
+≡ (pow zero zero) one
+≡ (pow two five) (times four eight)
+≡ (pow five two) (plus (times four six) one)

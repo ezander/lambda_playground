@@ -1,0 +1,15 @@
+# Symbolic aliases for boolean/logic operations (mixin)
+⊤ := true
+⊥ := false
+
+¬ := not
+∧ := and
+∨ := or
+→ := implies
+↔ := iff
+⊕ := xor
+
+# Test using all aliases (de Morgan, biconditional, xor)
+≡[p:={⊥,⊤},q:={⊥,⊤}] (¬ (∧ p q)) (∨ (¬ p) (¬ q))
+≡[p:={⊥,⊤},q:={⊥,⊤}] (↔ p q) (∧ (→ p q) (→ q p))
+≡[p:={⊥,⊤},q:={⊥,⊤}] (¬ (↔ p q)) (⊕ p q)
