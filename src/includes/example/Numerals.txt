@@ -1,18 +1,61 @@
-# Make a signed numeral example here
-# Use boolean, numerals and pair
-# define Nat, Signed, define 0', 1', 2', ... -1', -2, -3'
-# define +' and -', >'
+#*
+  Here, we show an example on how to define signed numerals, given a numeral
+  implementation, e.g. the Church numerals (but the scheme would be the same
+  for e.g. Scott's numerals).
+
+*#
+
+:import "std/Church Numerals Symbolic"
+:import "std/Pairs"
+
+#*
+  We define signed numbers as pairs of natural numbers, e.g. (a,b), where a
+  represents the positive part and b the negative part (a bit like maybe your
+  bank account: a is what you have, and b are your debts, only the difference
+  matters).
+  Note in the following, that we cannot have overloading in LC. I.e. since
+  we've defined + already for Church numerals, we cannot use it for signed
+  numbers, and we need to use something like e.g. +' for it. The same holds
+  for every other number: we can't just interchange the normal 1 for the
+  signed 1. We'll need a signed constructor, which makes a signed number from
+  a natural one.
+*#
+
+Signed n := pair n 0
+' n := Signed n # we can also have a shortcut
+
+# Now we define values up to 10
+0' := ' 0; 1' := ' 1; 2' := ' 2; 3' := ' 3; 4' := ' 4;
+5' := ' 5; 6' := ' 6; 7' := ' 7; 8' := ' 8; 9' := ' 9; 10' := ' 10;
+
+# Now we also need to construct negative numbers
+Neg n := pair 0 n
+
+-0' := Neg 0; -1' := Neg 1; -2' := Neg 2; -3' := Neg 3; -4' := Neg 4;
+-5' := Neg 5; -6' := Neg 6; -7' := Neg 7; -8' := Neg 8; -9' := Neg 9; -10' := Neg 10;
+
+# Before we can define e.g. add or other functions we need a method to
+# normalize the reprentation, i.e. when we have `pair a b`, then either
+# a or b should be zero. I.e. if they're both non-zero, then depending on which
+# one is larger, we change that to the equivalent form `pair a-b 0` (if a is
+# larger) or `pair 0 b-a` (if b is larger).
 #
 
-# Church numerals
-zero      := λf x. x
-succ  n f x := f (n f x)
-plus  m n f x := m f (n f x)
-mult  m n f   := m (n f)
-one   := succ zero
-two   := succ one
-three := succ two
-four  := succ three
-five  := succ four
+# Note: Our following defs, won't β-normalize because the current def of - doesn't
+# Note also that a-b for Church numerals is really max(a-b,0), so we don't need
+# a case distinction here
+:set no-normalize-defs
+normalize s := pair (s (λ a b . (a - b))) (s (λa b . (b - a)))
+≡ (normalize (pair 1 3)) (pair 0 2)
+≡ (normalize (pair 5 2)) (pair 3 0)
 
-plus two three
+# # Now we define add (+') and note that (a,b)+(c,d) is equal to
+# # (a+c,b+d)
+
++' s r := normalize (pair ((first s) + (first r)) ((second s) + (second r)))
+:infix +'
+
+π -4' +' 3'
+π 5' +' -2'
+
+# Now it's up to you to define substraction, multiplication, comparisons, etc.
