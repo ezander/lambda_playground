@@ -64,7 +64,7 @@ function    ::= ('\' | 'λ') identLike+ '.' term
 bindings    ::= identLike ':=' '{' term (',' term)* '}' (',' …)*
 identLike   ::= plainIdent | '`' [^`\n]+ '`'
 plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α β η ∀ ∃ ⊢ reserved
-directive   ::= ':import' '"path"' modifier* | ':mixin' '"path"' | ':set' key value?
+directive   ::= ':import' '"path"' modifier* | ':mixin' '"path"' | ':set' key value? | ':eval' term | ':infix' name+
 ```
 
 ### Private symbols

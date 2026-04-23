@@ -31,10 +31,10 @@ function colonCmd(re: RegExp): (text: string, startOffset: number) => RegExpExec
   };
 }
 
-// Directive — captures the entire line content for :import, :mixin, :set.
+// Directive — captures the entire line content for :import, :mixin, :set, :infix.
 export const Directive = createToken({
   name: "Directive",
-  pattern: colonCmd(/:(?:import|mixin|set)\b[^\n]*/y),
+  pattern: colonCmd(/:(?:import|mixin|set|infix)\b[^\n]*/y),
   line_breaks: false,
   start_chars_hint: [":"],
 });

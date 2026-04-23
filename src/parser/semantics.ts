@@ -36,6 +36,33 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
   }
 }
 
+// ── Infix swap ───────────────────────────────────────────────────────────────
+// For each App(a, op) where op is a Var marked infix and a is not infix,
+// rewrite to App(op, a). Left-associative fold handles chaining naturally.
+
+function swapInfix(term: Term, infixNames: Set<string>): Term {
+  switch (term.kind) {
+    case "Var":   return term;
+    case "Abs":   return Abs(term.param, swapInfix(term.body, infixNames));
+    case "Subst": return term;
+    case "App": {
+      const func = swapInfix(term.func, infixNames);
+      const arg  = swapInfix(term.arg,  infixNames);
+      if (arg.kind === "Var" && infixNames.has(arg.name) &&
+          !(func.kind === "Var" && infixNames.has(func.name)))
+        return App(arg, func);
+      return App(func, arg);
+    }
+  }
+}
+
+function getInfixNames(defEntries: Map<string, DefEntry>): Set<string> {
+  const s = new Set<string>();
+  for (const [name, entry] of defEntries)
+    if (entry.infix) s.add(name);
+  return s;
+}
+
 // ── Include / mixin caches ────────────────────────────────────────────────────
 
 const includeCache = new Map<string, { content: string; configKey: string; result: ProgramResult }>();
@@ -147,7 +174,7 @@ function processPragma(
       defs.set(name, entry.term);
       // Propagate quiet flags from mixin; offset = this pragma line
       const existing = defEntries.get(name);
-      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: entry.quiet });
+      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: entry.quiet, infix: entry.infix });
     }
     return;
   }
@@ -191,7 +218,21 @@ function processPragma(
       // Offset = first time this name became available (keep existing if already known).
       const existing = defEntries.get(name);
       const isQuiet = quiet || entry.quiet;
-      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: isQuiet });
+      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: isQuiet, infix: entry.infix });
+    }
+    return;
+  }
+
+  const infixMatch = text.match(/^infix\s+(.+)$/);
+  if (infixMatch) {
+    const names = infixMatch[1].trim().split(/\s+/);
+    for (const name of names) {
+      const entry = defEntries.get(name);
+      if (!entry) {
+        errors.push({ message: `Warning: '${name}' is not defined, cannot mark as infix`, offset, kind: "warning" });
+      } else {
+        entry.infix = true;
+      }
     }
     return;
   }
@@ -344,7 +385,8 @@ export function parseProgram(
 
         const innerDefs = new Map(defs);
         for (const p of params.map(tokenName)) innerDefs.delete(p);
-        let body = expandDefs(bodyTerm, innerDefs);
+        const infx = getInfixNames(defEntries);
+        let body = expandDefs(swapInfix(bodyTerm, infx), innerDefs);
 
         if (params.length > 0)
           body = params.map(tokenName).reduceRight((acc, p) => Abs(p, acc), body);
@@ -372,7 +414,7 @@ export function parseProgram(
         }
         defs.set(name, body);
         const existingEntry = defEntries.get(name);
-        defEntries.set(name, { term: body, offset: existingEntry?.offset ?? stmt.nameTok.startOffset, quiet: false });
+        defEntries.set(name, { term: body, offset: existingEntry?.offset ?? stmt.nameTok.startOffset, quiet: false, infix: false });
 
         defInfos.push({
           name,
@@ -387,18 +429,19 @@ export function parseProgram(
         const merged = { ...defaultConfig, ...pragmaConfig };
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const infx = getInfixNames(defEntries);
 
         if (stmt.bindings) {
           const bindingNames = new Set(stmt.bindings.map(b => b.name));
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
-          const expandedBase = expandDefs(stmt.term, defsFiltered);
+          const expandedBase = expandDefs(swapInfix(stmt.term, infx), defsFiltered);
           const baseSrc = prettyPrint(stmt.term);
           const visibleDefs = new Map([...defs].filter(([k]) => !defEntries.get(k)?.quiet));
           const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
-            expandedValues: b.termValues.map(v => expandDefs(v, defsFiltered)),
+            expandedValues: b.termValues.map(v => expandDefs(swapInfix(v, infx), defsFiltered)),
             valueSrcs: b.termValues.map(v => prettyPrint(v)),
           }));
 
@@ -429,7 +472,7 @@ export function parseProgram(
           exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
-          const expanded = expandDefs(stmt.term, defs);
+          const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
           const runResult = normalize(expanded, cfg);
           const { term: normalizedTerm, kind, steps } = runResult;
           const visibleDefs = new Map([...defs].filter(([k]) => !defEntries.get(k)?.quiet));
@@ -453,18 +496,19 @@ export function parseProgram(
         const merged = { ...defaultConfig, ...pragmaConfig };
         const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const infx = getInfixNames(defEntries);
 
         if (stmt.bindings) {
           const bindingNames = new Set(stmt.bindings.map(b => b.name));
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
-          const baseT1 = expandDefs(stmt.atom1, defsFiltered);
-          const baseT2 = expandDefs(stmt.atom2, defsFiltered);
+          const baseT1 = expandDefs(swapInfix(stmt.atom1, infx), defsFiltered);
+          const baseT2 = expandDefs(swapInfix(stmt.atom2, infx), defsFiltered);
           const src1 = prettyPrint(stmt.atom1);
           const src2 = prettyPrint(stmt.atom2);
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
-            expandedValues: b.termValues.map(v => expandDefs(v, defsFiltered)),
+            expandedValues: b.termValues.map(v => expandDefs(swapInfix(v, infx), defsFiltered)),
             valueSrcs: b.termValues.map(v => prettyPrint(v)),
           }));
 
@@ -507,8 +551,8 @@ export function parseProgram(
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
-          const t1 = expandDefs(stmt.atom1, defs);
-          const t2 = expandDefs(stmt.atom2, defs);
+          const t1 = expandDefs(swapInfix(stmt.atom1, infx), defs);
+          const t2 = expandDefs(swapInfix(stmt.atom2, infx), defs);
           const r1 = normalize(t1, cfg);
           const r2 = normalize(t2, cfg);
           const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
@@ -538,8 +582,9 @@ export function parseProgram(
       }
 
       case "eval": {
+        const infx = getInfixNames(defEntries);
         rawExpr = stmt.term;
-        expr    = expandDefs(stmt.term, defs);
+        expr    = expandDefs(swapInfix(stmt.term, infx), defs);
         hasEval = true;
         exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         break;
@@ -547,8 +592,9 @@ export function parseProgram(
 
       case "expr": {
         if (!hasEval) {
+          const infx = getInfixNames(defEntries);
           rawExpr = stmt.term;
-          expr    = expandDefs(stmt.term, defs);
+          expr    = expandDefs(swapInfix(stmt.term, infx), defs);
         }
         exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         break;

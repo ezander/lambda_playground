@@ -68,6 +68,8 @@ Lines starting with `:` are directives:
 :set max-size 5000              # max AST nodes before reduction halts
 :set no-normalize-defs          # disable definition body normalization
 :set allow-eta                  # enable η-reduction during normalization
+:eval expr                      # load expression into eval panel (last wins)
+:infix + * ^^                   # mark defs as infix: a + b is read as + a b
 ```
 
 ### Definitions

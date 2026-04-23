@@ -165,6 +165,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:assert atom1 atom2</code></td><td>alternative to <code>≡</code></td></tr>
             <tr><td><code>:assert-not atom1 atom2</code></td><td>alternative to <code>≢</code></td></tr>
             <tr><td><code>:eval expr</code></td><td>load expression into eval panel (last one wins; overrides bare expressions)</td></tr>
+            <tr><td><code>:infix name1 name2 …</code></td><td>mark definitions as infix operators; <code>a + b</code> is read as <code>+ a b</code></td></tr>
           </tbody></table>
           <h3>settings (<code>:set</code>)</h3>
           <table className="help-table"><tbody>

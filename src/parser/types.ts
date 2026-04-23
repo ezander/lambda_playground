@@ -36,6 +36,7 @@ export type DefEntry = {
   term:   Term;       // normalized/expanded body
   offset: number;     // source offset where name becomes available (def line or :import line)
   quiet:  boolean;    // hidden from autocomplete and match list
+  infix:  boolean;    // marked as infix operator via :infix directive
 };
 
 export type DefInfo = {

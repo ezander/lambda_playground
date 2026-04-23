@@ -30,6 +30,8 @@ even? := isEven
 odd? := isOdd
 :set normalize-defs
 
+:infix + * ^^ -
+
 # Verify number table
 ≡ 1 (++ 0)
 ≡ 2 (++ (++ 0))
@@ -42,3 +44,5 @@ odd? := isOdd
 ≡ (+ 3 4) 7
 ≡ (* 3 10) 30
 ≡ (^^ 2 5) 32
+≡ (1 + 3 + 4) 8
+≡ (2 * 3 * 4) 24
