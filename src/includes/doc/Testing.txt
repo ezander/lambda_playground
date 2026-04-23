@@ -1,0 +1,22 @@
+#! include "sys/Church Booleans"
+
+#
+triple a b c := λ f . f a b c alskkk
+1st t  := t (λ a b c. a)
+2nd t  := t (λ a b c. b)
+3rd t  := t (λ a b c. c)
+imp_tt := triple true true true
+imp_tf := triple true false false
+imp_ft := triple false true true
+imp_ff := triple false false true
+λ x. x triple triple triple triple triple kkkkkkkkkkkkkhallo
+what the fuck what what what what the fuck 
+si this bla bla blblllll   lksjdlfk bla
+I don't know what this is all about
+kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+a
+kkk 
+
+
+≡[t:={imp_tt, imp_tf imp_ft imp_ff}] (implies (1st t) (2nd t)) (3rd t)
+

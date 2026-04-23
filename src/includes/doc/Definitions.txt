@@ -1,0 +1,74 @@
+#* 
+  Definitions
+  ===========
+
+  Definitions are, strictly speaking, not part of the lambda calculus. LC 
+  consists only of variables, abstractions (i.e. anonymous function definitions)
+  and applications. However, it would we awkward to write the same lambda 
+  abstraction for true (i.e. `λ x y . x`) over and over again. And furthermore, 
+  it would be impossible to build libraries and compose more complicated 
+  "lambda programs" from those. 
+
+  That's why this dialect of the λ calculus allows definitions. Definitions 
+  always look like
+
+    <def-name> := <lambda-expression>
+
+  where <def-name> is any identifier also viable as a lambda variable names 
+  (see [doc/Identifier]) and <lambda-expression> any valid lambda expression.
+
+  E.g. we could define the identity as follows:
+*#
+
+I := λx . x
+# I applied to I gives again the identity
+π I I 
+
+#* 
+  Note that definitions are somewhat similar to C macros in that in all lines
+  following, everywhere <def-name> appears, it is replaced by
+  <lambda-expression>. Thus, it does not allow recursion: if the name also
+  appears on the right inside the lambda expression, it is just treated as a
+  free variable.
+  
+  You can see that in the following:
+*#
+
+foo := foo bar
+# This prints `foo bar` in the output window, since foo is just a free var here
+π foo
+
+#* 
+  If you redefine a definition, this is okay, as long as the normal form of the
+  definiens does not change, up to α-equivalence (i.e. renaming). E.g. it does 
+  not matter which for the normal form of I whether we use `x` or `y` as 
+  variable name. And thus no warning is shown.
+*#
+
+# The following line shows no warning because λx.x ≡ λy.y 
+I := λ y . y
+
+# However, λx.x ≢ λy.x. That's why you see yellow squiggles below the 
+# redefinition and a warning in the issues panel.
+I := λ x . y
+
+# If we redefine `foo` from above, you see that the `foo` on the right hand
+# side is just replace by the previous definition, still no recursion here.
+foo := foo quux
+π foo
+
+#* 
+  Sometimes, it may happen, that you want to redefine something, that is already 
+  defined with a differing normal form. Maybe, because some definitions for a
+  common operation are more efficient in terms of substitutions than others
+  or because you want to compare different approaches in one buffer. Than you
+  can use `::=` for the redefinition (however, now you get a warning if term
+  wasn't already defined).
+*#
+
+# I and foo were already defined
+I ::= λx . x
+foo ::= λa b c. c b a
+
+# bar hasn't been defined yet, thus the squiggles
+bar ::= foo

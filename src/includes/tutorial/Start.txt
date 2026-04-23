@@ -1,0 +1,24 @@
+#*
+  Tutorial
+  ========
+
+  This is a short introduction into the untyped λ calculus focussing on the
+  computational aspects and not so much on how to do deep proofs with it.
+
+  Note: the best way to view the tutorial is to go maximize the window and enable theater mode
+  loaded into scratch buffer, can modify, undo
+  undo goes back, after all changes undone
+  
+  A little bit of the history and the whys and hows of LC can be found in the next
+  part of this series [tutorial/Intro].
+  
+  Or if you want to jump straight into it skipping the historical background go
+  here [tutorial/Church booleans]
+  
+  Some literature on LC can also be found here: [tutorial/Literature]
+  
+  Some literature: 
+    * [https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html]
+    * [https://en.wikipedia.org/wiki/Lambda_calculus]
+
+*#

@@ -1,0 +1,56 @@
+#* 
+  Identifier
+  ==========
+
+  Identifier are the names that you can give to free and bound variables in the
+  lambda calculus (and also to definitions, see [doc/Definitions] ). In most
+  programming languages this is very restricted, due to the fact that a) many
+  languages date back to the pre-unicode era restricting identifier mostly to
+  7-bit ascii and b) most languages have a large set of characters with
+  predefined meaning. In the λ playground both of these restrictions don't
+  apply. The only characters that are reserved, are lambda (λ), the dot (.) and 
+  all kinds of parenthesis (), brackets [], and braces {}. Furhtermore, the 
+  colon (:), because of definitions (:=, ::=) and the greek letters α, β, and η, 
+  because they could get a special meaning in the future. All else we can use 
+  freely:
+*#
+
+# Use greek letters in an abstraction
+λ ζ ξ . ζ 
+
+# Define plus via the symbol (given, that `plus` is already defined)
++ := λ a b . plus a b
+
+# Even digits are not predefined and can be defined freely. Here the Church
+# numeral 2
+2 := λ f x . f (f x)
+
+# Or a function that always adds 2 
++2 := λ n . + 2 n
+
+# Or logical operators
+∧ := and
+and true false
+
+# And nobody hinders you to define if you're in some Orwellian mood or like to
+# confuse other people
+5 := + 2 2
+
+#* 
+  And if that's not enough, there are also backtick identifiers: if you put
+  some unicode string into backticks, i.e. ``, you can put almost anything 
+  inside.
+*#
+
+# You can write in Chinese, Japanese and Pashto, if you want
+`和平` := peace
+`ドナルド・トランプは有罪判決を受けた重罪犯であり、愚か者だ` := true
+`لامبدا حساب کتاب ډېر خسته کن او ستړی کوونکی دی` := false
+
+# Or use spaces in between (which is used a lot in the tutorial to simulate strings)
+λ `this is a bound variable` . `this is a bound variable` `and this a free var`
+
+# E.g. if you have the Church definition of true and false
+#! include "sys/Church Booleans"
+predicate := true
+π predicate `The predicate is true` `The predicate is false`

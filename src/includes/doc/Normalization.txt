@@ -1,0 +1,82 @@
+#* 
+  Normalization
+  =============
+
+  The λ playground often tries to bring λ expressions into normal form. Normal
+  form means that no β-substitutions (i.e. "function calls" more or less) can be
+  performed any more on the expression. Here is an example of some expression
+  applied to the identity
+
+     (λ x . x)(λ y . y a)
+     x[x:=(λ y . y a)]     # replace x in the leftmost abstraction with the 
+                           # argument, i.e., (λ y . y a)
+     (λ y . y a)
+
+  given the `(λ y . y a)` as result, where nothing can be substituted any more.
+  This would be the normal form of the original expression `(λ x . x)(λ y . y)`.
+  Note that naming of bound variables does not matter: `(λ z . z a)` would 
+  count as normal form just as well (this is called α-equivalence). 
+
+  There are some things to note here:
+    a) Not all expressions have a normal form. E.g. `(λ x . x x)(λ x . x x)` 
+       (which is sometimes called the Ω combinator) does not have a normal form: 
+       every substitution just leads back to the original expression.
+    b) Some expressions even grow indefinetely like `(λ x . x x)(λ x . x x x)`
+       Just copy it somewhere and try to expand it β-step by β-step.
+    c) Some expressions have relatively small normal forms, but huge 
+       intermeditate representation, e.g. try to evaluate 
+       `/ (factorial 10) (factorial 9)` with Church numerals (or better: don't)
+    d) There is no method to determine whether a general λ expression has a 
+       normal form at all (this was at the center of the Entscheidungsproblem
+       and the halting problem, solved back then in the 1930s by Church and 
+       Turing)
+    e) Even if there is a normal form, it cannot be predetermined in how many 
+       steps this can be achieved and how big the intermediate expressions become.
+
+  Given these complications, in a computational system like this here, we must
+  decide or terminate at some step. Therefore, there is a step limit for 
+  substitutions and also a size limit for intermediate expression, that can be 
+  controlled either via the settings or in code via pragmas [doc/Pragmas]. The
+  step limit is usually set to 1000, i.e. after 1000 some "did not terminate"
+  message will pop up in the output, or when an intermediate has more than 
+  a set limit (default: 3000) terms in it's abstract syntax tree (AST), the 
+  evaluation will also be stopped, in order to preserve memory. You can change
+  that globally via the settings, or via pragmas like `max-steps` or `max-size`.
+
+  Lambda expressions appearing alone on a line are not normalized by default.
+  Definitions on the contrary are, because that usually speeds up things for
+  future use. For definitions you know, won't normalize (e.g. the Ω combinator
+  `(λx.x x)(λx.x x)`), or you just don't want normalization to happen you can
+  disable it via `no-normalize-defs` and re-enable via `normalize-defs`. T
+
+
+  Leftmost-outermost:
+
+  weak normalization 
+  using defs for speed optimization
+
+  Here are some examples concerning normalization and equivalences:
+*#
+
+
+# I I normalizes to I
+I := λx . x 
+≡ (I I) I
+
+# Ω has no normal form
+ω := λx . x x
+≢ (ω ω) (ω ω)
+#! no-normalize-defs
+Ω := ω ω
+#! normalize-defs
+
+# λ x . z x is only η-equivalent to z
+≢ (λ x . z x) z
+#! allow-eta
+≡ (λ x . z x) z
+#! no-allow-eta
+
+# K I Ω has a weak normal form, that can be found via leftmost-outermost 
+# reductions, though Ω itself has no normal form
+K y := λ x . y
+≡ I (K I Ω)

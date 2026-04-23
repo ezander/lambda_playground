@@ -1,0 +1,35 @@
+#* 
+  Editor
+  ======
+
+  The λ playground includes CodeMirror ([https://codemirror.net]), a fully 
+  featured programming editor as web component. Syntax highlighting follows the
+  λ grammar as laid out on the help page, focussing especially on free and bound
+  variables, definitions and other language and operator tokens.
+  
+  
+  The default keymap is pretty rich and standard (see below for details - in use 
+  is the default codemirror keymap, which include the standard keymap).
+  
+  Keys with additional special meaning:
+  
+    * ESC            - takes you out of the editor and back into the editor from 
+                       all over the page
+    * Ctrl+space     - Code completion. Let's you select from defined or 
+                       imported symbols, or from possible include files.
+    * Ctrl+/         - Comments/Uncomments the current line/selected lines.
+    * Alt+l          - Inserts λ the current cursor position.
+    * Alt+p          - Inserts π at the start of the line.
+    * Alt+e          - Inserts ≡ at the start of the line.
+    * Alt+n          - Inserts ≢ at the start of the line.
+    * \name + space  - Inserts the character given by "name" at the current 
+                       position. Case-sensitive. E.g. "\Sigma " inserts "Σ", 
+                       "\and " inserts "∧", and "\equiv " inserts "≡"
+
+  For loading and saving of buffers into the editor see [doc/Buffers].
+
+  CodeMirror-keymaps:
+    [https://codemirror.net/docs/ref/#commands.standardKeymap]
+    [https://codemirror.net/docs/ref/#commands.defaultKeymap]
+  
+*#

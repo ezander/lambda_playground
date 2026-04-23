@@ -1,0 +1,42 @@
+#* 
+  Substitution laws
+  =================
+
+  Substitution rules including capture-avoiding substitution (last example)
+
+Untyped Lambda Calculus
+Lecture Notes
+Gert Smolka
+Saarland University
+December 14, 2015  
+[https://www.ps.uni-saarland.de/courses/sem-ws15/ulc.pdf]
+*#
+
+≡ (f x y)[x:=y] (f y y)
+≡ (f x y x)[x:=z] (f z y z)
+≡ ((λx.x) x)[x:=z] ((λx.x)z)
+≡ (λx y.f x y)[f:=g] (λx y.g x y)
+≡ (λx y.f x y)[f:=g z] (λx y.g z x y)
+≡ (λx y.f x y)[f:=g x] (λx' y.g x x' y)
+
+≡ x[y:=u] x
+≡ y[y:=u] u
+# The following are a bit meaningless without 
+# explicit expressions for s and t (because this 
+# is meant to mean ∀s,t it holds that, but here
+# s and t are just free variables)
+≡ (s t)[y:=u] (s[y:=u] t[y:=u]) 
+
+# So let's take some somewhat complicated expressions
+# and plug them in (make defs local by prefixing with _)
+_s := x y u x y u λ x y u. x y u
+_s' := x u x u λ x y u. x y u
+_t := a x y u c
+_u := x y z
+_u' := y z
+≡ (_s _t)[y:=_u] (_s[y:=_u] _t[y:=_u]) 
+≡ (λx._s)[y:=_u'] λx.(_s[y:=_u']) 
+≡ (λy._s)[y:=_u] λy._s 
+≡ (λx._s') λy._s'[x:=y]
+≡ (_s'[y:=u]) _s'
+≡ _s[x:=x] _s

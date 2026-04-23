@@ -1,0 +1,45 @@
+#*
+  Buffers
+  =======
+
+  A buffer is a text document that holds your lambda calculus code. You can
+  think of it as a file — it has content you edit, and it can be saved and
+  loaded by name. Buffers are stored in your browser's local storage, so they
+  persist across sessions but are tied to this browser on this device.
+                                                                                                                             
+  There are two kinds:                                      
+
+  - Scratch — the default buffer, shown as *scratch*. It auto-saves on every
+    edit, so you never lose work here. It's a good place for quick experiments.
+  
+  - Named buffers — buffers you explicitly save with a name. Names can contain
+    slashes to organize them hierarchically (e.g. notes/booleans,
+    lib/combinators).
+   
+  To save your current work as a named buffer, type a name in the text field
+  next to the save button and press Enter. If a buffer with that name already
+  exists, it will be overwritten.
+  
+  Auto-save can be enabled in settings. When active, named buffers are saved
+  automatically as you type — a brief dot indicator appears after each edit and
+  disappears once the save completes.
+
+  You can switch between buffers using the dropdown. Switching away from a
+  buffer with unsaved changes will prompt you before discarding them.
+                                                                                                                            
+
+  Docs, tutorials, and examples. Loading a doc, tutorial, or example replaces
+  the content of the scratch buffer. This is done as a normal edit, so you can
+  undo it with Ctrl-Z — pressing undo repeatedly walks back through everything
+  you loaded, letting you use undo as a navigation history. If you are in a
+  named buffer with unsaved changes, you will be prompted before switching.
+
+  Export / Import lets you back up all your named buffers as a zip file. The zip
+  preserves your naming structure: a buffer named lib/combinators becomes
+  lib/combinators.txt in the zip. Importing a zip brings them back; you can
+  review and select which buffers to import, with conflicts highlighted.
+                                                            
+  Download saves the current buffer as a standalone .txt file.             
+
+*#
+

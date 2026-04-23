@@ -1,0 +1,66 @@
+#! include "sys/Tutorial Utils"
+
+#*
+  Church booleans
+  ===============
+  
+  One of the most fundamental concepts in any programming language is that of a 
+  boolean. No constrol structure (if-else, while, etc.) can be defined with a
+  notion of booleans. So, how do we define booleans in a world where there's 
+  only functions?
+
+  It may sound somewhat philosophical to ask "What exacatly *is* or constitutes
+  a boolean value - true or false". And in contrast maybe to classical
+  philosophy the answer in computing is: it doesn't really matter. All that
+  matters is behavior. But `true`` and `false` don't show behavior by
+  themselves, only in connection with some selector function, that generally
+  called `if` or `if-then-else`, with the expected behavior that `if true a b`
+  evaluates to `a`, whatever the term `a` may be, and that `if false a b`
+  evaluates to `b`. How we define `true`, `false` and `if` is not important as
+  long the given conditions are fulfilled.
+
+  In λ calculus there are multiple ways to do this (we'll see later), but the
+  most common (nearly canonical) choice are the so-called Church booleans. Their
+  definition is given by:
+*#
+
+true  := λ x y . x
+false := λ x y . y
+
+#* 
+  i.e. `true`` and `false` are each functions of two arguments that return their
+  first and second argument respectively. How do we define `if` now? `if` is
+  obviously a function of three arguments, taking such a bool as it's first one
+  and two unspecified one as second and third, i.e. something like `if := λ p a
+  b . ???` as `p` is a boolean predicate, i.e. either `true` or `false`. Assume,
+  `p` is `true`: if we apply `a` and `b` to `true`, we get `a` (true a b ≡
+  (x)[x:=a] ≡ a). Assume, `p` is `false`: if we apply `a` and `b` to `false`, we
+  get `b` (false a b ≡ (x)[x:=a] ≡ a).
+
+  I.e. we can just define
+*#
+
+if := λ p a b . p a b
+
+# Now evaluate the next line step-by-step by clicking on the button "β-step" in 
+# the eval panel or by hitting F10, and see that this really evaluates to `then 
+# clause` (1)
+if true `then clause` `else clause`
+
+# When you're done, change the `no` in the next line to `yes`.
+≡ `Continue ?` no
+
+# Now evaluate this line and see that it evaluates to `else clause`. If
+# you want to see the substitutions in more detail activate the "Show Subst"
+# checkbox and rerun.
+if false `then clause` `else clause`
+
+# Continue to next lesson here: [tutorial/Boolean junctors]
+
+# (1) Just in case you're curious: `then clause` is not a string but an
+# identifier containing a space, which is why it is enclosed in backticks. 
+# See more on that here: [doc/identifier]
+# (2) Note: with Church encodings the `if` function reduces to just the identity
+# which is why it is generally left out and instead of `if p a b`, you usually
+# only find `p a b`. Writing the `if` explicitly, however, makes the everything
+# also amenable to other defintions of `true` and `false`.

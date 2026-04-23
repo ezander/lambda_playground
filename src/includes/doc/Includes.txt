@@ -1,0 +1,40 @@
+#*
+
+  Include system
+  ==============
+
+  To enable building modules of lambda definitions, the λ playground features an
+  include system. In addition to the pragmas described here [doc/Pragmas] ,
+  there is also "include". E.g. 
+
+  #! include "sys/Church Booleans"
+
+  will include all definitions from the system include "Church Booleans". You
+  can also include 
+
+  right clicking takes you there
+
+  user include via "user/Your title"
+
+  definition are merged with already existing definitions
+  merging according to rules in [doc/Definitions], i.e. overwrite, but warn
+  if normal forms differ
+
+  all definitions exported except _def names
+  pragmas/options not exported
+
+  include file, new namespace, does not see existing defs, or pragma/options
+
+  mixin, can see exisiting defs, useful for extending defs:
+  e.g. some definition for `true`, `false`, `if` then in mixin
+  def for `and`, `or`, etc. using only those three defs (e.g. `and p q := if p q p`)
+
+  true := ...
+  false := ...
+  #! mixin "sys/Boolean Operator Symbols"
+
+  quite includes: like normal includes but definitions not selectable, just 
+  a UI thing
+
+
+*#

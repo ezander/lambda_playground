@@ -1,0 +1,34 @@
+#! include "sys/Tutorial Utils"
+
+#*
+  Boolean connectives
+  ===================
+
+  Boolean connectives (or operators, or junctors) are 
+
+  
+*#
+
+#! include "sys/Church Booleans"
+implies p q := if p q true
+π[p:={true,false},q:={true,false}] implies p q
+
+⊥ := false
+⊤ := true
+∧ := and
+∨ := or
+→ := implies
+¬ := not
+ι x f := f x
+≡[A:={true,false}] (¬ A) (ι A → ⊥)
+≡ (¬ A) (ι A → ⊥)
+≡[A:={true,false},B:={true,false}] (ι A ∧ B) (ι (ι A → (ι B → ⊥))→ ⊥)
+# ≡ (ι A ∧ B) (ι (ι A → (ι B → ⊥))→ ⊥)
+≡[A:={true,false},B:={true,false}] (ι A ∨ B) (ι (ι A → ⊥) → B)
+# ≡ (ι A ∨ B) (ι (ι A → ⊥) → B)
+
+≡[A:={⊤,⊥}] (⊤) (ι ⊥ → A)
+≡ (⊤) (ι ⊥ → A)
+
+
+
