@@ -1,0 +1,41 @@
+# We define the following combinators S and K:
+
+S := λf g x. f x (g x)
+K := λx y. x
+
+# which we could also have imported from ("std/Combinators")
+# The interesting thing about them, is that essentially everything
+# you can do with ULC, you can do with just those two combinators.
+# Without going into the theory, we just show some things, e.g.
+# that we can express the identity only by S and K
+
+# Define I by only S and K
+I := S K K
+# and indeed it's the identity
+≡ I (λx. x)
+
+
+# Then we can "prove" also the following identities
+# (see e.g. [https://en.wikipedia.org/wiki/SKI_combinator_calculus])
+
+≡ ((S K I)(K I S)) I
+≡ (K S(I(S K S I))) S
+≡ (S K I K) K
+
+# Or we can define booleans in terms of just S and K
+# Define true (T) and false (F)
+T := K
+F := S K
+
+# The definition of `not` is similar to the Church booleans (which is
+# of course, because T and F reduce to the exact same normal form...)
+not b := b F T
+≡ (not T) F
+≡ (not F) T
+
+# And then `and` or `or` are of cause also the same as for Church booleans
+or a b := a T b
+π[a:={T,F},b:={T,F}] or a b
+
+and a b := a b F
+π[a:={T,F},b:={T,F}] and a b
