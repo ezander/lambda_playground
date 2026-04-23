@@ -1,5 +1,3 @@
-# -> rename to Recursion
-
 # We need the Y combinator from Combinators defined as
 #   Y := λf. (λx. f (x x)) (λx. f (x x))
 # for implementing recursion

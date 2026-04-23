@@ -1,0 +1,17 @@
+:import "std/Church Booleans Symbolic"
+
+# We can use π with comprehensions to show truth tables of logical propositions
+# E.g. to show the truth table for the material implication
+
+π[p:={true,false},q:={true,false}] implies p q
+
+# or in symbols (true=⊤=\top, false=⊥=\bot, implies=→=\implies)
+
+π[p:={⊤,⊥},q:={⊤,⊥}] → p q
+
+# Now, suppose you want to prove some identity using a truth table. We
+# can use ≡ (=\equiv=Alt+e) with comprehensions for this. Let's prove
+# de Morgans laws `¬(p∧q) = (¬ p)∨(¬ q)` and `¬(p∨q) = (¬ p)∧(¬ q)`
+
+≡[p:={⊤,⊥},q:={⊤,⊥}] (¬ (∧ p q)) (∨ (¬ p) (¬ q))
+≡[p:={⊤,⊥},q:={⊤,⊥}] (¬ (∨ p q)) (∧ (¬ p) (¬ q))
