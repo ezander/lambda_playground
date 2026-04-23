@@ -1,3 +1,9 @@
+# Load the booleans
+# and show some tricks on them, like showing tables, proving via asserts and ... tables, evaluations
+# show diff symbols
+
+# Other version: show different possible implementations of true, false, and if, and dependent and,or,not, ...
+
 # Church booleans
 true    := λx y. x
 false   := λx y. y

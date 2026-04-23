@@ -157,7 +157,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>directives</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>:import "ns/…"</code></td><td>import definitions from <code>sys/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
+            <tr><td><code>:import "ns/…"</code></td><td>import definitions from <code>std/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
             <tr><td><code>:import "…" quiet</code></td><td>like import, but imported names are hidden from match list and autocomplete</td></tr>
             <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending)</td></tr>
             <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>

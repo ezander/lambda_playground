@@ -542,50 +542,50 @@ describe("error offsets", () => {
 describe("include system", () => {
   const resolver = (path: string) => {
     const files: Record<string, string> = {
-      "sys/Booleans": "true := λx y. x\nfalse := λx y. y",
-      "sys/WithInclude": ":import \"sys/Booleans\"\nnot p := p false true",
-      "sys/Circular1": ":import \"sys/Circular2\"\nx := λa. a",
-      "sys/Circular2": ":import \"sys/Circular1\"\ny := λa. a",
+      "std/Booleans": "true := λx y. x\nfalse := λx y. y",
+      "std/WithInclude": ":import \"std/Booleans\"\nnot p := p false true",
+      "std/Circular1": ":import \"std/Circular2\"\nx := λa. a",
+      "std/Circular2": ":import \"std/Circular1\"\ny := λa. a",
     };
     return files[path] ?? null;
   };
 
   it("imports defs from included file", () => {
-    const r = parseProgram(":import \"sys/Booleans\"\nπ true\n", {}, resolver);
+    const r = parseProgram(":import \"std/Booleans\"\nπ true\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("false")).toBe(true);
   });
 
   it("included file's own includes are resolved (nested)", () => {
-    const r = parseProgram(":import \"sys/WithInclude\"\n", {}, resolver);
+    const r = parseProgram(":import \"std/WithInclude\"\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("not")).toBe(true);
   });
 
   it("reports error for unknown include path", () => {
-    const r = parseProgram(":import \"sys/Unknown\"\n", {}, resolver);
+    const r = parseProgram(":import \"std/Unknown\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toMatch(/not found/i);
   });
 
   it("detects circular includes", () => {
-    const r = parseProgram(":import \"sys/Circular1\"\n", {}, resolver);
+    const r = parseProgram(":import \"std/Circular1\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.match(/circular/i))).toBe(true);
   });
 
   it("annotates errors from included file with source", () => {
-    const badResolver = (path: string) => path === "sys/Bad" ? "f := (" : null;
-    const r = parseProgram(":import \"sys/Bad\"\n", {}, badResolver);
+    const badResolver = (path: string) => path === "std/Bad" ? "f := (" : null;
+    const r = parseProgram(":import \"std/Bad\"\n", {}, badResolver);
     expect(r.ok).toBe(false);
-    expect(r.errors[0].source).toBe("sys/Bad");
+    expect(r.errors[0].source).toBe("std/Bad");
   });
 
   it("π statements in included file are silenced", () => {
-    const piResolver = (path: string) => path === "sys/WithPi" ? "x := λa. a\nπ x" : null;
-    const r = parseProgram(":import \"sys/WithPi\"\n", {}, piResolver);
+    const piResolver = (path: string) => path === "std/WithPi" ? "x := λa. a\nπ x" : null;
+    const r = parseProgram(":import \"std/WithPi\"\n", {}, piResolver);
     expect(r.printInfos).toHaveLength(0);
     expect(r.defs.has("x")).toBe(true);
   });
@@ -593,16 +593,16 @@ describe("include system", () => {
   it("parent max-steps pragma does not affect included file", () => {
     // not(not(true)) takes several steps — would fail with max-steps=1 but include ignores parent pragmas
     const bools = "true := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
-    const res = (path: string) => path === "sys/Bools" ? bools : null;
-    const r = parseProgram(":set max-steps=1\n:import \"sys/Bools\"\n", {}, res);
+    const res = (path: string) => path === "std/Bools" ? bools : null;
+    const r = parseProgram(":set max-steps=1\n:import \"std/Bools\"\n", {}, res);
     expect(r.ok).toBe(true);
     expect(r.defs.has("not")).toBe(true);
   });
 
   it("bubbles up equiv failure from included file as an error", () => {
     const bad = "true := λx y. x\nfalse := λx y. y\n≡ true false\n";
-    const res = (path: string) => path === "sys/Bad" ? bad : null;
-    const r = parseProgram(":import \"sys/Bad\"\n", {}, res);
+    const res = (path: string) => path === "std/Bad" ? bad : null;
+    const r = parseProgram(":import \"std/Bad\"\n", {}, res);
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.match(/assertion failed/i))).toBe(true);
   });
@@ -610,8 +610,8 @@ describe("include system", () => {
   it("included file max-steps pragma does not affect parent", () => {
     // included file sets max-steps=1; parent's π should still normalize not(not(true))
     const bools = ":set max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
-    const res = (path: string) => path === "sys/Bools" ? bools : null;
-    const r = parseProgram(":import \"sys/Bools\"\nπ not (not true)\n", {}, res);
+    const res = (path: string) => path === "std/Bools" ? bools : null;
+    const r = parseProgram(":import \"std/Bools\"\nπ not (not true)\n", {}, res);
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].normal).toBe(true);
   });
@@ -821,13 +821,13 @@ describe("allow-eta pragma", () => {
 describe("include def ordering", () => {
   const resolver = (path: string) => {
     const files: Record<string, string> = {
-      "sys/Booleans": "true := λx y. x\nfalse := λx y. y",
+      "std/Booleans": "true := λx y. x\nfalse := λx y. y",
     };
     return files[path] ?? null;
   };
 
   it("include after local def overwrites it", () => {
-    const r = parseProgram("true := λx y. x y\n:import \"sys/Booleans\"\n", {}, resolver);
+    const r = parseProgram("true := λx y. x y\n:import \"std/Booleans\"\n", {}, resolver);
     const entry = r.defs.get("true");
     expect(entry).toBeDefined();
     // After include, true should be λx y. x (from Booleans), not λx y. x y
@@ -835,12 +835,12 @@ describe("include def ordering", () => {
   });
 
   it("include overwrites warns when normal forms differ", () => {
-    const r = parseProgram("true := λx y. x y\n:import \"sys/Booleans\"\n", {}, resolver);
+    const r = parseProgram("true := λx y. x y\n:import \"std/Booleans\"\n", {}, resolver);
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
   });
 
   it("local def after include overwrites included def", () => {
-    const r = parseProgram(":import \"sys/Booleans\"\ntrue := λx y. x y z\n", {}, resolver);
+    const r = parseProgram(":import \"std/Booleans\"\ntrue := λx y. x y z\n", {}, resolver);
     // Local def comes after include — it should win, with a warning
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
   });
@@ -858,9 +858,9 @@ describe("error location attribution", () => {
   });
 
   it("error from included file has source and location", () => {
-    const resolver = (path: string) => path === "sys/Bad" ? "f := (\n" : null;
-    const r = parseProgram(":import \"sys/Bad\"\n", {}, resolver);
-    const err = r.errors.find(e => e.source === "sys/Bad");
+    const resolver = (path: string) => path === "std/Bad" ? "f := (\n" : null;
+    const r = parseProgram(":import \"std/Bad\"\n", {}, resolver);
+    const err = r.errors.find(e => e.source === "std/Bad");
     expect(err).toBeDefined();
     expect(err!.location).toBeDefined(); // pre-computed line:col from included file
     expect(err!.offset).toBeDefined();   // jump target in current file (pragma line)
@@ -868,14 +868,14 @@ describe("error location attribution", () => {
 
   it("transitively included error has via set", () => {
     const resolver = (path: string) => {
-      if (path === "sys/Outer") return ":import \"sys/Inner\"\n";
-      if (path === "sys/Inner") return "f := (\n";
+      if (path === "std/Outer") return ":import \"std/Inner\"\n";
+      if (path === "std/Inner") return "f := (\n";
       return null;
     };
-    const r = parseProgram(":import \"sys/Outer\"\n", {}, resolver);
-    const err = r.errors.find(e => e.source === "sys/Inner");
+    const r = parseProgram(":import \"std/Outer\"\n", {}, resolver);
+    const err = r.errors.find(e => e.source === "std/Inner");
     expect(err).toBeDefined();
-    expect(err!.via).toBe("sys/Outer");
+    expect(err!.via).toBe("std/Outer");
   });
 });
 

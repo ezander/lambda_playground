@@ -13,4 +13,4 @@ nand p q := not (and p q)
 nor p q := not (or p q)
 xor p q := not (iff p q)
 
-:mixin "sys/Boolean Tests"
+:mixin "std/Boolean Tests"

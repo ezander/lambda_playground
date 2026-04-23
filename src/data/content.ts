@@ -2,7 +2,7 @@
 // All .txt files under src/includes/ are bundled at build time via import.meta.glob.
 // Claude maintains the ordered name lists below; just drop files in the folders.
 
-const sysRaw      = import.meta.glob("../includes/sys/*.txt",      { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
+const stdRaw      = import.meta.glob("../includes/std/*.txt",      { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
 const docRaw      = import.meta.glob("../includes/doc/*.txt",      { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
 const exampleRaw  = import.meta.glob("../includes/example/*.txt",  { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
 const tutorialRaw = import.meta.glob("../includes/tutorial/*.txt", { eager: true, query: "?raw", import: "default" }) as Record<string, string>;
@@ -18,14 +18,14 @@ function buildMap(raw: Record<string, string>, ns: string): Record<string, strin
   return map;
 }
 
-const sysMap      = buildMap(sysRaw,      "sys");
+const stdMap      = buildMap(stdRaw,      "std");
 const docMap      = buildMap(docRaw,      "doc");
 const exampleMap  = buildMap(exampleRaw,  "example");
 const tutorialMap = buildMap(tutorialRaw, "tutorial");
 
-// All bundled paths — used by the include resolver (sys/doc/example/tutorial)
+// All bundled paths — used by the include resolver (std/doc/example/tutorial)
 export const BUNDLED_CONTENT: Record<string, string> = {
-  ...sysMap, ...docMap, ...exampleMap, ...tutorialMap,
+  ...stdMap, ...docMap, ...exampleMap, ...tutorialMap,
 };
 
 function ordered(map: Record<string, string>, ns: string, names: string[]): { label: string; src: string }[] {

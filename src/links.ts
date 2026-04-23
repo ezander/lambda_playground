@@ -6,7 +6,7 @@ import { contentExists } from "./storage";
 // ── Link pattern ──────────────────────────────────────────────────────────────
 // Matches [example/name], [user/name], [tut/name] inside comments.
 
-const LINK_RE    = /\[(doc|sys|example|tutorial|user)\/([^\]\n]+)\]/g;
+const LINK_RE    = /\[(doc|std|example|tutorial|user)\/([^\]\n]+)\]/g;
 const URL_LINK_RE = /\[https?:\/\/[^\]\n]+\]/g;
 
 // ── Import/mixin directive pattern ───────────────────────────────────────────

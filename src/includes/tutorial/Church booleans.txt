@@ -1,4 +1,4 @@
-:import "sys/Tutorial Utils"
+:import "std/Tutorial Utils"
 
 #*
   Church booleans

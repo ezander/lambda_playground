@@ -51,6 +51,6 @@ and true false
 λ `this is a bound variable` . `this is a bound variable` `and this a free var`
 
 # E.g. if you have the Church definition of true and false
-:import "sys/Church Booleans"
+:import "std/Church Booleans"
 predicate := true
 π predicate `The predicate is true` `The predicate is false`

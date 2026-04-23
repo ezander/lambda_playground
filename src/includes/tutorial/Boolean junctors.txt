@@ -1,4 +1,4 @@
-:import "sys/Tutorial Utils"
+:import "std/Tutorial Utils"
 
 #*
   Boolean connectives
@@ -9,7 +9,7 @@
   
 *#
 
-:import "sys/Church Booleans"
+:import "std/Church Booleans"
 implies p q := if p q true
 π[p:={true,false},q:={true,false}] implies p q
 

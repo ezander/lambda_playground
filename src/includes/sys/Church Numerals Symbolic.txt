@@ -1,2 +1,0 @@
-:import "sys/Church Numerals"
-:mixin "sys/Numeric Symbols"

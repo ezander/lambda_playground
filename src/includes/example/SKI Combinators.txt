@@ -1,3 +1,5 @@
+# Import combinators and do some real SKI stuff
+
 # SKI combinators
 I     := λx. x
 K     := λx y. x

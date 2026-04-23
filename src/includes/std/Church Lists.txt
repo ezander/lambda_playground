@@ -1,5 +1,5 @@
-:import "sys/Pairs"
-:import "sys/Church Booleans"
+:import "std/Pairs"
+:import "std/Church Booleans"
 
 #*
   Original definition from wikipedia:

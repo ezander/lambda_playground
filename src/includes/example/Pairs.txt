@@ -1,3 +1,8 @@
+# Example for pred using pairs
+# Example for pairs in pred
+# What about triple, first/3, second/3
+# What about Lists, put numberals in list, map them by sqr, add them (filter?)
+
 # Church pairs
 pair  a b f := f a b
 fst   p     := p (λa b. a)

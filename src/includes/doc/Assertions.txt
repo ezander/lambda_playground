@@ -57,7 +57,7 @@
 ω := λx . x x
 ≢ (ω ω) (ω ω)
 
-:import "sys/Church Booleans"
+:import "std/Church Booleans"
 
 # Assertions that work without comprehensions
 ≡ true (not false)

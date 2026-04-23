@@ -119,7 +119,7 @@ fact n := λ s z . n (λ r a . a (r (succ a))) (λa.s) one z
 ≡ (fact four) (times four six)
 
 # Tests
-:import "sys/Church Booleans"
+:import "std/Church Booleans"
 # (would be nicer maybe, if we had the following
 # as a mixin dependent on the boolean type)
 isZero n := n (λ _ . false) true

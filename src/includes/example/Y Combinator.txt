@@ -1,10 +1,12 @@
+# -> rename to Recursion
+
 # We need the Y combinator from Combinators defined as
 #   Y := λf. (λx. f (x x)) (λx. f (x x))
 # for implementing recursion
-:import "sys/Combinators"
+:import "std/Combinators"
 
 # And also the Church numerals in symbolic form
-:import "sys/Church Numerals Symbolic"
+:import "std/Church Numerals Symbolic"
 
 # We can define `fac` almost like normal, except that we have to give `fac`
 # as an extra (function) argument, since definitions are not really recursive
