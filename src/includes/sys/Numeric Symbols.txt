@@ -24,6 +24,10 @@
 * := times
 ^^ := pow
 - := minus
+-- := pred
+0? := isZero
+even? := isEven
+odd? := isOdd
 :set normalize-defs
 
 # Verify number table

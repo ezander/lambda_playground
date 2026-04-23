@@ -1,6 +1,34 @@
-# Y combinator — diverges without a lazy argument
-Y   := λf. (λx. f (x x)) (λx. f (x x))
-I   := λx. x
+# We need the Y combinator from Combinators defined as
+#   Y := λf. (λx. f (x x)) (λx. f (x x))
+# for implementing recursion
+:import "sys/Combinators"
 
-# Y I diverges; step carefully
-Y I
+# And also the Church numerals in symbolic form
+:import "sys/Church Numerals Symbolic"
+
+# We can define `fac` almost like normal, except that we have to give `fac`
+# as an extra (function) argument, since definitions are not really recursive
+# and we'll have to apply the "Y combinator trick" on that argument
+fac := λ fac . λ n . (0? n) 1 (* n (fac (-- n)))
+
+# The Y combinator makes the function now really recursive in that
+# for each use of the bound variable `fac` the term `Y fac` is "inserted"
+# making it truly recursive. Note, that the resulting function is neither
+# strongly nor weakly normalizing, so we need to wrap it in `no-normalize-defs`
+# in order to avoid warnings (and speed things up by not even trying to
+# normalize).
+:set no-normalize-defs
+fac ::= Y fac
+:set normalize-defs
+
+# For 0..2 the factorial is pretty fast
+π[n:={0,1,2}] fac n
+
+# For 3, and especially for 4 it can take a while and needs a higher step limit
+# Uncomment at your own risk
+:set max-steps 4000
+# π[n:={3,4}] fac n
+:set max-steps 1000
+
+# The iterative version for Church numerals is much faster
+π[n:={0,1,2,3,4}] fact n
