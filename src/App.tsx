@@ -571,6 +571,8 @@ export default function App() {
   const [symOpen, setSymOpen]         = useState(false);
   const [showCopied, setShowCopied]   = useState(false);
   const [copiedKey,  setCopiedKey]    = useState(0);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
   const [config, setConfig]         = useState<Config>(loadConfig);
   const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem(KEY_PANEL_STEPS) !== "0");
   const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem(KEY_PANEL_PRINT) !== "0");
@@ -1060,7 +1062,8 @@ export default function App() {
     await navigator.clipboard.writeText(url);
     setShowCopied(true);
     setCopiedKey(k => k + 1);
-    setTimeout(() => setShowCopied(false), 1500);
+    clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = setTimeout(() => setShowCopied(false), 1500);
   }, [source]);
 
 
