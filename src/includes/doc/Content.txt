@@ -1,13 +1,41 @@
 #* 
   Content
   =======
-    [doc/Printing]
+
+  Documentation
+  -------------
     [doc/Assertions]
+    [doc/Buffers]
+    [doc/Content]
     [doc/Definitions]
+    [doc/Editor]
+    [doc/Evaluation]
+    [doc/Identification]
     [doc/Identifier]
+    [doc/Includes]
+    [doc/Literature]
+    [doc/Normalization]
+    [doc/Pragmas]
+    [doc/Printing]
+    [doc/Substitution]
+    [doc/Testing]
+    [doc/User Interface]
+    [doc/Welcome]
 
 
-  [user/All of it]
+  System includes
+  ---------------
+    [std/Boolean Tests]
+    [std/Church Booleans]
+    [std/Church Booleans Symbolic]
+    [std/Church Lists]
+    [std/Church Numerals]
+    [std/Church Numerals Symbolic]
+    [std/Combinators]
+    [std/Logic Symbols]
+    [std/Numeric Symbols]
+    [std/Pairs]
+    [std/Tutorial Utils]
 
 *#
 
