@@ -1,0 +1,95 @@
+#*
+  Church booleans are not the only possible implementation of booleans.
+  You could also have completely different definitions for `true` and `false`,
+  as long as you also have a definition for `if`, that fulfills both of
+
+    ≡ (if true then_case else_case) then_case
+    ≡ (if false then_case else_case) else_case
+
+  Then you can define all logical operators in terms of this triple. E.g.
+  instead of the typical Church boolean definiton `and p q := p q false` (or
+  `and p q := p q p`) you would write `and p q := if p q false`.
+
+  We'll do that with three different definitions of booleans.
+*#
+
+# Case 1:
+# ==============================================================================
+# We begin with the Church booleans
+
+true  := λx y. x
+false := λx y. y
+if pred then else := pred then else
+
+# Let's check that the conditions on this triple hold
+≡ (if true then_case else_case) then_case
+≡ (if false then_case else_case) else_case
+
+# Works so let's define not, and, and or
+not p := if p false true
+and p q := if p q p
+or p q := if p p q
+
+# And now we check de Morgan's laws
+≡[p:={true,false},q:={true,false}] (not (and p q)) (or (not p) (not q))
+≡[p:={true,false},q:={true,false}] (not (or p q)) (and (not p) (not q))
+
+# Case 2:
+# ==============================================================================
+# Now we swap true or false in the Church booleans, which (as we'll see)
+# does not matter as long as we swap the parameters in `if` accordingly.
+# Note: that we need to re-define using ::=, because the new and the old
+# definitions have different normal forms. := would also work and overwrite,
+# but give some annoying warnings, and here we do want to override.
+
+true  ::= λx y. y
+false ::= λx y. x
+if pred then else ::= pred else then
+
+# The conditions still hold (would be good to have them in a mixin)
+≡ (if true then_case else_case) then_case
+≡ (if false then_case else_case) else_case
+
+# Redefine not, and and or. Note that the actual right hand sides are the same
+# as for case 1, and could also come from a mixin. However, in the first
+# definition of the operators, the actual definition of true,false and if were
+# directly inserted, so we have to repeat that here.
+not p ::= if p false true
+and p q ::= if p q p
+or p q ::= if p p q
+
+# And now we check de Morgan's laws again
+≡[p:={true,false},q:={true,false}] (not (and p q)) (or (not p) (not q))
+≡[p:={true,false},q:={true,false}] (not (or p q)) (and (not p) (not q))
+
+# and lo and behold, they still apply...
+
+# Case 3:
+# ==============================================================================
+# Let's check a somewhat weird definition where we just attach a free variable
+# `z` to true and false. Here, in our `if` function def, we need to get rid of
+# this extra parameter, which is why we need to pass to λ functions to
+# the predicate in this case.
+
+true  ::= λx y. x z
+false ::= λx y. y z
+if pred then else ::= pred (λ w . then) (λ w . else)
+
+# And again, the conditions still hold
+≡ (if true then_case else_case) then_case
+≡ (if false then_case else_case) else_case
+
+# We again redefine not, and and or using the (textually) same right hand sides
+not p ::= if p false true
+and p q ::= if p q p
+or p q ::= if p p q
+
+# And also de Morgan's laws hold again
+≡[p:={true,false},q:={true,false}] (not (and p q)) (or (not p) (not q))
+≡[p:={true,false},q:={true,false}] (not (or p q)) (and (not p) (not q))
+
+# Though, this seems to be a somewhat weird idea, it could still be useful.
+# E.g. one could use the extra parameter `z` as some kind of tag, that indicates
+# this is a boolean (e.g. `true := λ x y. x bool_val`). This could also be used
+# to differentiate `false` e.g. from Church `zero`, which usually has the same
+# representation.
