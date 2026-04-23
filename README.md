@@ -1,65 +1,61 @@
 # λ playground
 
-An interactive browser-based playground for an untyped lambda dialect with step-by-step beta/eta reduction, definitions, and syntax highlighting. Inspired by [hbr's Lambda Calculus evaluator](https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html).
+An interactive browser-based environment for the untyped lambda calculus with step-by-step beta/eta reduction, definitions, an include system, and syntax highlighting.
 
 > 99% vibe-coded — all implementation by [Claude Code](https://claude.ai/code).
 
 ## Features
 
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
-- Named definitions with eager expansion into subsequent lines
-- Shorthand `f x y := e` desugars to `f := \x y. e`
-- `π expr` print statements: evaluate an expression to normal form and show it in the output panel
-- `≡ expr1 expr2` equivalence assertions: checks alpha-beta equivalence; green/red in output; halts further output on failure
-- `≢ expr1 expr2` non-equivalence assertions: passes when terms are *not* equivalent; also halts on failure
-- Live parsing on every keystroke with clickable error locations
-- Syntax highlighting: defined names, lambda binders, bound/free variables, comments
-- Greek letters in identifiers (ω, Ω, Θ, …); logic symbols as operator identifiers (∧, ∨, ¬, →, ↔, ⊤, ⊥, ⊕, ⊗, ∘, ≠, ∅); backtick-quoted identifiers for arbitrary names
-- Two-phase beta reduction: optionally show `e[x:=a]` substitution as an intermediate step
-- Eta reduction as a separate step
-- Step-by-step or batch evaluation; continue after pausing
+- Named definitions with eager expansion; shorthand `f x y := e` desugars to `f := λx y. e`
+- `π expr` / `:print expr` — evaluate to normal form and show in output panel
+- `≡ expr1 expr2` / `:assert` — equivalence assertion (alpha-beta equivalence)
+- `≢ expr1 expr2` / `:assert-not` — non-equivalence assertion
+- Comprehension bindings: `≡[p:={true,false}] (not (not p)) p`
 - Normal-order (leftmost-outermost) beta reduction with capture-avoiding substitution
-- Alpha-equivalence matching: history entries show the definition name when a result matches
-- Toggle between pretty-printed syntax and interactive collapsible AST view
-- Named save/load slots in browser local storage; slot picker dropdown; download as plain text
-- Share button: encodes editor content into a URL (LZ-compressed) and copies it to the clipboard
-- Kino (fullscreen) mode for the editor
-- Select text and press `(`, `[`, or `{` to wrap in brackets; `` ` `` wraps in backticks (or inserts paired backticks with cursor inside when nothing is selected)
-- Clickable links in comments: `[doc/name]`, `[example/name]`, `[tutorial/name]`, `[sys/name]`, `[user/name]` — loads into scratch (`user/` loads named buffer)
+- Step-by-step or batch evaluation; optional substitution display; eta reduction
+- Import system: `:import "sys/Church Booleans"`, `:mixin`, quiet imports
+- Bundled libraries (booleans, numerals, pairs, lists, combinators) with symbolic alias mixins
+- Live syntax highlighting: defined names, lambda binders, bound/free variables, comments
+- Greek letters and logic symbols in identifiers; backtick-quoted identifiers for arbitrary names
+- Issues panel showing errors and warnings with click-to-jump
+- Named buffers with auto-save; export/import as zip; share via URL
+- Docs, tutorials, and examples accessible from toolbar dropdowns
+- CodeMirror 6 editor with custom keybindings, autocomplete, block comment auto-close, paragraph reflow
 
 ## Syntax
 
 ```
-λx. body             # lambda abstraction (\ also accepted)
+λx. body             # lambda abstraction
 λx y z. body         # multi-param (desugars to nested abstractions)
 f x y                # application (left-associative)
-e[x:=a]              # substitution: desugars to (λx. e) a
+e[x:=a]              # explicit substitution: desugars to (λx. e) a
 + m n := m S n       # operator identifier as definition name
-<= m n := ...        # = is also an operator char: <=, >=, ==, != all valid
 # comment            # rest of line ignored
+#* block comment *#  # multi-line comment
 ;                    # statement separator (same as newline)
 ```
 
 ### Identifiers
 
-Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, and Greek letters (full block `\u0370–\u03FF`, excluding λ and π which are keywords; α, β, η, ∀, ∃, ⊢ are reserved). Operator identifiers may also start with free logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅), enabling definitions like `∧ p q := p q false`.
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, apostrophes, Greek letters (`\u0370–\u03FF`, excluding λ and π; α, β, η, ∀, ∃, ⊢ are reserved), and operator characters (`+ - * / ^ ~ & | < > ! ? =`). Logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅) are also valid in identifiers.
 
-Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
+Backtick-quoted identifiers allow arbitrary names:
 
 ```
 `church 0` := λf x. x
 `church 0`              # evaluates the definition
 ```
 
-### Directives and settings
+Names starting with `_` are private: they work locally but are not exported across `:import`/`:mixin` boundaries.
+
+### Directives
 
 Lines starting with `:` are directives:
 
 ```
-:import "sys/Church Booleans"   # import from standard library
-:import "example/Booleans"      # import from example
-:import "tutorial/Basics"       # import from tutorial
-:import "user/my-buffer"        # import from named user buffer
+:import "sys/Church Booleans"   # import definitions from a module
+:import "user/my-buffer"        # import from a named user buffer
 :import "sys/Pairs" quiet       # import without polluting autocomplete/match list
 :mixin "sys/Boolean Tests"      # import that can see existing defs
 :print expr                     # alternative to π
@@ -67,11 +63,11 @@ Lines starting with `:` are directives:
 :assert-not atom1 atom2         # alternative to ≢
 :set max-steps 500              # set both max-steps-print and max-steps-ident
 :set max-steps-print 500        # beta step limit for π statements
-:set max-steps-ident 500        # beta step limit for definition matching/normalization
-:set max-history 20             # max history entries stored (panel scrolls)
+:set max-steps-ident 500        # beta step limit for definition matching
+:set max-history 20             # max history entries stored
 :set max-size 5000              # max AST nodes before reduction halts
-:set no-normalize-defs          # disable definition body normalization at load time
-:set allow-eta                  # enable η-reduction during normalization (default off)
+:set no-normalize-defs          # disable definition body normalization
+:set allow-eta                  # enable η-reduction during normalization
 ```
 
 ### Definitions
@@ -79,53 +75,41 @@ Lines starting with `:` are directives:
 ```
 true  := λx y. x          # define a name
 false := λx y. y
-and p q := p q false      # shorthand: f x y := e  means  f := λx y. e
+and p q := p q false       # shorthand: f x y := e  means  f := λx y. e
 
-π and true false          # print to output panel (normalized)
-≡ and true false false    # assert  and true false ≡ false  (left-assoc: last term is rhs)
-≢ true false              # assert  true ≢ false
-and true false            # last expression line is what gets evaluated
+π and true false           # print to output panel (normalized)
+≡ (and true false) false   # assert equivalence
+≢ true false               # assert non-equivalence
+and true false             # last expression is loaded into the eval panel
 ```
 
-Definitions are expanded eagerly. The last non-definition line is loaded and evaluated. `π`, `≡`, and `≢` lines are evaluated immediately and shown in the output panel; they do not affect the loaded expression. A failing assertion halts further output.
-
-## Toolbar
-
-Below the editor, a compact toolbar provides these groups:
-
-- **docs** — dropdown; loads a documentation file into scratch (first entry is the default scratch for new users)
-- **tutorials** — dropdown; loads a tutorial into scratch (hidden when empty)
-- **examples** — dropdown; loads a complete example program into scratch
-- **storage** — name field + `▾` slot picker + load / save / delete / download; saves named buffers to browser local storage; overwrite and delete both ask for confirmation
+Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning when the normal form changes. `π`, `≡`, and `≢` results appear in the output panel; a failing assertion halts further evaluation.
 
 ## Controls
 
 | Button | Key | Action |
 |--------|-----|--------|
-| load & run | F5 | Load and immediately run to normal form |
-| load | F6 | Parse and load the current expression into the history |
+| run | F5 | Load and beta-reduce to normal form |
+| reset | F6 | Reset to step 0 |
 | β-step | F10 | One beta-reduction step |
 | η-step | F11 | One eta-reduction step (λx. f x → f) |
-| run | F9 | Up to N beta steps (default 1000); press again to continue |
-| show substitution | | Show `e[x:=a]` as an intermediate step before beta-reducing |
-| find | Ctrl-F | Open the editor's find/replace bar |
-| ⚙ | | Settings dialog: max steps (print/run/ident), max history, max term size |
-| share | | Encode editor content as a URL and copy to clipboard |
-| clear | | Clear the editor |
+| continue | F9 | Continue beta-reducing up to N steps |
 
 ### Keyboard shortcuts
 
 | Key | Action |
 |-----|--------|
-| `Ctrl-/` | Toggle `#` comment on current line or all selected lines |
-| `( [ {` with selection | Wrap selected text in the chosen brackets |
-| `` ` `` with selection | Wrap selected text in backticks |
-| `` ` `` without selection | Insert paired backticks with cursor inside |
+| `Ctrl-/` | Toggle `#` comment on current line or selection |
+| `Ctrl-R` | Reflow paragraph in block comment |
+| `( [ {` with selection | Wrap in brackets |
+| `` ` `` | Wrap in backticks, or insert paired backticks |
+| `#*` | Auto-insert closing `*#` |
 | `Alt-L` | Insert λ at cursor |
 | `Alt-P` | Insert π at start of line |
 | `Alt-E` | Insert ≡ at start of line |
 | `Alt-N` | Insert ≢ at start of line |
-| `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧); reserved symbols greyed out in picker |
+| `Alt-Space` | Autocomplete (def names, directives, import paths) |
+| `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧) |
 
 ## Development
 
@@ -133,28 +117,34 @@ Below the editor, a compact toolbar provides these groups:
 npm run dev      # start Vite dev server with hot reload
 npm run build    # TypeScript compile + production bundle to /dist
 npm test         # run Vitest unit tests
-tsc --noEmit     # type-check without emitting
+npx tsc --noEmit # type-check without emitting
 ```
 
 ## Architecture
 
 ```
-user input → lexer.ts → parser.ts (CST + visitor) → ast.ts → eval.ts → App.tsx
+user input → lexer.ts → grammar.ts (CST + visitor) → semantics.ts (AST + eval) → App.tsx
 ```
 
 Key modules in `src/`:
 
 | File | Role |
 |------|------|
-| `parser/ast.ts` | `Var`, `Abs`, `App`, `Subst` node types and factory functions |
 | `parser/lexer.ts` | Chevrotain tokenizer |
-| `parser/parser.ts` | CST parser + AST visitor; `parseProgram` handles multi-line input and definitions; attaches source positions for highlighting |
-| `parser/pretty.ts` | Serializes AST back to surface syntax; `assertRoundTrip` sanity check |
-| `evaluator/eval.ts` | Normal-order beta/eta reduction, `alphaEq` for definition matching |
-| `highlight.ts` | CodeMirror syntax highlighting using the live parse result |
-| `editor.ts` | CodeMirror theme and custom keybindings |
-| `AstView.tsx` | Collapsible AST tree component |
+| `parser/grammar.ts` | CST parser + AST visitor |
+| `parser/semantics.ts` | Statement processing: definitions, directives, print/equiv |
+| `parser/ast.ts` | `Var`, `Abs`, `App`, `Subst` node types |
+| `parser/types.ts` | Shared types: `ProgramResult`, `PragmaConfig`, `DefEntry`, etc. |
+| `parser/pretty.ts` | AST → surface syntax serializer |
+| `evaluator/eval.ts` | Normal-order beta/eta reduction, `alphaEq`, `termSize` |
+| `highlight.ts` | CodeMirror syntax highlighting from live parse result |
+| `links.ts` | Clickable `[type/name]` links in comments; `:import`/`:mixin` path links |
+| `autocomplete.ts` | Alt-Space autocomplete for defs, directives, import paths |
+| `editor.ts` | CodeMirror theme, keybindings, symbol expansion |
+| `rewrap.ts` | Ctrl-R paragraph reflow for block comments |
+| `storage.ts` | localStorage key constants, buffer helpers, content resolution |
+| `config.ts` | `Config` type and `DEFAULT_CONFIG` |
+| `data/content.ts` | Bundled `.txt` content loader; ordered display lists |
+| `App.tsx` | Main UI: editor, eval panel, output panel, issues panel |
 | `HelpModal.tsx` | In-app help/reference dialog |
-| `App.tsx` | UI: editor, controls, step history, parse output |
-| `data/examples.ts` | Built-in example programs |
-| `data/snippets.ts` | Insertable definition blocks |
+| `SettingsModal.tsx` | Settings dialog |
