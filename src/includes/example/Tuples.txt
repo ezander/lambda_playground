@@ -1,0 +1,63 @@
+#*
+  Church pairs are usually defined as follows
+
+    pair a b f := f a b
+    first p := p (λa b. a)
+    second p := p (λa b. b)
+
+  We just import the definitions from here...
+*#
+
+:import "std/Pairs"
+
+#*
+  How could we define triples? Just the same, now only with three args...
+*#
+
+triple a b c f := f a b c
+
+#*
+  One problem we get here, is the naming. The problem is that if we define
+
+    first t := t (λa b c.a)
+
+  we can't use it for pairs any more. So, we need to use a different name. E.g.
+  we could choose first/3 to indicate, we choose the first of 3. But of course
+  you could choose any other naming convention
+*#
+
+first/3 t := t (λa b c. a)
+second/3 t := t (λa b c. b)
+third/3 t := t (λa b c. c)
+
+# An example using them (note: we haven't imported any numerals, so the numbers
+# you see, are just free variable with the names `12`, `3` and `6` without
+# further meaning.)
+3d_coords := triple 12 3 6
+≡ (first/3 3d_coords) 12
+≡ (second/3 3d_coords) 3
+≡ (third/3 3d_coords) 6
+
+# If you use pairs and triples often that may feel clumsy. Now, you can just
+# import lists for that, or we can brew our own here, and define any kind of
+# tuple with it.
+
+singleton a := λ f . f a dummy
+pair a b ::= λ f . f a (singleton b)
+triple a b c ::= λ f . f a (pair b c)
+
+rest t := t (λ a b. b)
+first t ::= t (λa b. a)
+second t ::= first (rest t)
+third t := first (rest (rest t))
+
+# Now our definitions work for 3d
+3d_coords ::= triple 12 3 6
+≡ (first 3d_coords) 12
+≡ (second 3d_coords) 3
+≡ (third 3d_coords) 6
+
+# and for 2d
+2d_coords := pair 4 5
+≡ (first 2d_coords) 4
+≡ (second 2d_coords) 5

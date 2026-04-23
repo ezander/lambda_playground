@@ -60,10 +60,11 @@ export const DOCS: { label: string; src: string }[] = ordered(docMap, "doc", [
 export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "example", [
   "Truth Tables",
   "Bool Implementations",
-  "Numerals",
-  "Pairs",
-  "SKI Combinators",
+  "Signed Numerals",
+  "List Operations",
+  "Tuples",
   "Recursion",
+  "SKI Combinators",
 ]);
 
 export const TUTORIALS: { label: string; src: string }[] = ordered(tutorialMap, "tutorial", [

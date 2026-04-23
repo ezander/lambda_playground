@@ -1,0 +1,52 @@
+#*
+  This examples demonstrates what we can do with lists. For that we need
+  the Church lists and the numerals
+*#
+
+:import "std/Church Lists"
+:import "std/Church Booleans Symbolic"
+:import "std/Church Numerals Symbolic"
+
+# We can define lists the e.g. like that
+
+π cons 3 (cons 5 (cons 2 nil)) # represents the list [3 5 2]
+
+# To do that in a somewhat nicer fashing we'll redefine ∅ (\emptyset) to mean
+# nil and also // to mean `cons` but as an infix operator (of course, you could
+# also choose ++ (hmm, taken for succ, but could be redefined), or __ or
+# whatever you choose)
+
+∅ := nil
+// a b := append a (singleton b)
+:infix //
+
+# Now we define the same list as above, but more readable
+L := ∅ // 3 // 5 // 2
+
+# And indeed
+≡ L (cons 3 (cons 5 (cons 2 nil)))
+
+#*
+  We needed to use append and singleton, because cons associates to the right,
+  and we would have needed to reverse the list construction like that:
+
+    // a b := cons b a
+    L := ∅ // 2 // 5 // 3
+
+  Note, that now, we need to begin with nil/∅, becaue our new // operator always
+  expects a list to the left, and 3 would not satisfy that.
+*#
+
+
+# Now lets compute the sum of squares of the list entries
+# Therefore we first square the list entries
+Lsqr := map (λx . x * x) L
+≡ (head Lsqr) 9
+≡ (head (tail Lsqr)) 25
+
+# Then we add
+sumSquare := fold (λ n m. n + m) 0 Lsqr
+
+# We don't have numerals over 32 defined, so we do it here for identification
+38 := 30 + 8
+π sumSquare # should be 38=9+25+4
