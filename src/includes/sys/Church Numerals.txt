@@ -73,3 +73,50 @@ pow n m := λ s z. m n s z
 ≡ (pow zero zero) one
 ≡ (pow two five) (times four eight)
 ≡ (pow five two) (plus (times four six) one)
+
+#*
+    Define predecessor (easier to understand by pairs, but this one is faster).
+    see [https://en.wikipedia.org/wiki/Church_encoding#Predecessor_function]
+*#
+
+pred n := λ s z . n (λ r i . i (r s)) (λ_.z) (λx.x)
+≡ (pred zero) zero
+≡ (pred one) zero
+≡ (pred two) one
+≡ (pred three) two
+
+#*
+    Define minus
+     * Intuitive: minus n m := m pred n
+     * Faster via Y-combinator (we define it locally here, can't normalize however)
+*#
+
+#! no-normalize-defs
+_Y := λf. (λx. f (x x)) (λx. f (x x))
+minus := λ m n f x . m (λ r q.q r)(λ q.x) (n (λq r.r q) (_Y (λq r. f (r q))))
+#! normalize-defs
+
+≡ (minus zero zero) zero
+≡ (minus three zero) three
+≡ (minus three two) one
+≡ (minus three four) zero
+≡ (minus three three) zero
+
+# Halving a value
+half n := λ s z . n (λ r a b . a (r b a)) (λa b.z) (λx.x) s
+≡ (half zero) zero
+≡ (half one) zero
+≡ (half two) one
+≡ (half three) one
+≡ (half four) two
+
+# Factorial
+fact n := λ s z . n (λ r a . a (r (succ a))) (λa.s) one z
+≡ (fact zero) one
+≡ (fact one) one
+≡ (fact two) two
+≡ (fact three) six
+≡ (fact four) (times four six)
+
+# Tests
+isZero n := n () true
