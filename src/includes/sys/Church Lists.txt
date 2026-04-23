@@ -1,5 +1,5 @@
-#! include "sys/Pairs"
-#! include "sys/Church Booleans"
+:import "sys/Pairs"
+:import "sys/Church Booleans"
 
 #*
   Original definition from wikipedia:

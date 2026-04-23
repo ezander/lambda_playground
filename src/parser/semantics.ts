@@ -152,10 +152,11 @@ function processPragma(
     return;
   }
 
-  const incMatch = text.match(/^(include-quiet|include)\s+"([^"]+)"\s*$/);
+  const incMatch = text.match(/^import\s+"([^"]+)"(.*)$/);
   if (incMatch) {
-    const quiet = incMatch[1] === "include-quiet";
-    const path = incMatch[2];
+    const path = incMatch[1];
+    const modifiers = incMatch[2].trim();
+    const quiet = modifiers === "quiet";
     if (includeStack.includes(path)) {
       errors.push({ message: `Circular include: "${path}"`, offset });
       return;
@@ -195,9 +196,11 @@ function processPragma(
     return;
   }
 
-  const m = text.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
+  const setMatch = text.match(/^set\s+/);
+  const settingText = setMatch ? text.slice(setMatch[0].length) : text;
+  const m = settingText.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
   if (!m) {
-    errors.push({ message: `Invalid pragma: "${text}"`, offset, kind: "warning" });
+    errors.push({ message: `Invalid directive: "${text}"`, offset, kind: "warning" });
     return;
   }
   const [, negate, key, val] = m;

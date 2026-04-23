@@ -7,9 +7,9 @@ B f g x := f (g x)
 C f x y := f y x
 
 # The Y combinator (used for recursion) has no terminating normal form
-#! no-normalize-defs
+:set no-normalize-defs
 Y := λf. (λx. f (x x)) (λx. f (x x))
-#! normalize-defs
+:set normalize-defs
 
 # SKI basis equivalences
 ≡ (S K K) I

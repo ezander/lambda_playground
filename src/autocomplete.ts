@@ -14,11 +14,18 @@ const PRAGMA_KEY_RE = /[a-z-]+/;
 // Link path inside [...]: type/name
 const LINK_PATH_RE = /[a-zA-Z0-9_/ .'-]+/;
 
-const PRAGMA_OPTIONS = [
+const DIRECTIVE_OPTIONS = [
+  { label: ":import", type: "keyword" as const },
+  { label: ":mixin", type: "keyword" as const },
+  { label: ":set", type: "keyword" as const },
+  { label: ":print", type: "keyword" as const },
+  { label: ":assert", type: "keyword" as const },
+  { label: ":assert-not", type: "keyword" as const },
+];
+
+const SET_OPTIONS = [
   ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
   ...([...BOOLEAN_PRAGMAS]).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
-  { label: "include", type: "keyword" as const },
-  { label: "include-quiet", type: "keyword" as const },
 ];
 
 function getAllIncludePaths(): string[] {
@@ -31,10 +38,12 @@ function completionSource(context: CompletionContext): CompletionResult | null {
 
   const line = context.state.doc.lineAt(context.pos);
 
-  // ── Pragma context: #! line ──────────────────────────────────────────────────
-  if (line.text.trimStart().startsWith("#!")) {
-    const incMatch = line.text.match(/^\s*#!\s*(?:include-quiet|include|mixin)\s*"([^"]*)/);
-    if (incMatch) {
+  // ── Directive context: : at line start ───────────────────────────────────────
+  const trimmedLine = line.text.trimStart();
+  if (trimmedLine.startsWith(":")) {
+    // Path completion for :import "..." and :mixin "..."
+    const pathMatch = line.text.match(/^\s*:(?:import|mixin)\s*"([^"]*)/);
+    if (pathMatch) {
       const quotePos = line.from + line.text.indexOf('"') + 1;
       if (context.pos >= quotePos) {
         return {
@@ -44,9 +53,19 @@ function completionSource(context: CompletionContext): CompletionResult | null {
         };
       }
     }
-    const word = context.matchBefore(PRAGMA_KEY_RE);
-    if (!word && !context.explicit) return null;
-    return { from: word ? word.from : context.pos, options: PRAGMA_OPTIONS, filter: true };
+    // Option completion for :set
+    const setMatch = line.text.match(/^\s*:set\s+/);
+    if (setMatch) {
+      const word = context.matchBefore(PRAGMA_KEY_RE);
+      if (!word && !context.explicit) return null;
+      return { from: word ? word.from : context.pos, options: SET_OPTIONS, filter: true };
+    }
+    // Command completion for : at line start
+    const cmdWord = context.matchBefore(/:[a-z-]*/);
+    if (cmdWord) {
+      return { from: cmdWord.from, options: DIRECTIVE_OPTIONS, filter: true };
+    }
+    return null;
   }
 
   // ── Link context: [...] in a comment ─────────────────────────────────────────

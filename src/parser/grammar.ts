@@ -2,7 +2,10 @@ import { CstParser, CstNode, IToken, tokenMatcher, EOF } from "chevrotain";
 import {
   allTokens,
   LambdaLexer,
-  Pragma,
+  Directive,
+  CmdPrint,
+  CmdAssert,
+  CmdAssertNot,
   Lambda,
   Pi,
   Equiv,
@@ -38,13 +41,13 @@ function emptyPositionMap(): PositionMap {
 //
 // Program grammar:
 //   program            ::= programItem*
-//   programItem        ::= statementSep | statement statementSep | pragmaLine
+//   programItem        ::= statementSep | statement statementSep | directiveLine
 //   statementSep       ::= NewLine | Semi
-//   pragmaLine         ::= Pragma NewLine
+//   directiveLine      ::= Directive NewLine
 //   statement          ::= printStmt | equivStmt | nequivStmt | definition | term
-//   printStmt          ::= π comprehensionSpec? term
-//   equivStmt          ::= ≡ comprehensionSpec? atom atom
-//   nequivStmt         ::= ≢ comprehensionSpec? atom atom
+//   printStmt          ::= (π | :print) comprehensionSpec? term
+//   equivStmt          ::= (≡ | :assert) comprehensionSpec? atom atom
+//   nequivStmt         ::= (≢ | :assert-not) comprehensionSpec? atom atom
 //   definition         ::= identifier+ ':=' term         (gated: next := after identifier+)
 //   comprehensionSpec  ::= '[' compBinding (',' compBinding)* ']'
 //   compBinding ::= identLike ':=' '{' term (',' term)* '}'
@@ -81,7 +84,7 @@ class LambdaParser extends CstParser {
           this.SUBRULE2(this.statementSep);
         },
       },
-      { ALT: () => this.SUBRULE(this.pragmaLine) },
+      { ALT: () => this.SUBRULE(this.directiveLine) },
     ]);
   });
 
@@ -102,8 +105,8 @@ class LambdaParser extends CstParser {
     ]);
   });
 
-  pragmaLine = this.RULE("pragmaLine", () => {
-    this.CONSUME(Pragma);
+  directiveLine = this.RULE("directiveLine", () => {
+    this.CONSUME(Directive);
     this.CONSUME(NewLine);
   });
 
@@ -114,20 +117,29 @@ class LambdaParser extends CstParser {
   }
 
   printStmt = this.RULE("printStmt", () => {
-    this.CONSUME(Pi);
+    this.OR([
+      { ALT: () => this.CONSUME(Pi) },
+      { ALT: () => this.CONSUME(CmdPrint) },
+    ]);
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.term);
   });
 
   equivStmt = this.RULE("equivStmt", () => {
-    this.CONSUME(Equiv);
+    this.OR([
+      { ALT: () => this.CONSUME(Equiv) },
+      { ALT: () => this.CONSUME(CmdAssert) },
+    ]);
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.atom);
     this.SUBRULE2(this.atom);
   });
 
   nequivStmt = this.RULE("nequivStmt", () => {
-    this.CONSUME(NEquiv);
+    this.OR([
+      { ALT: () => this.CONSUME(NEquiv) },
+      { ALT: () => this.CONSUME(CmdAssertNot) },
+    ]);
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.atom);
     this.SUBRULE2(this.atom);
@@ -261,7 +273,7 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   programItem(ctx: any): RawStmt {
-    if (ctx.pragmaLine) return this.visit(ctx.pragmaLine[0]) as RawStmt;
+    if (ctx.directiveLine) return this.visit(ctx.directiveLine[0]) as RawStmt;
     if (ctx.statement)  return this.visit(ctx.statement[0])  as RawStmt;
     return { kind: "empty" };
   }
@@ -286,35 +298,36 @@ export class AstBuilder extends BaseCstVisitor {
     return { kind: "empty" };
   }
 
-  pragmaLine(ctx: any): RawPragma {
-    const tok = ctx.Pragma[0] as IToken;
-    return { kind: "pragma", text: tok.image.slice(2).trim(), offset: tok.startOffset };
+  directiveLine(ctx: any): RawPragma {
+    const tok = ctx.Directive[0] as IToken;
+    // Strip leading ":" and trim — e.g. ":import "foo"" → "import "foo""
+    return { kind: "pragma", text: tok.image.slice(1).trim(), offset: tok.startOffset };
   }
 
   printStmt(ctx: any): RawPrint | RawEmpty {
-    if (!ctx.Pi || !ctx.term) return { kind: "empty" };
-    const piTok = ctx.Pi[0] as IToken;
+    const kwTok = (ctx.Pi?.[0] ?? ctx.CmdPrint?.[0]) as IToken | undefined;
+    if (!kwTok || !ctx.term) return { kind: "empty" };
     const term = this.visit(ctx.term[0]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "print", term, bindings, offset: piTok.startOffset };
+    return { kind: "print", term, bindings, offset: kwTok.startOffset };
   }
 
   equivStmt(ctx: any): RawEquiv | RawEmpty {
-    if (!ctx.Equiv || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
-    const equivTok = ctx.Equiv[0] as IToken;
+    const kwTok = (ctx.Equiv?.[0] ?? ctx.CmdAssert?.[0]) as IToken | undefined;
+    if (!kwTok || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
     const atom1 = this.visit(ctx.atom[0]) as Term;
     const atom2 = this.visit(ctx.atom[1]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "equiv", atom1, atom2, bindings, negated: false, offset: equivTok.startOffset };
+    return { kind: "equiv", atom1, atom2, bindings, negated: false, offset: kwTok.startOffset };
   }
 
   nequivStmt(ctx: any): RawEquiv | RawEmpty {
-    if (!ctx.NEquiv || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
-    const tok = ctx.NEquiv[0] as IToken;
+    const kwTok = (ctx.NEquiv?.[0] ?? ctx.CmdAssertNot?.[0]) as IToken | undefined;
+    if (!kwTok || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
     const atom1 = this.visit(ctx.atom[0]) as Term;
     const atom2 = this.visit(ctx.atom[1]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "equiv", atom1, atom2, bindings, negated: true, offset: tok.startOffset };
+    return { kind: "equiv", atom1, atom2, bindings, negated: true, offset: kwTok.startOffset };
   }
 
   definition(ctx: any): RawDef | RawEmpty {

@@ -8,7 +8,10 @@ import { parser } from "./parser/parser";
 type Gast = { type: string; name?: string; definition?: Gast[] };
 
 const TOKEN_LABELS: Record<string, string> = {
-  Pragma:       "'#!…'",
+  Directive:    "':…'",
+  CmdPrint:     "':print'",
+  CmdAssert:    "':assert'",
+  CmdAssertNot: "':assert-not'",
   NewLine:      "'\\n'",
   Semi:         "';'",
   Pi:           "'π'",
@@ -152,17 +155,24 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>≡[a:=&#123;T,F&#125;] atom1 atom2</code></td><td>equivalence comprehension over substitution combinations</td></tr>
           </tbody></table>
 
-          <h3>in-source config (<code>#!</code> pragma)</h3>
+          <h3>directives</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>#! max-steps=500</code></td><td>set both max-steps-print and max-steps-ident</td></tr>
-            <tr><td><code>#! max-steps-print=500</code></td><td>beta step limit for π statements</td></tr>
-            <tr><td><code>#! max-steps-ident=500</code></td><td>beta step limit for definition matching / normalization</td></tr>
-            <tr><td><code>#! max-history=20</code></td><td>max history entries stored</td></tr>
-            <tr><td><code>#! max-size=5000</code></td><td>max AST nodes before reduction halts</td></tr>
-            <tr><td><code>#! normalize-defs</code></td><td>normalize defs at load time (default on); <code>no-normalize-defs</code> to disable</td></tr>
-            <tr><td><code>#! allow-eta</code></td><td>enable η-reduction during normalization (default off); <code>no-allow-eta</code> to disable</td></tr>
-            <tr><td><code>#! include "ns/…"</code></td><td>import definitions from <code>sys/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
-            <tr><td><code>#! include-quiet "…"</code></td><td>like include, but imported names are hidden from match list and autocomplete</td></tr>
+            <tr><td><code>:import "ns/…"</code></td><td>import definitions from <code>sys/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
+            <tr><td><code>:import "…" quiet</code></td><td>like import, but imported names are hidden from match list and autocomplete</td></tr>
+            <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending)</td></tr>
+            <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>
+            <tr><td><code>:assert atom1 atom2</code></td><td>alternative to <code>≡</code></td></tr>
+            <tr><td><code>:assert-not atom1 atom2</code></td><td>alternative to <code>≢</code></td></tr>
+          </tbody></table>
+          <h3>settings (<code>:set</code>)</h3>
+          <table className="help-table"><tbody>
+            <tr><td><code>:set max-steps 500</code></td><td>set both max-steps-print and max-steps-ident</td></tr>
+            <tr><td><code>:set max-steps-print 500</code></td><td>beta step limit for π statements</td></tr>
+            <tr><td><code>:set max-steps-ident 500</code></td><td>beta step limit for definition matching / normalization</td></tr>
+            <tr><td><code>:set max-history 20</code></td><td>max history entries stored</td></tr>
+            <tr><td><code>:set max-size 5000</code></td><td>max AST nodes before reduction halts</td></tr>
+            <tr><td><code>:set normalize-defs</code></td><td>normalize defs at load time (default on); <code>no-normalize-defs</code> to disable</td></tr>
+            <tr><td><code>:set allow-eta</code></td><td>enable η-reduction during normalization (default off); <code>no-allow-eta</code> to disable</td></tr>
           </tbody></table>
         </>}
 

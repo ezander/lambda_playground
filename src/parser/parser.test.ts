@@ -400,7 +400,7 @@ describe("parseProgram", () => {
   });
 
   it("π records normal=false when step limit is hit", () => {
-    const r = parseProgram("#! max-steps = 5\nπ (λx. x x)(λx. x x)");
+    const r = parseProgram(":set max-steps = 5\nπ (λx. x x)(λx. x x)");
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].normal).toBe(false);
   });
@@ -437,7 +437,7 @@ describe("block comments", () => {
   });
 
   it("does not process pragmas inside a block comment", () => {
-    const r = parseProgram("#*\n#! max-steps = 1\n*#\nf := λx. x");
+    const r = parseProgram("#*\n:set max-steps = 1\n*#\nf := λx. x");
     expect(r.ok).toBe(true);
     expect(r.errors).toHaveLength(0);
   });
@@ -450,59 +450,59 @@ describe("block comments", () => {
   });
 });
 
-// ── Pragma value syntax ───────────────────────────────────────────────────────
+// ── Directive value syntax ───────────────────────────────────────────────────────
 
 describe("pragma value syntax", () => {
-  it("accepts = syntax: #! max-steps = 42", () => {
-    const r = parseProgram("#! max-steps = 42\n");
+  it("accepts = syntax: :set max-steps = 42", () => {
+    const r = parseProgram(":set max-steps = 42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
-  it("accepts space syntax: #! max-steps 42", () => {
-    const r = parseProgram("#! max-steps 42\n");
+  it("accepts space syntax: :set max-steps 42", () => {
+    const r = parseProgram(":set max-steps 42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
-  it("accepts no-space =: #! max-steps=42", () => {
-    const r = parseProgram("#! max-steps=42\n");
+  it("accepts no-space =: :set max-steps=42", () => {
+    const r = parseProgram(":set max-steps=42\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(42);
   });
 
   it("accepts boolean pragma without value", () => {
-    const r = parseProgram("#! normalize-defs\n");
+    const r = parseProgram(":set normalize-defs\n");
     expect(r.pragmaConfig.normalizeDefs).toBe(true);
   });
 
-  it("accepts boolean pragma with space value: #! normalize-defs true", () => {
-    const r = parseProgram("#! normalize-defs true\n");
+  it("accepts boolean pragma with space value: :set normalize-defs true", () => {
+    const r = parseProgram(":set normalize-defs true\n");
     expect(r.pragmaConfig.normalizeDefs).toBe(true);
   });
 
   it("accepts max-size pragma", () => {
-    const r = parseProgram("#! max-size = 5000\n");
+    const r = parseProgram(":set max-size = 5000\n");
     expect(r.pragmaConfig.maxSize).toBe(5000);
   });
 
   it("max-steps-print and max-steps-ident can be set independently", () => {
-    const r = parseProgram("#! max-steps-print = 100\n#! max-steps-ident = 200\n");
+    const r = parseProgram(":set max-steps-print = 100\n:set max-steps-ident = 200\n");
     expect(r.pragmaConfig.maxStepsPrint).toBe(100);
     expect(r.pragmaConfig.maxStepsIdent).toBe(200);
   });
 
   it("unknown pragma key produces a warning", () => {
-    const r = parseProgram("#! unknown-thing = 42\n");
+    const r = parseProgram(":set unknown-thing = 42\n");
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("unknown-thing"))).toBe(true);
   });
 
   it("boolean pragma with a non-boolean value produces a warning", () => {
-    const r = parseProgram("#! normalize-defs = 42\n");
+    const r = parseProgram(":set normalize-defs = 42\n");
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("normalize-defs"))).toBe(true);
   });
 
   it("no-normalize-defs stores definition bodies without normalizing", () => {
     // f x := (λy. y) x — body has a redex that normalizeDefs=true would reduce
     const withNorm    = parseProgram("f x := (λy. y) x");
-    const withoutNorm = parseProgram("#! no-normalize-defs\nf x := (λy. y) x");
+    const withoutNorm = parseProgram(":set no-normalize-defs\nf x := (λy. y) x");
     // With normalization: f = λx. x
     expect(prettyPrint(withNorm.defs.get("f")!.term)).toBe("λx. x");
     // Without: f = λx. (λy. y) x (redex preserved)
@@ -543,49 +543,49 @@ describe("include system", () => {
   const resolver = (path: string) => {
     const files: Record<string, string> = {
       "sys/Booleans": "true := λx y. x\nfalse := λx y. y",
-      "sys/WithInclude": "#! include \"sys/Booleans\"\nnot p := p false true",
-      "sys/Circular1": "#! include \"sys/Circular2\"\nx := λa. a",
-      "sys/Circular2": "#! include \"sys/Circular1\"\ny := λa. a",
+      "sys/WithInclude": ":import \"sys/Booleans\"\nnot p := p false true",
+      "sys/Circular1": ":import \"sys/Circular2\"\nx := λa. a",
+      "sys/Circular2": ":import \"sys/Circular1\"\ny := λa. a",
     };
     return files[path] ?? null;
   };
 
   it("imports defs from included file", () => {
-    const r = parseProgram("#! include \"sys/Booleans\"\nπ true\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Booleans\"\nπ true\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("false")).toBe(true);
   });
 
   it("included file's own includes are resolved (nested)", () => {
-    const r = parseProgram("#! include \"sys/WithInclude\"\n", {}, resolver);
+    const r = parseProgram(":import \"sys/WithInclude\"\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("not")).toBe(true);
   });
 
   it("reports error for unknown include path", () => {
-    const r = parseProgram("#! include \"sys/Unknown\"\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Unknown\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toMatch(/not found/i);
   });
 
   it("detects circular includes", () => {
-    const r = parseProgram("#! include \"sys/Circular1\"\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Circular1\"\n", {}, resolver);
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.match(/circular/i))).toBe(true);
   });
 
   it("annotates errors from included file with source", () => {
     const badResolver = (path: string) => path === "sys/Bad" ? "f := (" : null;
-    const r = parseProgram("#! include \"sys/Bad\"\n", {}, badResolver);
+    const r = parseProgram(":import \"sys/Bad\"\n", {}, badResolver);
     expect(r.ok).toBe(false);
     expect(r.errors[0].source).toBe("sys/Bad");
   });
 
   it("π statements in included file are silenced", () => {
     const piResolver = (path: string) => path === "sys/WithPi" ? "x := λa. a\nπ x" : null;
-    const r = parseProgram("#! include \"sys/WithPi\"\n", {}, piResolver);
+    const r = parseProgram(":import \"sys/WithPi\"\n", {}, piResolver);
     expect(r.printInfos).toHaveLength(0);
     expect(r.defs.has("x")).toBe(true);
   });
@@ -594,7 +594,7 @@ describe("include system", () => {
     // not(not(true)) takes several steps — would fail with max-steps=1 but include ignores parent pragmas
     const bools = "true := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
     const res = (path: string) => path === "sys/Bools" ? bools : null;
-    const r = parseProgram("#! max-steps=1\n#! include \"sys/Bools\"\n", {}, res);
+    const r = parseProgram(":set max-steps=1\n:import \"sys/Bools\"\n", {}, res);
     expect(r.ok).toBe(true);
     expect(r.defs.has("not")).toBe(true);
   });
@@ -602,16 +602,16 @@ describe("include system", () => {
   it("bubbles up equiv failure from included file as an error", () => {
     const bad = "true := λx y. x\nfalse := λx y. y\n≡ true false\n";
     const res = (path: string) => path === "sys/Bad" ? bad : null;
-    const r = parseProgram("#! include \"sys/Bad\"\n", {}, res);
+    const r = parseProgram(":import \"sys/Bad\"\n", {}, res);
     expect(r.ok).toBe(false);
     expect(r.errors.some(e => e.message.match(/assertion failed/i))).toBe(true);
   });
 
   it("included file max-steps pragma does not affect parent", () => {
     // included file sets max-steps=1; parent's π should still normalize not(not(true))
-    const bools = "#! max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
+    const bools = ":set max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
     const res = (path: string) => path === "sys/Bools" ? bools : null;
-    const r = parseProgram("#! include \"sys/Bools\"\nπ not (not true)\n", {}, res);
+    const r = parseProgram(":import \"sys/Bools\"\nπ not (not true)\n", {}, res);
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].normal).toBe(true);
   });
@@ -619,7 +619,7 @@ describe("include system", () => {
   it("_-prefixed defs are private and not exported across include boundary", () => {
     const lib = "_helper := λx. x\npublic := _helper\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include \"lib\"\n", {}, res);
+    const r = parseProgram(":import \"lib\"\n", {}, res);
     expect(r.defs.has("public")).toBe(true);
     expect(r.defs.has("_helper")).toBe(false);
   });
@@ -627,15 +627,15 @@ describe("include system", () => {
   it("_-prefixed defs are private and not exported across mixin boundary", () => {
     const lib = "_helper := λx. x\npublic := _helper\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! mixin \"lib\"\n", {}, res);
+    const r = parseProgram(":mixin \"lib\"\n", {}, res);
     expect(r.defs.has("public")).toBe(true);
     expect(r.defs.has("_helper")).toBe(false);
   });
 
-  it("include-quiet marks all imported names as quiet", () => {
+  it("import quiet marks all imported names as quiet", () => {
     const lib = "foo := λx. x\nbar := λy. y\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include-quiet \"lib\"\n", {}, res);
+    const r = parseProgram(":import \"lib\" quiet\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.has("bar")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(true);
@@ -645,7 +645,7 @@ describe("include system", () => {
   it("normal include preserves quiet=false", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include \"lib\"\n", {}, res);
+    const r = parseProgram(":import \"lib\"\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
@@ -653,7 +653,7 @@ describe("include system", () => {
   it("local redefinition clears quiet flag", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include-quiet \"lib\"\nfoo ::= λy. y\n", {}, res);
+    const r = parseProgram(":import \"lib\" quiet\nfoo ::= λy. y\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
@@ -661,37 +661,37 @@ describe("include system", () => {
   it("latter import wins: quiet then normal → visible", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include-quiet \"lib\"\n#! include \"lib\"\n", {}, res);
+    const r = parseProgram(":import \"lib\" quiet\n:import \"lib\"\n", {}, res);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("latter import wins: normal then quiet → quiet", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include \"lib\"\n#! include-quiet \"lib\"\n", {}, res);
+    const r = parseProgram(":import \"lib\"\n:import \"lib\" quiet\n", {}, res);
     expect(r.defs.get("foo")?.quiet).toBe(true);
   });
 
   it("quiet flag propagates through include chain", () => {
     const inner = "bar := λx. x\n";
-    const outer = "#! include-quiet \"inner\"\nfoo := λy. y\n";
+    const outer = ":import \"inner\" quiet\nfoo := λy. y\n";
     const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
-    // outer include-quiets inner → bar is quiet in outer
-    // parent includes outer normally → bar stays quiet, foo is visible
-    const r = parseProgram("#! include \"outer\"\n", {}, res);
+    // outer imports inner quietly → bar is quiet in outer
+    // parent imports outer normally → bar stays quiet, foo is visible
+    const r = parseProgram(":import \"outer\"\n", {}, res);
     expect(r.defs.has("bar")).toBe(true);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.get("bar")?.quiet).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
-  it("include-quiet forces transitive names quiet regardless of chain", () => {
+  it("import quiet forces transitive names quiet regardless of chain", () => {
     const inner = "bar := λx. x\n";
-    const outer = "#! include \"inner\"\nfoo := λy. y\n";
+    const outer = ":import \"inner\"\nfoo := λy. y\n";
     const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
-    // outer includes inner normally → bar is visible in outer
-    // parent include-quiets outer → both bar and foo become quiet
-    const r = parseProgram("#! include-quiet \"outer\"\n", {}, res);
+    // outer imports inner normally → bar is visible in outer
+    // parent imports outer quietly → both bar and foo become quiet
+    const r = parseProgram(":import \"outer\" quiet\n", {}, res);
     expect(r.defs.get("bar")?.quiet).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(true);
   });
@@ -699,7 +699,7 @@ describe("include system", () => {
   it("quiet defs are excluded from match list in π output", () => {
     const lib = "id := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include-quiet \"lib\"\nπ λx. x\n", {}, res);
+    const r = parseProgram(":import \"lib\" quiet\nπ λx. x\n", {}, res);
     expect(r.printInfos).toHaveLength(1);
     // id is quiet → should NOT appear in match
     expect(r.printInfos[0].match).toBeUndefined();
@@ -708,7 +708,7 @@ describe("include system", () => {
   it("visible defs still appear in match list", () => {
     const lib = "id := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram("#! include \"lib\"\nπ λx. x\n", {}, res);
+    const r = parseProgram(":import \"lib\"\nπ λx. x\n", {}, res);
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].match).toBe("id");
   });
@@ -792,7 +792,7 @@ describe("comprehension", () => {
   });
 });
 
-// ── #! allow-eta pragma ───────────────────────────────────────────────────────
+// ── :set allow-eta pragma ───────────────────────────────────────────────────────
 
 describe("allow-eta pragma", () => {
   it("without pragma, eta-redex is left as normal form", () => {
@@ -801,15 +801,15 @@ describe("allow-eta pragma", () => {
     expect(r.printInfos[0].result).toBe("λx. g x");
   });
 
-  it("with #! allow-eta, eta-redex normalizes to g", () => {
-    const r = parseProgram("#! allow-eta\nf := λx. g x\nπ f");
+  it("with :set allow-eta, eta-redex normalizes to g", () => {
+    const r = parseProgram(":set allow-eta\nf := λx. g x\nπ f");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("g");
   });
 
   it("allow-eta affects ≡ evaluation", () => {
     // Without eta: λx. g x ≢ g. With eta: they are equivalent.
-    const withEta    = parseProgram("#! allow-eta\n≡ (λx. g x) g");
+    const withEta    = parseProgram(":set allow-eta\n≡ (λx. g x) g");
     const withoutEta = parseProgram("≡ (λx. g x) g");
     expect(withEta.ok).toBe(true);
     expect(withoutEta.ok).toBe(false);
@@ -827,7 +827,7 @@ describe("include def ordering", () => {
   };
 
   it("include after local def overwrites it", () => {
-    const r = parseProgram("true := λx y. x y\n#! include \"sys/Booleans\"\n", {}, resolver);
+    const r = parseProgram("true := λx y. x y\n:import \"sys/Booleans\"\n", {}, resolver);
     const entry = r.defs.get("true");
     expect(entry).toBeDefined();
     // After include, true should be λx y. x (from Booleans), not λx y. x y
@@ -835,12 +835,12 @@ describe("include def ordering", () => {
   });
 
   it("include overwrites warns when normal forms differ", () => {
-    const r = parseProgram("true := λx y. x y\n#! include \"sys/Booleans\"\n", {}, resolver);
+    const r = parseProgram("true := λx y. x y\n:import \"sys/Booleans\"\n", {}, resolver);
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
   });
 
   it("local def after include overwrites included def", () => {
-    const r = parseProgram("#! include \"sys/Booleans\"\ntrue := λx y. x y z\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Booleans\"\ntrue := λx y. x y z\n", {}, resolver);
     // Local def comes after include — it should win, with a warning
     expect(r.errors.some(e => e.kind === "warning" && e.message.includes("true"))).toBe(true);
   });
@@ -859,7 +859,7 @@ describe("error location attribution", () => {
 
   it("error from included file has source and location", () => {
     const resolver = (path: string) => path === "sys/Bad" ? "f := (\n" : null;
-    const r = parseProgram("#! include \"sys/Bad\"\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Bad\"\n", {}, resolver);
     const err = r.errors.find(e => e.source === "sys/Bad");
     expect(err).toBeDefined();
     expect(err!.location).toBeDefined(); // pre-computed line:col from included file
@@ -868,11 +868,11 @@ describe("error location attribution", () => {
 
   it("transitively included error has via set", () => {
     const resolver = (path: string) => {
-      if (path === "sys/Outer") return "#! include \"sys/Inner\"\n";
+      if (path === "sys/Outer") return ":import \"sys/Inner\"\n";
       if (path === "sys/Inner") return "f := (\n";
       return null;
     };
-    const r = parseProgram("#! include \"sys/Outer\"\n", {}, resolver);
+    const r = parseProgram(":import \"sys/Outer\"\n", {}, resolver);
     const err = r.errors.find(e => e.source === "sys/Inner");
     expect(err).toBeDefined();
     expect(err!.via).toBe("sys/Outer");

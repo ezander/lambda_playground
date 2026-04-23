@@ -34,7 +34,7 @@ export type ParseResult =
 
 export type DefEntry = {
   term:   Term;       // normalized/expanded body
-  offset: number;     // source offset where name becomes available (def line or #! include line)
+  offset: number;     // source offset where name becomes available (def line or :import line)
   quiet:  boolean;    // hidden from autocomplete and match list
 };
 

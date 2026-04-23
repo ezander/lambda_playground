@@ -1,4 +1,4 @@
-<pg>#! max-steps 500</pg>
+<pg>:set max-steps 500</pg>
 <cm># Church booleans</cm>
 <defi>tru</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <lm>λ</lm><pm>y</pm><lm>.</lm> <bv>x</bv>
 <defi>fls</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <lm>λ</lm><pm>y</pm><lm>.</lm> <bv>y</bv>

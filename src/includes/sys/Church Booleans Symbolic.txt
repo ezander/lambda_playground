@@ -1,2 +1,2 @@
-#! include "sys/Church Booleans"
-#! mixin "sys/Logic Symbols"
+:import "sys/Church Booleans"
+:mixin "sys/Logic Symbols"

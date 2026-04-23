@@ -125,8 +125,8 @@ describe("computeHighlightRanges", () => {
       );
     });
 
-    it("pragma line", () => {
-      expect(tagged("#! max-steps 100\n")).toBe("<pg>#! max-steps 100</pg>\n");
+    it("directive line", () => {
+      expect(tagged(":set max-steps 100\n")).toBe("<pg>:set max-steps 100</pg>\n");
     });
   });
 
@@ -210,7 +210,7 @@ describe("computeHighlightRanges", () => {
     // multi-param def, nested lambdas, back-refs (defu), forward refs (fv),
     // bound vars, free vars, π, ≡, ≢, backtick identifier.
     const SRC = [
-      "#! max-steps 500",
+      ":set max-steps 500",
       "# Church booleans",
       "tru := λx. λy. x",
       "fls := λx. λy. y",
@@ -251,9 +251,9 @@ describe("computeHighlightRanges", () => {
     it("included def name is highlighted as def-use, not free var", () => {
       const lib = "foo := λx. x\n";
       const res = (p: string) => p === "lib" ? lib : null;
-      const parsed = parseProgram("#! include \"lib\"\nπ foo\n", {}, res);
-      const ranges = computeHighlightRanges("#! include \"lib\"\nπ foo\n", parsed);
-      const tags = tag("#! include \"lib\"\nπ foo\n", ranges);
+      const parsed = parseProgram(":import \"lib\"\nπ foo\n", {}, res);
+      const ranges = computeHighlightRanges(":import \"lib\"\nπ foo\n", parsed);
+      const tags = tag(":import \"lib\"\nπ foo\n", ranges);
       // foo after π should be defu (defined-use), not fv (free variable)
       expect(tags).toContain("<defu>foo</defu>");
     });
@@ -267,11 +267,11 @@ describe("computeHighlightRanges", () => {
       const src = [
         "π true one two",
         "true one two",
-        "#! include \"bool\"",
+        ":import \"bool\"",
         "π true one two",
         "true one two",
         "≢ (true one two) xyz",
-        "#! include \"num\"",
+        ":import \"num\"",
         "π true one two",
         "true one two",
         "≢ (true one two) xyz",

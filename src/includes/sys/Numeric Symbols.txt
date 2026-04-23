@@ -19,12 +19,12 @@
 
 # Rename operators (note, that they either have already been normalized, or they they won't do so here either.
 # E.g. the curr definitions of Church minus is defined via the Y combinator and is not normalizing
-#! no-normalize-defs
+:set no-normalize-defs
 + := plus
 * := times
 ^^ := pow
 - := minus
-#! normalize-defs
+:set normalize-defs
 
 # Verify number table
 ≡ 1 (++ 0)

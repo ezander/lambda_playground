@@ -7,7 +7,7 @@
   include system. In addition to the pragmas described here [doc/Pragmas] ,
   there is also "include". E.g. 
 
-  #! include "sys/Church Booleans"
+  :import "sys/Church Booleans"
 
   will include all definitions from the system include "Church Booleans". You
   can also include 
@@ -31,7 +31,7 @@
 
   true := ...
   false := ...
-  #! mixin "sys/Boolean Operator Symbols"
+  :mixin "sys/Boolean Operator Symbols"
 
   quite includes: like normal includes but definitions not selectable, just 
   a UI thing

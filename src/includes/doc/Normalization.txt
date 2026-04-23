@@ -66,15 +66,15 @@ I := λx . x
 # Ω has no normal form
 ω := λx . x x
 ≢ (ω ω) (ω ω)
-#! no-normalize-defs
+:set no-normalize-defs
 Ω := ω ω
-#! normalize-defs
+:set normalize-defs
 
 # λ x . z x is only η-equivalent to z
 ≢ (λ x . z x) z
-#! allow-eta
+:set allow-eta
 ≡ (λ x . z x) z
-#! no-allow-eta
+:set no-allow-eta
 
 # K I Ω has a weak normal form, that can be found via leftmost-outermost 
 # reductions, though Ω itself has no normal form

@@ -51,22 +51,27 @@ Backtick-quoted identifiers allow arbitrary names (spaces, operators, etc.):
 `church 0`              # evaluates the definition
 ```
 
-### In-source config
+### Directives and settings
 
-Lines starting with `#!` set runtime options for that program run (override the settings dialog; reset when the run ends):
+Lines starting with `:` are directives:
 
 ```
-#! max-steps=500         # set both max-steps-print and max-steps-ident
-#! max-steps-print=500   # beta step limit for π statements
-#! max-steps-ident=500   # beta step limit for definition matching/normalization
-#! max-history=20        # max history entries stored (panel scrolls)
-#! max-size=5000         # max AST nodes before reduction halts
-#! no-normalize-defs     # disable definition body normalization at load time
-#! allow-eta             # enable η-reduction during normalization (default off)
-#! include "sys/Church Booleans"   # import from standard library
-#! include "example/Booleans"      # import from example
-#! include "tutorial/Basics"       # import from tutorial
-#! include "user/my-buffer"        # import from named user buffer
+:import "sys/Church Booleans"   # import from standard library
+:import "example/Booleans"      # import from example
+:import "tutorial/Basics"       # import from tutorial
+:import "user/my-buffer"        # import from named user buffer
+:import "sys/Pairs" quiet       # import without polluting autocomplete/match list
+:mixin "sys/Boolean Tests"      # import that can see existing defs
+:print expr                     # alternative to π
+:assert atom1 atom2             # alternative to ≡
+:assert-not atom1 atom2         # alternative to ≢
+:set max-steps 500              # set both max-steps-print and max-steps-ident
+:set max-steps-print 500        # beta step limit for π statements
+:set max-steps-ident 500        # beta step limit for definition matching/normalization
+:set max-history 20             # max history entries stored (panel scrolls)
+:set max-size 5000              # max AST nodes before reduction halts
+:set no-normalize-defs          # disable definition body normalization at load time
+:set allow-eta                  # enable η-reduction during normalization (default off)
 ```
 
 ### Definitions

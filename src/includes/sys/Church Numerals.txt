@@ -91,10 +91,10 @@ pred n := λ s z . n (λ r i . i (r s)) (λ_.z) (λx.x)
      * Faster via Y-combinator (we define it locally here, can't normalize however)
 *#
 
-#! no-normalize-defs
+:set no-normalize-defs
 _Y := λf. (λx. f (x x)) (λx. f (x x))
 minus := λ m n f x . m (λ r q.q r)(λ q.x) (n (λq r.r q) (_Y (λq r. f (r q))))
-#! normalize-defs
+:set normalize-defs
 
 ≡ (minus zero zero) zero
 ≡ (minus three zero) three
@@ -119,7 +119,7 @@ fact n := λ s z . n (λ r a . a (r (succ a))) (λa.s) one z
 ≡ (fact four) (times four six)
 
 # Tests
-#!include "sys/Church Booleans"
+:import "sys/Church Booleans"
 # (would be nicer maybe, if we had the following
 # as a mixin dependent on the boolean type)
 isZero n := n (λ _ . false) true

@@ -1,2 +1,2 @@
-#! include "sys/Church Numerals"
-#! mixin "sys/Numeric Symbols"
+:import "sys/Church Numerals"
+:mixin "sys/Numeric Symbols"

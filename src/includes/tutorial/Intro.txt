@@ -1,4 +1,4 @@
-#! include "sys/Tutorial Utils"
+:import "sys/Tutorial Utils"
 
 ≡ `Continue ?` yes
 

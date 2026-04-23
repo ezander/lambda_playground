@@ -4,7 +4,7 @@ import { createToken, Lexer } from "chevrotain";
 export const Identifier = createToken({ name: "Identifier", pattern: Lexer.NA });
 
 // Block comments: #* ... *# (terminated) and #* ... EOF (unterminated).
-// Must come before Pragma and LineComment so #* wins over #! and #.
+// Must come before Directive and LineComment so #* wins over #.
 export const BlockComment = createToken({
   name: "BlockComment",
   pattern: /#\*[\s\S]*?\*#/,
@@ -19,14 +19,32 @@ export const UnterminatedBlockComment = createToken({
   group: "comment",
 });
 
-// Pragma directive (#! ...) — before LineComment so #! wins over #.
-// No group: pragmas are language constructs that appear in the main token stream.
-export const Pragma = createToken({
-  name: "Pragma",
-  pattern: /#![^\n]*/,
+// ── Colon-commands (:import, :mixin, :set, :print, :assert, :assert-not) ─────
+// Custom matchers ensure these only match at the start of a line (offset 0 or
+// preceded by \n), preventing false matches mid-line.
+
+function colonCmd(re: RegExp): (text: string, startOffset: number) => RegExpExecArray | null {
+  return (text, startOffset) => {
+    if (startOffset > 0 && text[startOffset - 1] !== "\n") return null;
+    re.lastIndex = startOffset;
+    return re.exec(text);
+  };
+}
+
+// Directive — captures the entire line content for :import, :mixin, :set.
+export const Directive = createToken({
+  name: "Directive",
+  pattern: colonCmd(/:(?:import|mixin|set)\b[^\n]*/y),
+  line_breaks: false,
+  start_chars_hint: [":"],
 });
 
-// Line comment: # until end of line — after Pragma so #! does not fall here.
+// Command keywords — alternatives to π / ≡ / ≢ symbols.
+export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),      start_chars_hint: [":"] });
+export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert(?!-)\b/y), start_chars_hint: [":"] });
+export const CmdAssertNot = createToken({ name: "CmdAssertNot", pattern: colonCmd(/:assert-not\b/y),  start_chars_hint: [":"] });
+
+// Line comment: # until end of line.
 // group: "comment" keeps comments accessible for syntax highlighting but out of the parser stream.
 export const LineComment = createToken({
   name: "LineComment",
@@ -92,10 +110,13 @@ export const PlainIdent = createToken({
 });
 
 export const allTokens = [
-  BlockComment,             // before Pragma, LineComment (so #* wins over #! and #)
+  BlockComment,             // before Directive, LineComment (so #* wins over #)
   UnterminatedBlockComment, // before LineComment (so unterminated #* wins over #)
-  Pragma,                   // before LineComment (#! wins over #)
-  LineComment,              // after Pragma
+  Directive,                // before RedefAssign/DefAssign (: at line start wins over :=)
+  CmdAssertNot,             // before CmdAssert (longer match wins)
+  CmdAssert,                // before RedefAssign/DefAssign
+  CmdPrint,                 // before RedefAssign/DefAssign
+  LineComment,              // after block comment
   WhiteSpace,               // skip spaces/tabs (not newlines)
   NewLine,                  // significant statement separator
   Semi,                     // significant statement separator

@@ -26,15 +26,15 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 - **`src/parser/ast.ts`** — Three node types: `Var`, `Abs` (single-param), `App`. Factory functions.
 - **`src/parser/lexer.ts`** — Chevrotain tokenizer.
 - **`src/parser/grammar.ts`** — Chevrotain CST parser + AST visitor. Desugars multi-param lambdas, folds left-associative application.
-- **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates π/≡/≢, handles `#! include`/`mixin` pragmas with caching.
+- **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates π/≡/≢, handles `:import`/`:mixin` directives with caching.
 - **`src/parser/types.ts`** — Shared types: `ProgramResult`, `LambdaError`, `PragmaConfig`, `ProgramRunConfig`, `PositionMap`, etc.
 - **`src/parser/parser.ts`** — Barrel re-export; `parseProgram(source, config, resolver)` entry point.
 - **`src/parser/pretty.ts`** — Serializes AST back to surface syntax.
 - **`src/evaluator/eval.ts`** — Normal-order beta reduction. `EvalConfig = { maxSteps?, maxSize? }`. `RunResult` has kinds `normalForm | stepLimit | sizeLimit`. Also exports `termSize`, `buildNormDefs`, `findMatch` (skips `_`-prefixed names).
 - **`src/highlight.ts`** — `computeHighlightRanges(text, parsed)` pure function; CM6 `ViewPlugin` + `StateField` (`parsedField`) wiring; hover tooltips for errors/warnings.
-- **`src/links.ts`** — CM6 decorations for `[type/name]` comment links and `#! include/mixin` pragma paths. Pragma paths require Ctrl-click (underline/cursor only visible while Ctrl held via `CtrlTrackerPlugin`).
+- **`src/links.ts`** — CM6 decorations for `[type/name]` comment links and `:import`/`:mixin` directive paths. Directive paths require Ctrl-click (underline/cursor only visible while Ctrl held via `CtrlTrackerPlugin`).
 - **`src/editor.ts`** — CM6 base theme, custom keymap (Alt-L/P/E/N, bracket wrapping, `\name`+Space expansion), line numbers.
-- **`src/autocomplete.ts`** — Alt-Space autocomplete: def names, pragma keys, include paths. Scroll wheel moves selection via global wheel listener.
+- **`src/autocomplete.ts`** — Alt-Space autocomplete: def names, directive commands, import paths. Scroll wheel moves selection via global wheel listener.
 - **`src/rewrap.ts`** — Ctrl-R paragraph reflow for block comments; ruler line; wrap width from config.
 - **`src/storage.ts`** — `SAVE_PREFIX`, `getSavedSlots`, `resolveContent`, `contentExists`; all localStorage key constants.
 - **`src/config.ts`** — `Config = { maxStepsPrint, maxStepsRun, maxStepsIdent, maxHistory, maxSize, showPassingEquiv, wrapWidth }`, `DEFAULT_CONFIG`.
@@ -49,14 +49,14 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 
 ```
 program     ::= statement (('\n' | ';') statement)*
-statement   ::= definition | redef | print | print-comp | equiv | equiv-comp | nequiv | term | pragma
+statement   ::= definition | redef | print | print-comp | equiv | equiv-comp | nequiv | term | directive
 definition  ::= identLike+ ':=' term
 redef       ::= identLike+ '::=' term
-print       ::= 'π' term
-print-comp  ::= 'π' '[' bindings ']' term
-equiv       ::= '≡' atom atom
-equiv-comp  ::= '≡' '[' bindings ']' atom atom
-nequiv      ::= '≢' atom atom
+print       ::= ('π' | ':print') term
+print-comp  ::= ('π' | ':print') '[' bindings ']' term
+equiv       ::= ('≡' | ':assert') atom atom
+equiv-comp  ::= ('≡' | ':assert') '[' bindings ']' atom atom
+nequiv      ::= ('≢' | ':assert-not') atom atom
 term        ::= application
 application ::= atom+
 atom        ::= primary ('[' identLike ':=' term ']')*
@@ -65,13 +65,13 @@ function    ::= ('\' | 'λ') identLike+ '.' term
 bindings    ::= identLike ':=' '{' term (',' term)* '}' (',' …)*
 identLike   ::= plainIdent | '`' [^`\n]+ '`'
 plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α β η ∀ ∃ ⊢ reserved
-pragma      ::= '#!' pragma-body    -- #! include/mixin "path", #! max-steps=N, etc.
+directive   ::= ':import' '"path"' modifier* | ':mixin' '"path"' | ':set' key value?
 ```
 
 ### Private symbols
 
-Definition names starting with `_` are private: they work locally but are not exported across `#! include`/`mixin` boundaries and are excluded from ≡ match display.
+Definition names starting with `_` are private: they work locally but are not exported across `:import`/`:mixin` boundaries and are excluded from ≡ match display.
 
 ### Quiet imports
 
-`#! include-quiet "path"` imports all non-private names but marks them as *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through include chains (if B include-quiets C, and A includes B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.
+`:import "path" quiet` imports all non-private names but marks them as *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through import chains (if B quietly imports C, and A imports B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.
