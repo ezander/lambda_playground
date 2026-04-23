@@ -21,6 +21,7 @@ const DIRECTIVE_OPTIONS = [
   { label: ":print", type: "keyword" as const },
   { label: ":assert", type: "keyword" as const },
   { label: ":assert-not", type: "keyword" as const },
+  { label: ":eval", type: "keyword" as const },
 ];
 
 const SET_OPTIONS = [

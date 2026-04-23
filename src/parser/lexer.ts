@@ -43,6 +43,7 @@ export const Directive = createToken({
 export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),      start_chars_hint: [":"] });
 export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert(?!-)\b/y), start_chars_hint: [":"] });
 export const CmdAssertNot = createToken({ name: "CmdAssertNot", pattern: colonCmd(/:assert-not\b/y),  start_chars_hint: [":"] });
+export const CmdEval      = createToken({ name: "CmdEval",      pattern: colonCmd(/:eval\b/y),        start_chars_hint: [":"] });
 
 // Line comment: # until end of line.
 // group: "comment" keeps comments accessible for syntax highlighting but out of the parser stream.
@@ -116,6 +117,7 @@ export const allTokens = [
   CmdAssertNot,             // before CmdAssert (longer match wins)
   CmdAssert,                // before RedefAssign/DefAssign
   CmdPrint,                 // before RedefAssign/DefAssign
+  CmdEval,                  // before RedefAssign/DefAssign
   LineComment,              // after block comment
   WhiteSpace,               // skip spaces/tabs (not newlines)
   NewLine,                  // significant statement separator

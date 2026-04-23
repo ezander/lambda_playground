@@ -12,6 +12,7 @@ const TOKEN_LABELS: Record<string, string> = {
   CmdPrint:     "':print'",
   CmdAssert:    "':assert'",
   CmdAssertNot: "':assert-not'",
+  CmdEval:      "':eval'",
   NewLine:      "'\\n'",
   Semi:         "';'",
   Pi:           "'π'",
@@ -163,6 +164,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>
             <tr><td><code>:assert atom1 atom2</code></td><td>alternative to <code>≡</code></td></tr>
             <tr><td><code>:assert-not atom1 atom2</code></td><td>alternative to <code>≢</code></td></tr>
+            <tr><td><code>:eval expr</code></td><td>load expression into eval panel (last one wins; overrides bare expressions)</td></tr>
           </tbody></table>
           <h3>settings (<code>:set</code>)</h3>
           <table className="help-table"><tbody>

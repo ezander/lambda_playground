@@ -6,6 +6,7 @@ import {
   CmdPrint,
   CmdAssert,
   CmdAssertNot,
+  CmdEval,
   Lambda,
   Pi,
   Equiv,
@@ -44,7 +45,7 @@ function emptyPositionMap(): PositionMap {
 //   programItem        ::= statementSep | statement statementSep | directiveLine
 //   statementSep       ::= NewLine | Semi
 //   directiveLine      ::= Directive NewLine
-//   statement          ::= printStmt | equivStmt | nequivStmt | definition | term
+//   statement          ::= printStmt | equivStmt | nequivStmt | evalStmt | definition | term
 //   printStmt          ::= (π | :print) comprehensionSpec? term
 //   equivStmt          ::= (≡ | :assert) comprehensionSpec? atom atom
 //   nequivStmt         ::= (≢ | :assert-not) comprehensionSpec? atom atom
@@ -100,6 +101,7 @@ class LambdaParser extends CstParser {
       { ALT: () => this.SUBRULE(this.printStmt) },
       { ALT: () => this.SUBRULE(this.equivStmt) },
       { ALT: () => this.SUBRULE(this.nequivStmt) },
+      { ALT: () => this.SUBRULE(this.evalStmt) },
       { GATE: () => this.isDefinition(), ALT: () => this.SUBRULE(this.definition) },
       { ALT: () => this.SUBRULE(this.term) },
     ]);
@@ -143,6 +145,11 @@ class LambdaParser extends CstParser {
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.atom);
     this.SUBRULE2(this.atom);
+  });
+
+  evalStmt = this.RULE("evalStmt", () => {
+    this.CONSUME(CmdEval);
+    this.SUBRULE(this.term);
   });
 
   definition = this.RULE("definition", () => {
@@ -237,7 +244,8 @@ export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: I
 export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number };
 export type RawEquiv   = { kind: "equiv"; atom1: Term; atom2: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
 export type RawExpr    = { kind: "expr"; term: Term; offset: number };
-export type RawStmt    = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr;
+export type RawEval    = { kind: "eval"; term: Term; offset: number };
+export type RawStmt    = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
 
 // ── 3. CST → AST visitor ─────────────────────────────────────────────────────
 
@@ -293,6 +301,7 @@ export class AstBuilder extends BaseCstVisitor {
     if (ctx.printStmt)  return this.visit(ctx.printStmt[0])  as RawStmt;
     if (ctx.equivStmt)  return this.visit(ctx.equivStmt[0])  as RawStmt;
     if (ctx.nequivStmt) return this.visit(ctx.nequivStmt[0]) as RawStmt;
+    if (ctx.evalStmt)   return this.visit(ctx.evalStmt[0])   as RawStmt;
     if (ctx.definition) return this.visit(ctx.definition[0]) as RawStmt;
     if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: this.termStart(term) }; }
     return { kind: "empty" };
@@ -328,6 +337,13 @@ export class AstBuilder extends BaseCstVisitor {
     const atom2 = this.visit(ctx.atom[1]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
     return { kind: "equiv", atom1, atom2, bindings, negated: true, offset: kwTok.startOffset };
+  }
+
+  evalStmt(ctx: any): RawEval | RawEmpty {
+    if (!ctx.CmdEval || !ctx.term) return { kind: "empty" };
+    const tok = ctx.CmdEval[0] as IToken;
+    const term = this.visit(ctx.term[0]) as Term;
+    return { kind: "eval", term, offset: tok.startOffset };
   }
 
   definition(ctx: any): RawDef | RawEmpty {

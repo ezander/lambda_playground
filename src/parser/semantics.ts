@@ -231,6 +231,7 @@ export function parseProgram(
   const defEntries = new Map<string, DefEntry>();
   let expr: Term | null = null;
   let rawExpr: Term | null = null;
+  let hasEval = false;  // once :eval is seen, bare expressions no longer override
   const errors: LambdaError[] = [];
   const defInfos:   DefInfo[] = [];
   const exprInfos:  ProgramResult["exprInfos"] = [];
@@ -320,6 +321,7 @@ export function parseProgram(
           exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           break;
+        case "eval":
         case "expr":
           exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
           break;
@@ -535,9 +537,19 @@ export function parseProgram(
         break;
       }
 
-      case "expr": {
+      case "eval": {
         rawExpr = stmt.term;
         expr    = expandDefs(stmt.term, defs);
+        hasEval = true;
+        exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+        break;
+      }
+
+      case "expr": {
+        if (!hasEval) {
+          rawExpr = stmt.term;
+          expr    = expandDefs(stmt.term, defs);
+        }
         exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         break;
       }
