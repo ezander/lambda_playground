@@ -38,6 +38,23 @@ function ordered(map: Record<string, string>, ns: string, names: string[]): { la
 
 export const DOCS: { label: string; src: string }[] = ordered(docMap, "doc", [
   "Welcome",
+  "Content",
+  "Language",
+  "Definitions",
+  "Identifier",
+  "Substitution",
+  "Normalization",
+  "Printing",
+  "Assertions",
+  "Evaluation",
+  "Identification",
+  "Includes",
+  "Pragmas",
+  "Editor",
+  "Buffers",
+  "User Interface",
+  "Literature",
+  "Testing",
 ]);
 
 export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "example", [
@@ -49,7 +66,10 @@ export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "e
 ]);
 
 export const TUTORIALS: { label: string; src: string }[] = ordered(tutorialMap, "tutorial", [
-  // add tutorial names here in desired order as files are created
+  "Start",
+  "Intro",
+  "Church booleans",
+  "Boolean junctors",
 ]);
 
 // ── Default scratch content for new users ─────────────────────────────────────
