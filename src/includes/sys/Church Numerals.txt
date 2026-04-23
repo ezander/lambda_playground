@@ -119,4 +119,20 @@ fact n := λ s z . n (λ r a . a (r (succ a))) (λa.s) one z
 ≡ (fact four) (times four six)
 
 # Tests
-isZero n := n () true
+#!include "sys/Church Booleans"
+# (would be nicer maybe, if we had the following
+# as a mixin dependent on the boolean type)
+isZero n := n (λ _ . false) true
+≡ (isZero zero) true
+≡ (isZero one) false
+≡ (isZero two) false
+
+isEven n := n not true
+≡ (isEven zero) true
+≡ (isEven one) false
+≡ (isEven two) true
+
+isOdd n := n not false
+≡ (isOdd zero) false
+≡ (isOdd one) true
+≡ (isOdd two) false
