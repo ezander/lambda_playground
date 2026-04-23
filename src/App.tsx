@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult } from "./parser/parser";
 import { prettyPrint, assertRoundTrip } from "./parser/pretty";
-import { AstView } from "./AstView";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
 import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
@@ -88,7 +87,6 @@ function Truncated({ text }: { text: string }) {
   return <TruncatedText key={text} text={text} />;
 }
 
-type View = "pretty" | "ast";
 type Loaded = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: number; effectiveConfig: Config } | null;
 type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
 
@@ -324,9 +322,8 @@ function IssuesPanel({ errors, roundTripError, source, onJumpTo }: {
   );
 }
 
-function EvalPanel({ open, onToggle, view, onSetView, currentTerm, hasExpr, canStep, canEtaStep, onRun, onReset, onStep, onEtaStep, onContinue, showSubst, onSetShowSubst, history, maxStepsRun }: {
+function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, onRun, onReset, onStep, onEtaStep, onContinue, showSubst, onSetShowSubst, history, maxStepsRun }: {
   open: boolean; onToggle: () => void;
-  view: View; onSetView: (v: View) => void;
   currentTerm: Term | null | undefined; hasExpr: boolean;
   canStep: boolean; canEtaStep: boolean;
   onRun: () => void; onReset: () => void; onStep: () => void; onEtaStep: () => void; onContinue: () => void;
@@ -335,13 +332,9 @@ function EvalPanel({ open, onToggle, view, onSetView, currentTerm, hasExpr, canS
 }) {
   return (
     <Panel label="eval" open={open} onToggle={onToggle}>
-      <div className="output-tabs">
-        <button className={view === "pretty" ? "active" : ""} onClick={() => onSetView("pretty")} title="Show pretty-printed term">pretty print</button>
-        <button className={view === "ast"    ? "active" : ""} onClick={() => onSetView("ast")}    title="Show abstract syntax tree">AST</button>
-      </div>
       <div className="output">
         {currentTerm
-          ? view === "pretty" ? <pre>{prettyPrint(currentTerm)}</pre> : <AstView term={currentTerm} />
+          ? <pre>{prettyPrint(currentTerm)}</pre>
           : <span className="placeholder">parse result will appear here</span>}
       </div>
       <div className="eval-controls">
@@ -548,7 +541,6 @@ export default function App() {
     const id = setTimeout(() => setDebouncedSource(source), PARSE_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [source]);
-  const [view, setView]               = useState<View>("pretty");
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
@@ -1180,7 +1172,6 @@ export default function App() {
           {kinoActive && <IssuesPanel errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
           <EvalPanel
             open={stepsOpen} onToggle={toggleSteps}
-            view={view} onSetView={setView}
             currentTerm={currentTerm} hasExpr={!!programResult.expr}
             canStep={canStep} canEtaStep={canEtaStep}
             onRun={handleLoadRun} onReset={handleLoad} onStep={handleStep} onEtaStep={handleEtaStep} onContinue={handleRun}

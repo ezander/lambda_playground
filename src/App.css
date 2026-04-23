@@ -671,32 +671,11 @@ label {
 
 /* ── Output ── */
 
-.output-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
-.output-tabs button {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  padding: 0.45rem 1rem;
-  cursor: pointer;
-  margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
-}
-.output-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
-
 .output {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: none;
   padding: 0.6rem 1rem;
-  border-radius: 0 0 2px 2px;
+  border-radius: 2px;
 }
 .output pre {
   font-family: var(--mono);
@@ -712,45 +691,6 @@ label {
   font-style: italic;
 }
 
-/* ── AST View ── */
-.ast-view {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
-.ast-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 2px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.ast-row:hover { background: rgba(255,255,255,0.04); }
-.ast-leaf { cursor: default; }
-.ast-leaf:hover { background: none; }
-
-.ast-toggle {
-  color: var(--accent);
-  font-size: 0.65rem;
-  width: 0.8rem;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.ast-leaf .ast-toggle { color: var(--muted); }
-
-.ast-label { color: var(--text); }
-.ast-name  { color: var(--accent); }
-
-.ast-children {
-  margin-left: 0.9rem;
-  padding-left: 0.7rem;
-  border-left: 1px solid var(--border);
-}
 
 /* ── π results ── */
 .print-section {

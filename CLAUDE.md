@@ -43,7 +43,6 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 - **`src/App.tsx`** — Main UI. `Loaded` state carries `effectiveConfig` (merged `Config` + pragma overrides). `programResult` is a `useMemo`; dispatched to CM6 via `setParsed` effect on change and immediately after `resetEditorContent` (via `programResultRef`).
 - **`src/SettingsModal.tsx`** — Settings dialog; Enter = apply, Escape = cancel, click-outside = apply.
 - **`src/HelpModal.tsx`** — Tabbed help: Language / UI & editing / Grammar / Credits.
-- **`src/AstView.tsx`** — Expandable AST tree display.
 
 ### Grammar (surface syntax)
 
