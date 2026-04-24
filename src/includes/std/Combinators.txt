@@ -6,9 +6,14 @@ S f g x := f x (g x)
 B f g x := f (g x)
 C f x y := f y x
 
-# The Y combinator (used for recursion) has no terminating normal form
+# Curry's Y combinator (used for recursion) has no terminating normal form
 :set no-normalize-defs
 Y := λf. (λx. f (x x)) (λx. f (x x))
+:set normalize-defs
+
+# The Turing combinator Θ is also not normalizing
+:set no-normalize-defs
+Θ := (λx. λy. y (x x y)) (λx. λy. y (x x y))
 :set normalize-defs
 
 # SKI basis equivalences
@@ -28,8 +33,13 @@ Y := λf. (λx. f (x x)) (λx. f (x x))
 ≡ (S (K f) I x) (f x)
 ≡ (K I x) I
 
-# Fixed-point property: Y f = f (Y f)
+# Fixed-point property for Y: Y f = f (Y f)
 _F := K I
 ≡ (Y _F) (_F (Y _F))
 ≡ (Y _F) I
 ≡ (Y (K K)) K
+
+# Fixed-point property for Θ: Θ f = f (Θ f)
+≡ (Θ _F) (_F (Θ _F))
+≡ (Θ _F) I
+≡ (Θ (K K)) K
