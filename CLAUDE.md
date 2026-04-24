@@ -47,7 +47,7 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 ### Grammar (surface syntax)
 
 ```
-program     ::= statement (('\n' | ';') statement)*
+program     ::= statement (('\n' | ';') statement)*   -- indented lines continue the previous statement
 statement   ::= definition | redef | print | print-comp | equiv | equiv-comp | nequiv | term | directive
 definition  ::= identLike+ ':=' term
 redef       ::= identLike+ '::=' term

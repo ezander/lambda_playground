@@ -34,6 +34,8 @@ e[x:=a]              # explicit substitution: desugars to (λx. e) a
 # comment            # rest of line ignored
 #* block comment *#  # multi-line comment
 ;                    # statement separator (same as newline)
+f :=                 # line continuation: indented lines
+  λx. x              #   continue the previous statement
 ```
 
 ### Identifiers

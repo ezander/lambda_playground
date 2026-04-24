@@ -450,6 +450,58 @@ describe("block comments", () => {
   });
 });
 
+// ── Line continuation ────────────────────────────────────────────────────────
+
+describe("line continuation", () => {
+  it("indented line continues previous statement", () => {
+    const r = parseProgram("f :=\n  λx. x\n");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+    expect(r.defs.get("f")?.term).toEqual(Abs("x", Var("x")));
+  });
+
+  it("tab-indented line continues previous statement", () => {
+    const r = parseProgram("f :=\n\tλx. x\n");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+  });
+
+  it("non-indented line starts a new statement", () => {
+    const r = parseProgram("f := λx.\nx\n");
+    expect(r.ok).toBe(false); // "λx." on its own is incomplete, "x" is a separate bare expr
+  });
+
+  it("blank lines between continuations break the statement", () => {
+    const r = parseProgram("f :=\n\n  λx. x\n");
+    expect(r.ok).toBe(false); // blank line breaks continuation
+  });
+
+  it("whitespace-only lines are absorbed (don't break continuation)", () => {
+    const r = parseProgram("f :=\n   \n  λx. x\n");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("f")).toBe(true);
+  });
+
+  it("multi-line definition with continuation", () => {
+    const r = parseProgram("and p q :=\n  p q\n  false\n");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("and")).toBe(true);
+  });
+
+  it("continuation works for π statements", () => {
+    const r = parseProgram("I := λx. x\nπ\n  I\n");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos).toHaveLength(1);
+  });
+
+  it("continuation works for ≡ statements", () => {
+    const r = parseProgram("≡\n  (λx. x)\n  (λy. y)\n");
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos).toHaveLength(1);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+  });
+});
+
 // ── Directive value syntax ───────────────────────────────────────────────────────
 
 describe("pragma value syntax", () => {

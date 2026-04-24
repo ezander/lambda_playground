@@ -61,7 +61,46 @@ export const WhiteSpace = createToken({
 });
 
 // Statement separators
-export const NewLine = createToken({ name: "NewLine", pattern: /\r?\n/ });
+// A newline followed by an indented (non-empty) line is a continuation — the
+// newline is skipped so the parser sees one long statement.  Whitespace-only
+// lines between continuations are absorbed.
+
+// Continuation newline: matched when the next non-empty line starts with whitespace.
+// Placed in SKIPPED group so the parser never sees it.
+export const ContNewLine = createToken({
+  name: "ContNewLine",
+  pattern: (text, startOffset) => {
+    if (text[startOffset] !== "\n" && !(text[startOffset] === "\r" && text[startOffset + 1] === "\n"))
+      return null;
+    let pos = startOffset;
+    if (text[pos] === "\r") pos++;
+    pos++; // skip \n
+    // Skip whitespace-only lines (but NOT empty lines — those break continuation)
+    while (pos < text.length) {
+      // Empty line (immediate newline) → stop, this breaks continuation
+      if (text[pos] === "\n" || (text[pos] === "\r" && text[pos + 1] === "\n")) break;
+      // Non-newline char — check if this line is whitespace-only
+      let lineEnd = pos;
+      while (lineEnd < text.length && text[lineEnd] !== "\n" && text[lineEnd] !== "\r") lineEnd++;
+      if (text.slice(pos, lineEnd).trim() === "") { pos = lineEnd === text.length ? lineEnd : lineEnd + 1; continue; }
+      break;
+    }
+    // Next non-empty line starts with whitespace → continuation
+    if (pos < text.length && (text[pos] === " " || text[pos] === "\t")) {
+      const result = [""] as unknown as RegExpExecArray;
+      result.index = startOffset;
+      result[0] = text.slice(startOffset, startOffset + (text[startOffset] === "\r" ? 2 : 1));
+      return result;
+    }
+    return null;
+  },
+  line_breaks: true,
+  start_chars_hint: ["\n", "\r"],
+  group: Lexer.SKIPPED,
+});
+
+// Regular newline: statement separator (only matches when ContNewLine didn't).
+export const NewLine = createToken({ name: "NewLine", pattern: /\r?\n/, line_breaks: true });
 export const Semi    = createToken({ name: "Semi",    pattern: /;/    });
 
 // Tokens — order matters: more specific / longer patterns first
@@ -120,6 +159,7 @@ export const allTokens = [
   CmdEval,                  // before RedefAssign/DefAssign
   LineComment,              // after block comment
   WhiteSpace,               // skip spaces/tabs (not newlines)
+  ContNewLine,              // continuation newline (skipped) — before NewLine
   NewLine,                  // significant statement separator
   Semi,                     // significant statement separator
   RedefAssign,              // ::= before := so longer match wins
