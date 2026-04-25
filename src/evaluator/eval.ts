@@ -206,10 +206,23 @@ export function etaStep(term: Term): Term | null {
 
 // ── Definition matching helpers ───────────────────────────────────────────────
 
+// Cached canonical form of a term's normal form, keyed by Term identity.
+// Only normalForm results are cached — step/size-limited results depend on cfg.
+const canonNormCache = new WeakMap<Term, string>();
+
+export function canonicalNormalForm(term: Term, cfg: EvalConfig = {}): string {
+  const cached = canonNormCache.get(term);
+  if (cached !== undefined) return cached;
+  const r = normalize(term, cfg);
+  const canon = canonicalForm(r.term);
+  if (r.kind === "normalForm") canonNormCache.set(term, canon);
+  return canon;
+}
+
 export function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
   const m = new Map<string, string>();
   for (const [name, term] of defs)
-    m.set(name, canonicalForm(normalize(term, cfg).term));
+    m.set(name, canonicalNormalForm(term, cfg));
   return m;
 }
 

@@ -14,7 +14,7 @@ import {
   EquivInfo,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
-import { normalize, alphaEq, buildNormDefs, findMatch } from "../evaluator/eval";
+import { normalize, alphaEq, buildNormDefs, canonicalNormalForm, findMatch } from "../evaluator/eval";
 import { prettyPrint } from "./pretty";
 
 // ── Definition expansion ───────────────────────────────────────────────────────
@@ -140,6 +140,8 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
+  const merged = { ...defaultConfig, ...pragmaConfig };
+  const normCfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
   const mixinMatch = text.match(/^mixin\s+"([^"]+)"\s*$/);
   if (mixinMatch) {
     const path = mixinMatch[1];
@@ -166,9 +168,7 @@ function processPragma(
     for (const [name, entry] of mixed.defs) {
       if (name.startsWith("_")) continue; // private — does not cross mixin boundary
       if (defs.has(name)) {
-        const oldNorm = normalize(defs.get(name)!).term;
-        const newNorm = normalize(entry.term).term;
-        if (!alphaEq(oldNorm, newNorm))
+        if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(entry.term, normCfg))
           errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
       }
       defs.set(name, entry.term);
@@ -207,9 +207,7 @@ function processPragma(
     for (const [name, entry] of included.defs) {
       if (name.startsWith("_")) continue; // private — does not cross include boundary
       if (defs.has(name)) {
-        const oldNorm = normalize(defs.get(name)!).term;
-        const newNorm = normalize(entry.term).term;
-        if (!alphaEq(oldNorm, newNorm))
+        if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(entry.term, normCfg))
           errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
       }
       defs.set(name, entry.term);
@@ -406,9 +404,8 @@ export function parseProgram(
             errors.push({ message: `Warning: '${name}' is not defined before ::=`, offset, kind: "warning" });
         } else {
           if (defs.has(name)) {
-            const oldNorm = normalize(defs.get(name)!).term;
-            const newNorm = normalize(body).term;
-            if (!alphaEq(oldNorm, newNorm))
+            const normCfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
+            if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(body, normCfg))
               errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset, kind: "warning" });
           }
         }
