@@ -142,7 +142,7 @@ function LambdaEditor({ source, extensions, onChange, onCreateEditor, onUpdate }
 }) {
   return (
     <CodeMirror
-      basicSetup={{ lineNumbers: false }}
+      basicSetup={{ lineNumbers: false, foldGutter: false }}
       value={source}
       extensions={extensions}
       onChange={onChange}

@@ -19,7 +19,8 @@ export const lambdaTheme: Extension = EditorView.theme({
     borderColor: "#c9a84c",
   },
   ".cm-content": {
-    padding: "0.85rem 1rem",
+    padding: "0.85rem 0",
+    margin: "0 1rem",
     lineHeight: "1.65",
     caretColor: "#e8e4dc",
     minHeight: "calc(10 * 0.95rem * 1.65 + 2 * 0.85rem)",
