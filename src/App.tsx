@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult } from "./parser/parser";
-import { prettyPrint, assertRoundTrip } from "./parser/pretty";
+import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
 import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
@@ -298,16 +298,15 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
   );
 }
 
-function IssuesPanel({ errors, roundTripError, source, onJumpTo }: {
-  errors: LambdaError[]; roundTripError: string | null;
+function IssuesPanel({ errors, source, onJumpTo }: {
+  errors: LambdaError[];
   source: string; onJumpTo: (offset: number) => void;
 }) {
-  const count = errors.length + (roundTripError ? 1 : 0);
-  if (count === 0) return null;
+  if (errors.length === 0) return null;
   return (
     <section className="panel issues-panel">
       <div className="issues-header">
-        <span className="panel-label">issues ({count})</span>
+        <span className="panel-label">issues ({errors.length})</span>
       </div>
       <ul className="issues-list">
         {errors.map((e, i) => (
@@ -316,7 +315,6 @@ function IssuesPanel({ errors, roundTripError, source, onJumpTo }: {
             onClick={() => e.offset !== undefined && onJumpTo(e.offset)}
           >{formatError(e, source)}</li>
         ))}
-        {roundTripError && <li>{roundTripError}</li>}
       </ul>
     </section>
   );
@@ -626,12 +624,6 @@ export default function App() {
     editorViewRef.current?.dispatch({ effects: wrapCompartment.reconfigure(makeWrapExtensions(config.wrapWidth)) });
   }, [config.wrapWidth]);
 
-  let roundTripError: string | null = null;
-  if (programResult.rawExpr) {
-    try { assertRoundTrip(programResult.rawExpr); }
-    catch (e) { roundTripError = String(e); }
-  }
-
   const makeEntry = useCallback(
     (term: Term, stepNum: number, suffix = "", normal = true, status?: HistoryEntry["status"]) =>
       buildEntry(term, stepNum, normDefs, suffix, normal, status),
@@ -701,6 +693,29 @@ export default function App() {
     if (!view) return;
     view.dispatch({ selection: { anchor: offset }, scrollIntoView: true });
     view.focus();
+  }, []);
+
+  const handleEditorCreate = useCallback((view: EditorView) => {
+    editorViewRef.current = view;
+    view.dispatch({ effects: setParsed.of(programResultRef.current) });
+    view.focus();
+  }, []);
+
+  const handleEditorUpdate = useCallback((update: ViewUpdate) => {
+    if (update.selectionSet) {
+      const pos = update.state.selection.main.head;
+      const line = update.state.doc.lineAt(pos);
+      setCursorPos(prev => {
+        const col = pos - line.from + 1;
+        return prev && prev.line === line.number && prev.col === col ? prev : { line: line.number, col };
+      });
+    }
+    if (update.docChanged) {
+      const u = undoDepth(update.state) > 0;
+      const r = redoDepth(update.state) > 0;
+      setCanUndo(prev => prev === u ? prev : u);
+      setCanRedo(prev => prev === r ? prev : r);
+    }
   }, []);
 
   const resetEditorContent = useCallback((content: string) => {
@@ -1138,16 +1153,8 @@ export default function App() {
           <LambdaEditor
             source={source} extensions={editorExtensions}
             onChange={setSource}
-            onCreateEditor={view => { editorViewRef.current = view; view.dispatch({ effects: setParsed.of(programResult) }); view.focus(); }}
-            onUpdate={update => {
-              if (update.selectionSet) {
-                const pos = update.state.selection.main.head;
-                const line = update.state.doc.lineAt(pos);
-                setCursorPos({ line: line.number, col: pos - line.from + 1 });
-              }
-              setCanUndo(undoDepth(update.state) > 0);
-              setCanRedo(redoDepth(update.state) > 0);
-            }}
+            onCreateEditor={handleEditorCreate}
+            onUpdate={handleEditorUpdate}
           />
           <BuffersToolbar
             loadedSlotName={loadedSlotName} showDirty={showDirty} programResult={programResult}
@@ -1166,13 +1173,13 @@ export default function App() {
             symPickerRef={symPickerRef} symOpen={symOpen} onToggleSymOpen={() => setSymOpen(o => !o)}
             onInsertSym={handleInsertSym}
           />
-          {!kinoActive && <IssuesPanel errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
+          {!kinoActive && <IssuesPanel errors={programResult.errors} source={source} onJumpTo={jumpTo} />}
         </section>
 
         {kinoActive && <div className="kino-divider" onMouseDown={handleDividerMouseDown} />}
 
         <div className="panels-right">
-          {kinoActive && <IssuesPanel errors={programResult.errors} roundTripError={roundTripError} source={source} onJumpTo={jumpTo} />}
+          {kinoActive && <IssuesPanel errors={programResult.errors} source={source} onJumpTo={jumpTo} />}
           <EvalPanel
             open={stepsOpen} onToggle={toggleSteps}
             currentTerm={currentTerm} hasExpr={!!programResult.expr}

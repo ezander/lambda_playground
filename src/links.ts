@@ -28,7 +28,7 @@ class LinkViewPlugin {
   decorations: DecorationSet;
   constructor(view: EditorView) { this.decorations = this.build(view); }
   update(u: ViewUpdate) {
-    if (u.docChanged || u.viewportChanged) this.decorations = this.build(u.view);
+    if (u.docChanged) this.decorations = this.build(u.view);
   }
   build(view: EditorView): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();

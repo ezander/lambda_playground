@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Var, Abs, App, Subst, Term } from "./ast";
 import { parse, parseProgram, expandDefs } from "./parser";
-import { prettyPrint, assertRoundTrip } from "./pretty";
+import { prettyPrint } from "./pretty";
 
 // ── parse (single expression) ─────────────────────────────────────────────────
 
@@ -210,14 +210,6 @@ describe("prettyPrint Subst", () => {
 
   it("wraps Abs body in parens: (λx. x)[y:=a]", () => {
     expect(prettyPrint(Subst(Abs("x", Var("x")), "y", Var("a")))).toBe("(λx. x)[y:=a]");
-  });
-});
-
-// ── assertRoundTrip ───────────────────────────────────────────────────────────
-
-describe("assertRoundTrip", () => {
-  it("passes for well-formed terms", () => {
-    expect(() => assertRoundTrip(Abs("x", Var("x")))).not.toThrow();
   });
 });
 
