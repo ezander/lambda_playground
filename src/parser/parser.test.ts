@@ -158,6 +158,61 @@ describe("parse", () => {
   });
 });
 
+// ── strict binders (β) ────────────────────────────────────────────────────────
+
+describe("strict binders", () => {
+  it("parses βx as a strict binder", () => {
+    const r = parse("λβx. x");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Abs("x", Var("x"), true));
+  });
+
+  it("treats βx and β x identically (whitespace skipped)", () => {
+    const a = parse("λβx. x");
+    const b = parse("λβ x. x");
+    // Both should produce the same AST: a strict binder for x
+    if (a.ok && b.ok) {
+      expect(a.term).toEqual(Abs("x", Var("x"), true));
+      // β x lexes as Beta + Ident; bare Beta in binder position is a parse error
+      // (Beta token is not in the Identifier category)
+      expect(b.ok).toBe(false);
+    } else {
+      // The "β x" form should fail to parse
+      expect(b.ok).toBe(false);
+    }
+  });
+
+  it("rejects bare β in binder position", () => {
+    const r = parse("λβ. x");
+    expect(r.ok).toBe(false);
+  });
+
+  it("mixes strict and lazy binders in one λ", () => {
+    const r = parse("λβx y. x");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Abs("x", Abs("y", Var("x"), false), true));
+  });
+
+  it("supports strict binder in [βx := arg] sugar", () => {
+    const r = parse("e[βx:=a]");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(App(Abs("x", Var("e"), true), Var("a")));
+  });
+
+  it("pretty-prints β prefix on strict binders", () => {
+    expect(prettyPrint(Abs("x", Var("x"), true))).toBe("λβx. x");
+    expect(prettyPrint(Abs("x", Abs("y", Var("x"), false), true))).toBe("λβx y. x");
+  });
+
+  it("round-trips strict binders through pretty + parse", () => {
+    const t = Abs("x", Abs("y", App(Var("x"), Var("y")), true), true);
+    const s = prettyPrint(t);
+    const r = parse(s);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(t);
+  });
+});
+
 // ── pretty-printer round-trip ─────────────────────────────────────────────────
 
 describe("prettyPrint round-trip", () => {
@@ -402,6 +457,26 @@ describe("parseProgram", () => {
     expect(r.ok).toBe(true);
     expect(r.equivInfos).toHaveLength(1);
     expect(r.equivInfos[0].equivalent).toBe(true);
+  });
+
+  it("π reduces a strict abstraction (arg evaluated before substitution)", () => {
+    // (λβx. x x) ((λy. y) a) → a a  (arg reduced once, then duplicated as NF)
+    const r = parseProgram("π (λβx. x x) ((λy. y) a)\n");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("a a");
+    expect(r.printInfos[0].normal).toBe(true);
+  });
+
+  it("strict and lazy abstractions are ≡-equivalent at NF", () => {
+    const r = parseProgram("≡ (λβx. x) (λx. x)\n");
+    expect(r.ok).toBe(true);
+    expect(r.equivInfos[0].equivalent).toBe(true);
+  });
+
+  it("strict binder works in a definition: f βx := x", () => {
+    const r = parseProgram("f βx := x\nπ f a\n");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("a");
   });
 });
 

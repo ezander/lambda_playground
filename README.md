@@ -28,6 +28,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 ```
 λx. body             # lambda abstraction
 λx y z. body         # multi-param (desugars to nested abstractions)
+λβx. body            # strict binder: argument reduced before substitution (call-by-value)
 f x y                # application (left-associative)
 e[x:=a]              # explicit substitution: desugars to (λx. e) a
 + m n := m S n       # operator identifier as definition name
@@ -40,7 +41,7 @@ f :=                 # line continuation: indented lines
 
 ### Identifiers
 
-Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, apostrophes, Greek letters (`\u0370–\u03FF`, excluding λ and π; α, β, η, ∀, ∃, ⊢ are reserved), and operator characters (`+ - * / ^ ~ & | < > ! ? =`). Logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅) are also valid in identifiers.
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, apostrophes, Greek letters (`\u0370–\u03FF`, excluding λ and π; α, η, ∀, ∃, ⊢ are reserved; β is reserved unless fused to a binder name as in `λβx. body`), and operator characters (`+ - * / ^ ~ & | < > ! ? =`). Logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅) are also valid in identifiers.
 
 Backtick-quoted identifiers allow arbitrary names:
 

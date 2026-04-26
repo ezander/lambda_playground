@@ -25,13 +25,21 @@ import {
   Semi,
   Identifier,
   BacktickIdent,
+  StrictBinder,
 } from "./lexer";
 import { Term, Var, Abs, App, Pos } from "./ast";
 import { LambdaError, ParseResult, PositionMap } from "./types";
 
-// Strip backtick quotes from a BacktickIdent token; leave plain identifiers unchanged.
+// Strip backtick quotes from a BacktickIdent token; strip leading β from a StrictBinder;
+// leave plain identifiers unchanged.
 export function tokenName(tok: IToken): string {
-  return tok.tokenType === BacktickIdent ? tok.image.slice(1, -1) : tok.image;
+  if (tok.tokenType === BacktickIdent) return tok.image.slice(1, -1);
+  if (tok.tokenType === StrictBinder)  return tok.image.slice(1);  // strip leading β
+  return tok.image;
+}
+
+export function isStrictBinder(tok: IToken): boolean {
+  return tok.tokenType === StrictBinder;
 }
 
 function emptyPositionMap(): PositionMap {
@@ -355,7 +363,7 @@ export class AstBuilder extends BaseCstVisitor {
     let rawBody: Term = bodyTerm;
     for (let i = params.length - 1; i >= 0; i--) {
       const tok = params[i];
-      const abs = Abs(tokenName(tok), rawBody);
+      const abs = Abs(tokenName(tok), rawBody, isStrictBinder(tok));
       this.positions.params.set(abs, this.pos(tok));
       rawBody = abs;
     }
@@ -387,8 +395,8 @@ export class AstBuilder extends BaseCstVisitor {
   atom(ctx: any): Term {
     let base: Term = this.visit(ctx.primary);
     for (const s of (ctx.subst ?? [])) {
-      const { param, paramTok, arg } = this.visit(s) as { param: string; paramTok: IToken; arg: Term };
-      const abs = Abs(param, base);
+      const { param, paramTok, arg, strict } = this.visit(s) as { param: string; paramTok: IToken; arg: Term; strict: boolean };
+      const abs = Abs(param, base, strict);
       this.positions.params.set(abs, this.pos(paramTok));
       base = App(abs, arg);
     }
@@ -406,9 +414,9 @@ export class AstBuilder extends BaseCstVisitor {
     return this.visit(ctx.term);
   }
 
-  subst(ctx: any): { param: string; paramTok: IToken; arg: Term } {
+  subst(ctx: any): { param: string; paramTok: IToken; arg: Term; strict: boolean } {
     const tok = ctx.Identifier[0] as IToken;
-    return { param: tokenName(tok), paramTok: tok, arg: this.visit(ctx.term) };
+    return { param: tokenName(tok), paramTok: tok, arg: this.visit(ctx.term), strict: isStrictBinder(tok) };
   }
 
   func(ctx: any): Term {
@@ -416,7 +424,7 @@ export class AstBuilder extends BaseCstVisitor {
     const body: Term = this.visit(ctx.term);
     let result = body;
     for (let i = toks.length - 1; i >= 0; i--) {
-      const abs = Abs(tokenName(toks[i]), result);
+      const abs = Abs(tokenName(toks[i]), result, isStrictBinder(toks[i]));
       this.positions.params.set(abs, this.pos(toks[i]));
       result = abs;
     }

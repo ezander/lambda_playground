@@ -126,6 +126,7 @@
 * [x] auto-save setting: saves named buffers on every edit; "save" button replaced by "auto" indicator; turning on auto-save immediately flushes any dirty buffer
 * [x] when we're expanding e.g. in the eval panel and we hit the size limit we should stop with a message and not continue
 * [x] `#! include-quiet "path"` pragma: imports names as quiet (hidden from match list and autocomplete); quiet flag propagates through include chains; local redefinition resets to visible; latter-import wins; for tutorial utilities that shouldn't clutter the user's namespace
+* [x] strict (call-by-value) binders: `λβx. body` reduces the argument to NF before substitution; per-binder, no whitespace between β and the name; pretty-printer round-trips; alphaEq treats strict and lazy as equivalent (operational, not denotational); η suppressed on strict abstractions
 
 ## Roadmap
 

@@ -1,7 +1,7 @@
 import { tokenMatcher } from "chevrotain";
 import { LambdaLexer, NewLine } from "./lexer";
 import { Term, App, Abs } from "./ast";
-import { parser, astBuilder, tokenName, RawStmt, RawBinding } from "./grammar";
+import { parser, astBuilder, tokenName, isStrictBinder, RawStmt, RawBinding } from "./grammar";
 import {
   LambdaError, errLocation,
   PositionMap,
@@ -26,10 +26,10 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
     case "App":
       return App(expandDefs(term.func, defs), expandDefs(term.arg, defs));
     case "Abs": {
-      if (!defs.has(term.param)) return Abs(term.param, expandDefs(term.body, defs));
+      if (!defs.has(term.param)) return Abs(term.param, expandDefs(term.body, defs), term.strict);
       const inner = new Map(defs);
       inner.delete(term.param);
-      return Abs(term.param, expandDefs(term.body, inner));
+      return Abs(term.param, expandDefs(term.body, inner), term.strict);
     }
     case "Subst":
       return term;
@@ -43,7 +43,7 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 function swapInfix(term: Term, infixNames: Set<string>): Term {
   switch (term.kind) {
     case "Var":   return term;
-    case "Abs":   return Abs(term.param, swapInfix(term.body, infixNames));
+    case "Abs":   return Abs(term.param, swapInfix(term.body, infixNames), term.strict);
     case "Subst": return term;
     case "App": {
       const func = swapInfix(term.func, infixNames);
@@ -387,7 +387,7 @@ export function parseProgram(
         let body = expandDefs(swapInfix(bodyTerm, infx), innerDefs);
 
         if (params.length > 0)
-          body = params.map(tokenName).reduceRight((acc, p) => Abs(p, acc), body);
+          body = params.reduceRight((acc, p) => Abs(tokenName(p), acc, isStrictBinder(p)), body);
 
         if (pragmaConfig.normalizeDefs ?? true) {
           const { term: normalized, kind } = normalize(body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });

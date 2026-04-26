@@ -22,11 +22,12 @@ function pp(term: Term, ctx: Context): string {
       return safeName(term.name);
 
     case "Abs": {
-      // Collect consecutive params for pretty compression
+      // Collect consecutive params for pretty compression. Strict binders get a β prefix.
       const params: string[] = [];
       let body: Term = term;
       while (body.kind === "Abs") {
-        params.push(safeName(body.param));
+        const n = safeName(body.param);
+        params.push(body.strict ? `β${n}` : n);
         body = body.body;
       }
       const s = `λ${params.join(" ")}. ${pp(body, "top")}`;

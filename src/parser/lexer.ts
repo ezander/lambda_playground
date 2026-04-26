@@ -140,6 +140,16 @@ export const BacktickIdent = createToken({
 // Excludes λ (\u03BB) and π (\u03C0) so those always lex as Lambda / Pi.
 const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
+// Strict binder: β fused immediately to an identifier (no whitespace).
+// Marks the parameter as call-by-value — the argument is reduced before substitution.
+// Listed before Beta and PlainIdent: "βx" lexes as one StrictBinder; "β x" still
+// lexes as Beta + PlainIdent (which the parser will reject in binder position).
+export const StrictBinder = createToken({
+  name: "StrictBinder",
+  pattern: new RegExp(`β${MIXED}+`),
+  categories: [Identifier],
+});
+
 // Plain identifier: one or more characters from the mixed charset.
 // Operator and alphanumeric chars may be freely mixed (e.g. "+3", "5-", "x+y" are all valid).
 // Reserved tokens (α, β, η, π, λ, ≡, ≢, ∀, ∃, ⊢) take priority via allTokens ordering.
@@ -167,6 +177,7 @@ export const allTokens = [
   Dot,
   Lambda,
   Pi,
+  StrictBinder,                           // βident must win over Beta+Ident (longest match)
   Alpha, Beta, Eta,                       // reserved Greek — before PlainIdent (same-length tie → first wins)
   ForAll, Exists, Equiv, NEquiv, Turnstile, // reserved logic — same strategy
   LParen,

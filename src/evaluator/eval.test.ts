@@ -445,3 +445,92 @@ describe("findMatch", () => {
     expect(result).toContain(", ");
   });
 });
+
+// ── Strict (call-by-value) reduction ──────────────────────────────────────────
+
+describe("strict binders", () => {
+  it("strict abstraction reduces arg to NF before substituting", () => {
+    // (λβx. x) ((λy. y) a)  — strict: arg reduces first
+    const term = App(Abs("x", Var("x"), true), App(I, Var("a")));
+    // Step 1: arg reduces (λy. y) a → a, lambda body unchanged
+    const s1 = step(term)!;
+    expect(s1).toEqual(App(Abs("x", Var("x"), true), Var("a")));
+    // Step 2: now perform beta
+    expect(step(s1)).toEqual(Var("a"));
+  });
+
+  it("lazy abstraction substitutes immediately (control)", () => {
+    // (λx. x) ((λy. y) a)  — lazy: substitute first, no pre-reduction
+    const term = App(I, App(I, Var("a")));
+    // Step 1: outermost beta — substitute (λy. y) a for x in body x
+    expect(step(term)).toEqual(App(I, Var("a")));
+  });
+
+  it("strict normalize: arg reduced once, then duplicated as NF", () => {
+    // (λβx. x x) ((λy. y) a) — should reach (a a) and stop
+    const term = App(Abs("x", App(Var("x"), Var("x")), true), App(I, Var("a")));
+    const r = normalize(term);
+    expect(r.kind).toBe("normalForm");
+    if (r.kind === "normalForm") expect(r.term).toEqual(App(Var("a"), Var("a")));
+  });
+
+  it("strict and lazy produce same NF when both terminate", () => {
+    // (λβx. x x x) ((λy. y) a)  vs  (λx. x x x) ((λy. y) a)
+    const arg = App(I, Var("a"));
+    const strictT = App(Abs("x", App(App(Var("x"), Var("x")), Var("x")), true), arg);
+    const lazyT   = App(Abs("x", App(App(Var("x"), Var("x")), Var("x")), false), arg);
+    const rs = normalize(strictT);
+    const rl = normalize(lazyT);
+    expect(rs.kind).toBe("normalForm");
+    expect(rl.kind).toBe("normalForm");
+    if (rs.kind === "normalForm" && rl.kind === "normalForm")
+      expect(alphaEq(rs.term, rl.term)).toBe(true);
+  });
+
+  it("alphaEq ignores strict flag (operational, not denotational)", () => {
+    expect(alphaEq(Abs("x", Var("x"), true), Abs("y", Var("y"), false))).toBe(true);
+  });
+
+  it("substitute preserves strict flag", () => {
+    // (λβy. y x)[x := a]  →  λβy. y a, strict still set
+    const term = Abs("y", App(Var("y"), Var("x")), true);
+    const result = substitute(term, "x", Var("a"));
+    expect(result.kind).toBe("Abs");
+    if (result.kind === "Abs") expect(result.strict).toBe(true);
+  });
+
+  it("eta does not reduce strict binders", () => {
+    // λβx. f x  is NOT eta-reducible (would change strictness behavior)
+    expect(etaStep(Abs("x", App(Var("f"), Var("x")), true))).toBeNull();
+    // λx. f x  (lazy) IS eta-reducible
+    expect(etaStep(Abs("x", App(Var("f"), Var("x")), false))).toEqual(Var("f"));
+  });
+
+  it("strict cuts step count when arg is duplicated", () => {
+    // body uses x three times; arg takes 3 reductions to reach a normal form.
+    //   lazy:   substitute unreduced arg → 3 copies each reduce independently
+    //   strict: reduce arg once (3 steps) then substitute the NF
+    const arg  = App(I, App(I, App(I, Var("a"))));   // I (I (I a))  — 3 steps to "a"
+    const body = App(App(Var("x"), Var("x")), Var("x")); // x x x
+
+    const lazyT   = App(Abs("x", body, false), arg);
+    const strictT = App(Abs("x", body, true),  arg);
+
+    const rl = normalize(lazyT);
+    const rs = normalize(strictT);
+
+    expect(rl.kind).toBe("normalForm");
+    expect(rs.kind).toBe("normalForm");
+    if (rl.kind !== "normalForm" || rs.kind !== "normalForm") return;
+
+    // Both reach the same NF: a a a
+    expect(alphaEq(rl.term, rs.term)).toBe(true);
+    expect(rs.term).toEqual(App(App(Var("a"), Var("a")), Var("a")));
+
+    // Strict should be meaningfully cheaper. Ratio between 2× and 3× covers
+    // the expected lazy-vs-strict gap on a 3-use body with a 3-step arg.
+    const ratio = rl.steps / rs.steps;
+    expect(ratio).toBeGreaterThanOrEqual(2);
+    expect(ratio).toBeLessThanOrEqual(3);
+  });
+});
