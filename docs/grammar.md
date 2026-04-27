@@ -5,9 +5,9 @@ Do not edit by hand — change the parser in `src/parser/grammar.ts` and re-run 
 
 ```
 program            ::=  programItem*
-programItem        ::=  (statementSep | statement statementSep | directiveLine)
-statementSep       ::=  ('\n' | ';')
-statement          ::=  (printStmt | equivStmt | nequivStmt | evalStmt | definition | term)
+programItem        ::=  statementSep | statement statementSep | directiveLine
+statementSep       ::=  '\n' | ';'
+statement          ::=  printStmt | equivStmt | nequivStmt | evalStmt | definition | term
 directiveLine      ::=  ':…' '\n'
 printStmt          ::=  ('π' | ':print') comprehensionSpec? term
 equivStmt          ::=  ('≡' | ':assert') comprehensionSpec? atom atom
@@ -19,10 +19,10 @@ compBinding        ::=  identifier ':=' '{' term (',' term)* '}'
 term               ::=  application
 application        ::=  atom+
 atom               ::=  primary subst*
-primary            ::=  (abstraction | identifier | '(' term ')')
+primary            ::=  abstraction | identifier | '(' term ')'
 subst              ::=  '[' binder ':=' term ']'
 abstraction        ::=  'λ' binder+ '.' term
-binder             ::=  (identifier | strictBinder)
+binder             ::=  identifier | strictBinder
 identifier         ::=  plainIdent | backtickIdent
 plainIdent         ::=  (alnum | '_' | "'" | greek | op-sym)+
 backtickIdent      ::=  '`' [^`\n]+ '`'

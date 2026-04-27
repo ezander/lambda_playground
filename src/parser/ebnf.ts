@@ -68,12 +68,19 @@ function fmtSeq(defs: Gast[]): string {
   return defs.map(fmtAtom).join(" ");
 }
 
+// Format a rule body. A bare top-level alternation prints without surrounding
+// parens (parens only matter when an alternation is nested inside a sequence).
+function fmtRuleBody(defs: Gast[]): string {
+  if (defs.length === 1 && defs[0].type === "Alternation") return fmtGroup(defs[0]);
+  return fmtSeq(defs);
+}
+
 export function generateEBNF(): string {
   const rules = parser.getSerializedGastProductions() as Gast[];
   const maxLen = Math.max(...rules.map(r => r.name!.length), "backtickIdent".length);
   const pad = (s: string) => s.padEnd(maxLen);
   const body = rules
-    .map(r => `${pad(r.name!)}  ::=  ${fmtSeq(r.definition ?? [])}`)
+    .map(r => `${pad(r.name!)}  ::=  ${fmtRuleBody(r.definition ?? [])}`)
     .join("\n");
   return body
     + `\n${pad("identifier")}  ::=  plainIdent | backtickIdent`
