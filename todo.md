@@ -137,8 +137,10 @@
 ## Up next (RC1)
 
 * [ ] improve test quality: path coverage (not just line coverage), edge cases, full grammar coverage (all statement types, operator identifiers, backtick idents, subst, comprehension variants), pragma interactions and combinations, mixin vs include semantics, ≡/π/≢ output fields, eval with size/step limits and allowEta combos, rewrap edge cases
-* minor but... the text above the editor should not be "expression" any more. find something more suitable...
-* 
+* [ ] improve grammar   
+
+
+
 ## Eval panel (post-1.0 ideas)
 * [ ] leading idea: modal overlay for stepping through a chosen expression; main view becomes just the π/≡ log; keeps UI clean for newcomers
 * [ ] tabbed panel: eval for scratch, output for named buffers

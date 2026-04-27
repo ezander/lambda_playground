@@ -48,28 +48,9 @@ function emptyPositionMap(): PositionMap {
 
 // ── 1. CST Parser ─────────────────────────────────────────────────────────────
 //
-// Program grammar:
-//   program            ::= programItem*
-//   programItem        ::= statementSep | statement statementSep | directiveLine
-//   statementSep       ::= NewLine | Semi
-//   directiveLine      ::= Directive NewLine
-//   statement          ::= printStmt | equivStmt | nequivStmt | evalStmt | definition | term
-//   printStmt          ::= (π | :print) comprehensionSpec? term
-//   equivStmt          ::= (≡ | :assert) comprehensionSpec? atom atom
-//   nequivStmt         ::= (≢ | :assert-not) comprehensionSpec? atom atom
-//   definition         ::= identifier+ ':=' term         (gated: next := after identifier+)
-//   comprehensionSpec  ::= '[' compBinding (',' compBinding)* ']'
-//   compBinding ::= identLike ':=' '{' term (',' term)* '}'
-//
-// Term grammar:
-//   term        ::= application
-//   application ::= atom+                  (left-associative fold)
-//   atom        ::= primary subst*
-//   primary     ::= identLike | '(' term ')' | abstraction
-//   abstraction ::= ('\' | 'λ') binder+ '.' term
-//   binder      ::= identLike | strictBinder            -- strictBinder = β fused to a name (call-by-value)
-//   subst       ::= '[' (identLike | strictBinder) ':=' term ']'
-//   identifier  ::= plainIdent | backtickIdent
+// The grammar is the rule definitions below. For an EBNF rendering see
+// docs/grammar.md (regenerate with `npm run gen:grammar`) or open the
+// Help modal's Grammar tab in the running app.
 
 class LambdaParser extends CstParser {
   constructor() {

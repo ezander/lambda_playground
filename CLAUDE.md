@@ -46,28 +46,17 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 
 ### Grammar (surface syntax)
 
-```
-program     ::= statement (('\n' | ';') statement)*   -- indented lines continue the previous statement
-statement   ::= definition | redef | print | print-comp | equiv | equiv-comp | nequiv | term | directive
-definition  ::= identLike+ ':=' term
-redef       ::= identLike+ '::=' term
-print       ::= ('π' | ':print') term
-print-comp  ::= ('π' | ':print') '[' bindings ']' term
-equiv       ::= ('≡' | ':assert') atom atom
-equiv-comp  ::= ('≡' | ':assert') '[' bindings ']' atom atom
-nequiv      ::= ('≢' | ':assert-not') atom atom
-term        ::= application
-application ::= atom+
-atom        ::= primary ('[' binder ':=' term ']')*
-primary     ::= identLike | '(' term ')' | abstraction
-abstraction ::= ('\' | 'λ') binder+ '.' term
-binder      ::= identLike | strictBinder
-strictBinder ::= 'β' (alnum | '_' | "'" | greek | op-sym)+   -- β fused to name, no whitespace; call-by-value
-bindings    ::= identLike ':=' '{' term (',' term)* '}' (',' …)*
-identLike   ::= plainIdent | '`' [^`\n]+ '`'
-plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α η ∀ ∃ ⊢ reserved (β reserved unless fused as strictBinder)
-directive   ::= ':import' '"path"' modifier* | ':mixin' '"path"' | ':set' key value? | ':eval' term | ':infix' name+
-```
+Top-level surface forms:
+
+- **Lambdas**: `λx. body`, `λx y z. body` (multi-param), `λβx. body` (strict / call-by-value binder).
+- **Application**: juxtaposition, left-associative (`f x y` = `(f x) y`).
+- **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Strict variant: `e[βx:=a]`.
+- **Definitions**: `name params := body` (`::=` for redefinition). The name slot rejects β; param slots accept it.
+- **Statements**: `π expr` / `:print` (evaluate and show), `≡ a b` / `:assert`, `≢ a b` / `:assert-not`, `:eval expr`. Each accepts a comprehension prefix `[x := {a,b,c}]`.
+- **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`. Pragmas `#! key value` inside line comments overlap with `:set`.
+- **Reserved letters**: λ, π, α, β, η, ∀, ∃, ⊢ — never absorbed into identifiers regardless of position.
+
+For the full EBNF, see [`docs/grammar.md`](docs/grammar.md) (regenerate with `npm run gen:grammar`) or open the Grammar tab in the running app's Help modal — both are produced from the live Chevrotain parser via `src/parser/ebnf.ts`.
 
 ### Private symbols
 
