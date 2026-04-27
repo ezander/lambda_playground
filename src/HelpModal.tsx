@@ -217,6 +217,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>`</code> with selection</td><td>wrap selected text in backticks</td></tr>
             <tr><td><code>`</code> without selection</td><td>insert paired backticks, cursor inside</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
+            <tr><td><code>Alt-B</code></td><td>insert β at cursor (for strict binders, e.g. <code>λβx. body</code>)</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
             <tr><td><code>Alt-E</code></td><td>insert ≡ at start of line</td></tr>
             <tr><td><code>Alt-N</code></td><td>insert ≢ at start of line</td></tr>

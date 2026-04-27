@@ -171,7 +171,7 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
   // lowercase
-  { sym: "α", name: "alpha",   reserved: true }, { sym: "β", name: "beta",  reserved: true },
+  { sym: "α", name: "alpha",   reserved: true }, { sym: "β", name: "beta",  reserved: true, shortcut: "alt-b" },
   { sym: "γ", name: "gamma"   }, { sym: "δ", name: "delta"   },
   { sym: "ε", name: "epsilon" }, { sym: "ζ", name: "zeta"    },
   { sym: "η", name: "eta",     reserved: true }, { sym: "θ", name: "theta"  },
@@ -239,6 +239,8 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "`", run: v => wrapSelection(v, "`", "`", true) },
   { key: "Alt-l", run: v => insertAt(v, "λ") },
   { key: "Alt-L", run: v => insertAt(v, "λ") },
+  { key: "Alt-b", run: v => insertAt(v, "β") },
+  { key: "Alt-B", run: v => insertAt(v, "β") },
   { key: "Alt-p", run: v => insertAtLineStart(v, "π") },
   { key: "Alt-P", run: v => insertAtLineStart(v, "π") },
   { key: "Alt-e", run: v => insertAtLineStart(v, "≡") },
