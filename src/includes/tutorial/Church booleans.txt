@@ -59,8 +59,8 @@ if false `then clause` `else clause`
 
 # (1) Just in case you're curious: `then clause` is not a string but an
 # identifier containing a space, which is why it is enclosed in backticks. 
-# See more on that here: [doc/identifier]
+# See more on that here: [doc/Identifier]
 # (2) Note: with Church encodings the `if` function reduces to just the identity
 # which is why it is generally left out and instead of `if p a b`, you usually
-# only find `p a b`. Writing the `if` explicitly, however, makes the everything
-# also amenable to other defintions of `true` and `false`.
+# only find `p a b`. Writing the `if` explicitly, however, makes the definitions
+# also amenable to other encodings of `true` and `false`.

@@ -15,3 +15,6 @@
 
 ≡[p:={⊤,⊥},q:={⊤,⊥}] (¬ (∧ p q)) (∨ (¬ p) (¬ q))
 ≡[p:={⊤,⊥},q:={⊤,⊥}] (¬ (∨ p q)) (∧ (¬ p) (¬ q))
+
+# Note: this was written before infix notation was added. You can change
+# that here as an exercise ;)

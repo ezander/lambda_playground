@@ -1,6 +1,8 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
 :import "std/Tutorial Utils"
+# WIP: Attention, this is still work in progress and will be expanded soon...
 
-≡ `Continue ?` yes
-
-
+#*
+  Note: this tutorial is currently far from finished: to get a better
+  introduction currently, look into the literature ([doc/Literature]) or look at
+  the examples.
+*#

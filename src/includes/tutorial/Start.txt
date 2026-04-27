@@ -3,22 +3,23 @@
   ========
 
   This is a short introduction into the untyped λ calculus focussing on the
-  computational aspects and not so much on how to do deep proofs with it.
+  computational aspects of it, and not so much on how to do proofs. But maybe
 
-  Note: the best way to view the tutorial is to go maximize the window and enable theater mode
-  loaded into scratch buffer, can modify, undo
-  undo goes back, after all changes undone
-  
-  A little bit of the history and the whys and hows of LC can be found in the next
-  part of this series [tutorial/Intro].
-  
-  Or if you want to jump straight into it skipping the historical background go
-  here [tutorial/Church booleans]
-  
-  Some literature on LC can also be found here: [tutorial/Literature]
-  
-  Some literature: 
-    * [https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html]
-    * [https://en.wikipedia.org/wiki/Lambda_calculus]
+  Note: the best way to view the tutorial is to maximize the window and enable
+  theater mode. When you click on any tutorial or example link, it will be
+  loaded into the scratch buffer. There you can modify it and play around with
+  it however you want. You undo can undo things, and after undoing all your
+  changes, it will also bring you back to the last loaded buffer. If you want
+  you can also save your experiments into your own buffers (see [doc/Buffers] ).
+  If you want to try this example/undo thing just click here:
+  [example/Bool Implementations] and then click 'undo' to come back here.
+
+
+  Note: this tutorial is currently far from finished: to get a better
+  introduction into the lambda calculus at the moment, please look into the
+  literature ([doc/Literature]) or take a look at the examples.
+
+  The only currently working section of the tutorial is this one here:
+  [tutorial/Church booleans]
 
 *#

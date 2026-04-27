@@ -1,17 +1,68 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
-#* 
+#*
 
-Literature
-==========
+  Literature
+  ==========
+
+  Tutorials:
+    * Helmut Brandl: Programming with the Lambda Calculus
+        [https://hbr.github.io/Lambda-Calculus/lambda2/lambda.html]
+    * Lucas Costa: A Gentle Introduction to Lambda Calculus
+        [https://www.lucasfcosta.com/blog/An-Introduction-to-Lambda-Calculus-Part-1]
+    * Amir Kamil: Lambda Calculus (in Programming Language Principles and Paradigms)
+        [https://eecs390.github.io/notes/theory.html]
+    * Lambda Calculus on nLab
+        [https://ncatlab.org/nlab/show/lambda-calculus]
 
 
+  YouTube Tutorials:
+    * Fullstack Academy - Lambda Calculus - Fundamentals of Lambda Calculus
+      & Functional Programming in JavaScript
+        [https://www.youtube.com/watch?v=3VQ382QG-y4]
+    * Theo Reto - Introduction to the Untyped λ-Calculus (1.1)
+        [https://www.youtube.com/watch?v=233A3bN0UBE]
+      Playlist - Lambda Cube Unboxed
+        [https://www.youtube.com/playlist?list=PLNwzBl6BGLwOKBFVbvp-GFjAA_ESZ--q4]
 
 
+  Wikipedia articles:
+    * [https://en.wikipedia.org/wiki/Lambda_calculus]
+    * [https://en.wikipedia.org/wiki/Church_encoding]
+    * [https://en.wikipedia.org/wiki/Lambda_calculus_definition]
 
-[https://www.youtube.com/watch?v=mBjhDyHFqJY]
-[https://www.youtube.com/watch?v=3VQ382QG-y4]
-https://www.youtube.com/watch?v=233A3bN0UBE
-https://www.youtube.com/playlist?list=PLNwzBl6BGLwOKBFVbvp-GFjAA_ESZ--q4
 
+ The one and only reference textbook on the lambda calculus:
+    * H.P. Barendregt: The Lambda Calculus, Its Syntax and Semantics
+      [just search the web for it...]
+    * Short version by the same author
+      [https://www.academia.edu/18746611/Introduction_to_lambda_calculus]
+
+
+  Fixed point combinators:
+    * [https://ncatlab.org/nlab/show/fixed-point+combinator]
+    * [https://www.cs.ru.nl/barendregt60/essays/klop/]
+
+
+  Other λ languages:
+    * pLam (article on Medium)
+        [https://medium.com/@slovnicki/plam-a-mighty-tool-for-learning-and-exploring-pure-%CE%BB-calculus-45b53be6f238]
+    * pLam (code on github)
+        [https://github.com/slovnicki/pLam]
+    * unlambda
+        [http://www.madore.org/~david/programs/unlambda/]
+    * Lambda Calc reducer (not working, but code)
+        [http://www.itu.dk/~sestoft/lamreduce/index.html]
+
+
+  Interactive sites related to lambda calculus, logic, etc.:
+    * Gentzen sequent calculus - interactive
+        [http://logitext.mit.edu/logitext.fcgi/tutorial]
+    * Tree proof generator
+        [https://www.umsu.de/trees/]
+    * Natural deduction proof editor and checker
+        [https://proofs.openlogicproject.org/]
+    * Terence Tao's QED
+        [https://teorth.github.io/QED/]
+    * The Incredible Proof Machine
+        [https://incredible.pm/]
 
 *#
