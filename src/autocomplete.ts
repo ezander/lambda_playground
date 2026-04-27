@@ -2,7 +2,7 @@ import { autocompletion, startCompletion, moveCompletionSelection, CompletionCon
 import { keymap, ViewPlugin, EditorView } from "@codemirror/view";
 import { Prec, Extension } from "@codemirror/state";
 import { parsedField } from "./highlight";
-import { KNOWN_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
+import { NUMERIC_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
 import { BUNDLED_CONTENT } from "./data/content";
 import { getUserIncludePaths } from "./storage";
 import { findCommentRanges, inComment } from "./comment";
@@ -26,8 +26,9 @@ const DIRECTIVE_OPTIONS = [
 ];
 
 const SET_OPTIONS = [
-  ...Object.keys(KNOWN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
-  ...([...BOOLEAN_PRAGMAS]).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
+  ...Object.keys(NUMERIC_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
+  ...Object.keys(BOOLEAN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
+  ...Object.keys(BOOLEAN_PRAGMAS).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
 ];
 
 function getAllIncludePaths(): string[] {

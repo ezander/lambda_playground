@@ -7,7 +7,7 @@ import {
   PositionMap,
   DefEntry,
   DefInfo,
-  PragmaConfig, KNOWN_PRAGMAS, BOOLEAN_PRAGMAS,
+  PragmaConfig, NUMERIC_PRAGMAS, BOOLEAN_PRAGMAS,
   ComprehensionBinding,
   PrintComprehensionRow, PrintComprehensionInfo,
   EquivComprehensionRow, EquivComprehensionInfo,
@@ -238,17 +238,18 @@ function processPragma(
     return;
   }
   const [, negate, key, val] = m;
-  const props = KNOWN_PRAGMAS[key];
-  if (!props) {
-    errors.push({ message: `Unknown pragma option: "${key}"`, offset, kind: "warning" });
-  } else if (BOOLEAN_PRAGMAS.has(key)) {
+  const boolProps = BOOLEAN_PRAGMAS[key];
+  const numProps  = NUMERIC_PRAGMAS[key];
+  if (boolProps) {
     if (val && val !== "true" && val !== "false")
       errors.push({ message: `Pragma "${key}" is boolean, expected no value, true, or false`, offset, kind: "warning" });
-    else { const b = negate ? false : val !== "false"; for (const prop of props) (pragmaConfig as any)[prop] = b; }
-  } else {
+    else { const b = negate ? false : val !== "false"; for (const prop of boolProps) pragmaConfig[prop] = b; }
+  } else if (numProps) {
     if (negate) errors.push({ message: `Pragma "${key}" is numeric, cannot negate`, offset, kind: "warning" });
     else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Pragma "${key}" requires a numeric value`, offset, kind: "warning" });
-    else for (const prop of props) pragmaConfig[prop] = parseInt(val) as any;
+    else for (const prop of numProps) pragmaConfig[prop] = parseInt(val);
+  } else {
+    errors.push({ message: `Unknown pragma option: "${key}"`, offset, kind: "warning" });
   }
 }
 
@@ -364,28 +365,32 @@ export function parseProgram(
 
   traceSummary("parse total", performance.now() - tParseStart);
 
+  // After an ≡ failure the rest of the program is skipped semantically, but we
+  // still record positions for syntax highlighting (def names as defs, term
+  // expressions as exprInfos). Used as the fallback path inside the main loop.
+  const recordHighlightOnly = (stmt: RawStmt): void => {
+    switch (stmt.kind) {
+      case "def":
+        defInfos.push({ name: stmt.name, namePos: { from: stmt.nameTok.startOffset, to: (stmt.nameTok.endOffset ?? stmt.nameTok.startOffset) + 1 }, body: stmt.rawBody, positions: globalPositions });
+        break;
+      case "print":
+        exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+        for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
+        break;
+      case "equiv":
+        exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+        for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
+        break;
+      case "eval":
+      case "expr":
+        exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+        break;
+    }
+  };
+
   // ── Semantic analysis ──────────────────────────────────────────────────────
   for (const stmt of stmts) {
-    if (equivFailed.value) {
-      switch (stmt.kind) {
-        case "def":
-          defInfos.push({ name: stmt.name, namePos: { from: stmt.nameTok.startOffset, to: (stmt.nameTok.endOffset ?? stmt.nameTok.startOffset) + 1 }, body: stmt.rawBody, positions: globalPositions });
-          break;
-        case "print":
-          exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
-          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
-          break;
-        case "equiv":
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
-          for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
-          break;
-        case "eval":
-        case "expr":
-          exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
-          break;
-      }
-      continue;
-    }
+    if (equivFailed.value) { recordHighlightOnly(stmt); continue; }
 
     switch (stmt.kind) {
       case "empty":

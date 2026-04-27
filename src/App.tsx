@@ -88,7 +88,7 @@ function Truncated({ text }: { text: string }) {
   return <TruncatedText key={text} text={text} />;
 }
 
-type Loaded = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: number; effectiveConfig: Config } | null;
+type EvalSession = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: number; effectiveConfig: Config } | null;
 type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
 
 
@@ -99,6 +99,50 @@ function buildEntry(term: Term, stepNum: number, defs: Map<string, DefEntry>, su
     match: normal ? findMatch(term, defs) : undefined,
     status,
   };
+}
+
+// Run reduction up to maxSteps, building a history entry per step. Tags the
+// last entry with its terminal status (normalForm / stepLimit / sizeLimit).
+// Used by both advance (incremental stepping) and handleLoadRun (fresh full
+// run); pass an initialEntry to seed the history with the starting term —
+// needed so a "term already in NF" case still gets the normalForm tag.
+function runSteps(
+  initialTerm: Term,
+  initialStepNum: number,
+  maxSteps: number,
+  maxSize: number,
+  showSubst: boolean,
+  defs: Map<string, DefEntry>,
+  initialEntry?: HistoryEntry,
+): { entries: HistoryEntry[]; finalTerm: Term; finalStepNum: number; done: boolean; sizeLimitHit: boolean } {
+  let current = initialTerm;
+  let stepNum = initialStepNum;
+  const entries: HistoryEntry[] = initialEntry ? [initialEntry] : [];
+  let i = 0;
+  let lastNext: Term | null = null;
+  let sizeLimitHit = false;
+  let hitSize = 0;
+  for (; i < maxSteps; i++) {
+    lastNext = step(current, showSubst);
+    if (lastNext === null) break;
+    current = lastNext;
+    entries.push(buildEntry(current, ++stepNum, defs));
+    const sz = termSize(current);
+    if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
+  }
+  const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
+  const batchLimitHit = !done && i === maxSteps && maxSteps > 1;
+  if (entries.length > 0) {
+    const last = entries[entries.length - 1];
+    if (sizeLimitHit) {
+      entries[entries.length - 1] = { ...last, match: undefined, status: "sizeLimit", steps: stepNum, size: hitSize };
+    } else if (done) {
+      entries[entries.length - 1] = { ...last, status: "normalForm" };
+    } else if (batchLimitHit) {
+      entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: stepNum };
+    }
+  }
+  return { entries, finalTerm: current, finalStepNum: stepNum, done, sizeLimitHit };
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -540,7 +584,7 @@ export default function App() {
     const id = setTimeout(() => setDebouncedSource(source), PARSE_DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [source]);
-  const [loaded, setLoaded]           = useState<Loaded>(null);
+  const [evalSession, setEvalSession] = useState<EvalSession>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, DefEntry>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
@@ -635,12 +679,6 @@ export default function App() {
     editorViewRef.current?.dispatch({ effects: wrapCompartment.reconfigure(makeWrapExtensions(config.wrapWidth)) });
   }, [config.wrapWidth]);
 
-  const makeEntry = useCallback(
-    (term: Term, stepNum: number, suffix = "", normal = true, status?: HistoryEntry["status"]) =>
-      buildEntry(term, stepNum, normDefs, suffix, normal, status),
-    [normDefs]
-  );
-
   const mergeConfig = useCallback((pragma: PragmaConfig): Config =>
     ({ ...config, ...pragma }), [config]);
 
@@ -651,52 +689,24 @@ export default function App() {
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
     setNormDefs(nd);
     const done = step(term) === null;
-    setLoaded({ term, done, stepNum: 0, effectiveConfig });
+    setEvalSession({ term, done, stepNum: 0, effectiveConfig });
     setLoadedSource(source);
     setHistory([{ label: "0:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
 
   // Auto-reload when source changes or showSubst toggles
   useEffect(() => {
-    if (!programResult.expr) { setLoaded(null); setHistory([]); return; }
+    if (!programResult.expr) { setEvalSession(null); setHistory([]); return; }
     handleLoad();
   }, [handleLoad, showSubst]); // handleLoad changes when programResult/source changes
 
   const advance = useCallback((maxSteps: number) => {
-    if (!loaded || loaded.done) return;
-    let current = loaded.term;
-    let stepNum = loaded.stepNum;
-    const entries: HistoryEntry[] = [];
-    const maxSize = loaded.effectiveConfig.maxSize;
-    let i = 0;
-    let lastNext: Term | null = null;
-    let sizeLimitHit = false;
-    let hitSize = 0;
-    for (; i < maxSteps; i++) {
-      lastNext = step(current, showSubst);
-      if (lastNext === null) break;
-      current = lastNext;
-      entries.push(makeEntry(current, ++stepNum));
-      const sz = termSize(current);
-      if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
-    }
-    const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
-    const batchLimitHit = !done && i === maxSteps && maxSteps > 1;
-    // Tag the last entry with its terminal status
-    if (entries.length > 0) {
-      const last = entries[entries.length - 1];
-      if (sizeLimitHit) {
-        entries[entries.length - 1] = { ...last, match: undefined, status: "sizeLimit", steps: stepNum, size: hitSize };
-      } else if (done) {
-        entries[entries.length - 1] = { ...last, status: "normalForm" };
-      } else if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: stepNum };
-      }
-    }
-    setLoaded({ term: current, done, sizeLimited: sizeLimitHit || undefined, stepNum, effectiveConfig: loaded.effectiveConfig });
-    const maxHistory = loaded.effectiveConfig.maxHistory;
-    setHistory(h => [...entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
-  }, [loaded, makeEntry, showSubst]);
+    if (!evalSession || evalSession.done) return;
+    const r = runSteps(evalSession.term, evalSession.stepNum, maxSteps, evalSession.effectiveConfig.maxSize, showSubst, normDefs);
+    setEvalSession({ term: r.finalTerm, done: r.done, sizeLimited: r.sizeLimitHit || undefined, stepNum: r.finalStepNum, effectiveConfig: evalSession.effectiveConfig });
+    const maxHistory = evalSession.effectiveConfig.maxHistory;
+    setHistory(h => [...r.entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
+  }, [evalSession, normDefs, showSubst]);
 
   const jumpTo = useCallback((offset: number) => {
     const view = editorViewRef.current;
@@ -922,19 +932,19 @@ export default function App() {
   }, [importItems]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
-  const handleRun     = useCallback(() => advance(loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, loaded, config.maxStepsRun]);
+  const handleRun     = useCallback(() => advance(evalSession?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, evalSession, config.maxStepsRun]);
 
   const handleEtaStep = useCallback(() => {
-    if (!loaded || loaded.sizeLimited) return;
-    const next = etaStep(loaded.term);
+    if (!evalSession || evalSession.sizeLimited) return;
+    const next = etaStep(evalSession.term);
     if (next === null) return;
-    const stepNum = loaded.stepNum + 1;
+    const stepNum = evalSession.stepNum + 1;
     const done = step(next, showSubst) === null;
-    const entry = makeEntry(next, stepNum);
+    const entry = buildEntry(next, stepNum, normDefs);
     if (done) entry.status = "normalForm";
-    setLoaded({ term: next, done, stepNum, effectiveConfig: loaded.effectiveConfig });
-    setHistory(h => [entry, ...h].slice(0, loaded.effectiveConfig.maxHistory));
-  }, [loaded, makeEntry, showSubst]);
+    setEvalSession({ term: next, done, stepNum, effectiveConfig: evalSession.effectiveConfig });
+    setHistory(h => [entry, ...h].slice(0, evalSession.effectiveConfig.maxHistory));
+  }, [evalSession, normDefs, showSubst]);
   const handleLoadRun = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
@@ -942,38 +952,9 @@ export default function App() {
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
     setNormDefs(nd);
     setLoadedSource(source);
-    // Run immediately from the fresh term
-    const LIMIT = effectiveConfig.maxStepsRun;
-    const maxSize = effectiveConfig.maxSize;
-    let current = term;
-    const entries: HistoryEntry[] = [buildEntry(term, 0, nd)];
-    let i = 0;
-    let lastNext: Term | null = null;
-    let sizeLimitHit = false;
-    let hitSize = 0;
-    for (; i < LIMIT; i++) {
-      lastNext = step(current, showSubst);
-      if (lastNext === null) break;
-      current = lastNext;
-      entries.push(buildEntry(current, i + 1, nd));
-      const sz = termSize(current);
-      if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
-    }
-    const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
-    const batchLimitHit = !done && i === LIMIT;
-    if (entries.length > 0) {
-      const last = entries[entries.length - 1];
-      if (sizeLimitHit) {
-        entries[entries.length - 1] = { ...last, match: undefined, status: "sizeLimit", steps: i + 1, size: hitSize };
-      } else if (done) {
-        entries[entries.length - 1] = { ...last, status: "normalForm" };
-      } else if (batchLimitHit) {
-        entries[entries.length - 1] = { ...last, match: undefined, status: "stepLimit", steps: i };
-      }
-    }
-    const stepNum = entries.length - 1;
-    setLoaded({ term: current, done, sizeLimited: sizeLimitHit || undefined, stepNum, effectiveConfig });
-    setHistory(entries.slice(-effectiveConfig.maxHistory).reverse());
+    const r = runSteps(term, 0, effectiveConfig.maxStepsRun, effectiveConfig.maxSize, showSubst, nd, buildEntry(term, 0, nd));
+    setEvalSession({ term: r.finalTerm, done: r.done, sizeLimited: r.sizeLimitHit || undefined, stepNum: r.finalStepNum, effectiveConfig });
+    setHistory(r.entries.slice(-effectiveConfig.maxHistory).reverse());
   }, [programResult, source, showSubst, mergeConfig]);
 
   const editorExtensions = useMemo(() => {
@@ -1091,8 +1072,8 @@ export default function App() {
   }, [source]);
 
 
-  const canStep    = loaded !== null && !loaded.done && source === loadedSource;
-  const canEtaStep = loaded !== null && !loaded.sizeLimited && source === loadedSource && etaStep(loaded.term) !== null;
+  const canStep    = evalSession !== null && !evalSession.done && source === loadedSource;
+  const canEtaStep = evalSession !== null && !evalSession.sizeLimited && source === loadedSource && etaStep(evalSession.term) !== null;
   const currentTerm = programResult.expr;
 
 
@@ -1195,7 +1176,7 @@ export default function App() {
             canStep={canStep} canEtaStep={canEtaStep}
             onRun={handleLoadRun} onReset={handleLoad} onStep={handleStep} onEtaStep={handleEtaStep} onContinue={handleRun}
             showSubst={showSubst} onSetShowSubst={setShowSubst}
-            history={history} maxStepsRun={loaded?.effectiveConfig.maxStepsRun ?? config.maxStepsRun}
+            history={history} maxStepsRun={evalSession?.effectiveConfig.maxStepsRun ?? config.maxStepsRun}
           />
           <PrintPanel
             open={printOpen} onToggle={togglePrint}

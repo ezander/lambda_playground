@@ -56,17 +56,22 @@ export type PragmaConfig = {
   allowEta?:      boolean;
 };
 
-export const KNOWN_PRAGMAS: Record<string, (keyof PragmaConfig)[]> = {
+// Pragma keys are split by value type so the parser can assign without casts.
+type NumericPragmaKey = "maxStepsPrint" | "maxStepsIdent" | "maxHistory" | "maxSize";
+type BooleanPragmaKey = "normalizeDefs" | "allowEta";
+
+export const NUMERIC_PRAGMAS: Record<string, NumericPragmaKey[]> = {
   "max-steps":       ["maxStepsPrint", "maxStepsIdent"],
   "max-steps-print": ["maxStepsPrint"],
   "max-steps-ident": ["maxStepsIdent"],
   "max-history":     ["maxHistory"],
-  "normalize-defs":  ["normalizeDefs"],
   "max-size":        ["maxSize"],
-  "allow-eta":       ["allowEta"],
 };
 
-export const BOOLEAN_PRAGMAS = new Set<string>(["normalize-defs", "allow-eta"]);
+export const BOOLEAN_PRAGMAS: Record<string, BooleanPragmaKey[]> = {
+  "normalize-defs":  ["normalizeDefs"],
+  "allow-eta":       ["allowEta"],
+};
 
 export type EquivInfo = {
   src1: string; src2: string;
