@@ -14,8 +14,9 @@ import {
   EquivInfo,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
-import { normalize, alphaEq, buildNormDefs, canonicalNormalForm, findMatch } from "../evaluator/eval";
+import { normalize, alphaEq, buildNormDefs, canonicalNormalForm, findMatch, RunResult } from "../evaluator/eval";
 import { prettyPrint } from "./pretty";
+import { traceSummary, traceDetail, isDetailEnabled } from "../trace";
 
 // ── Definition expansion ───────────────────────────────────────────────────────
 
@@ -259,6 +260,16 @@ function processPragma(
 
 // ── Main program parser ───────────────────────────────────────────────────────
 
+function normMeta(r: RunResult): string {
+  if (r.kind === "normalForm") return `steps=${r.steps}`;
+  if (r.kind === "stepLimit")  return `stepLimit steps=${r.steps}`;
+  return `sizeLimit steps=${r.steps} size=${r.size}`;
+}
+
+function shortSrc(s: string, max = 22): string {
+  return s.length > max ? s.slice(0, max - 1) + "…" : s;
+}
+
 export function parseProgram(
   input: string,
   defaultConfig: ProgramRunConfig = {},
@@ -281,8 +292,20 @@ export function parseProgram(
   const pragmaConfig: PragmaConfig = {};
   const equivFailed = { value: false };
 
+  // Tracing — accumulate eval time for the summary total at the end.
+  let evalTotal = 0;
+  const timedNorm = (label: string, term: Term, cfg: any): RunResult => {
+    const t0 = performance.now();
+    const r = normalize(term, cfg);
+    const dt = performance.now() - t0;
+    evalTotal += dt;
+    if (isDetailEnabled()) traceDetail(label, dt, normMeta(r));
+    return r;
+  };
+
   if (!input.endsWith("\n")) input += "\n";
 
+  const tParseStart = performance.now();
   // ── Lex ────────────────────────────────────────────────────────────────────
   const lexResult = LambdaLexer.tokenize(input);
   if (lexResult.errors.length > 0) {
@@ -345,6 +368,8 @@ export function parseProgram(
     paramPositions: bindings.map(b => ({ from: b.nameTok.startOffset, to: (b.nameTok.endOffset ?? b.nameTok.startOffset) + 1 })),
   } : {};
 
+  traceSummary("parse", performance.now() - tParseStart);
+
   // ── Semantic analysis ──────────────────────────────────────────────────────
   for (const stmt of stmts) {
     if (equivFailed.value) {
@@ -390,7 +415,7 @@ export function parseProgram(
           body = params.reduceRight((acc, p) => Abs(tokenName(p), acc, isStrictBinder(p)), body);
 
         if (pragmaConfig.normalizeDefs ?? true) {
-          const { term: normalized, kind } = normalize(body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
+          const { term: normalized, kind } = timedNorm(`def ${name}`, body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           if (kind === "stepLimit")
             errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset, kind: "warning" });
           else if (kind === "sizeLimit")
@@ -449,7 +474,8 @@ export function parseProgram(
           const rows: PrintComprehensionRow[] = [];
           for (const combo of valueCombos) {
             const wrappedTerm = applySubsts(expandedBase, combo.map(c => ({ name: c.name, value: c.valueTerm })));
-            const runResult = normalize(wrappedTerm, cfg);
+            const compStr = combo.map(c => `${c.name}=${c.valueSrc}`).join(",");
+            const runResult = timedNorm(`π ${shortSrc(baseSrc)} [${compStr}]`, wrappedTerm, cfg);
             const { term: normalizedTerm, kind, steps } = runResult;
             rows.push({
               substExpr: formatSubstExpr(baseSrc, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
@@ -470,7 +496,7 @@ export function parseProgram(
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
           const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
-          const runResult = normalize(expanded, cfg);
+          const runResult = timedNorm(`π ${shortSrc(prettyPrint(stmt.term))}`, expanded, cfg);
           const { term: normalizedTerm, kind, steps } = runResult;
           const visibleDefs = new Map([...defs].filter(([k]) => !defEntries.get(k)?.quiet));
           const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
@@ -519,8 +545,10 @@ export function parseProgram(
             const substs = combo.map(c => ({ name: c.name, value: c.valueTerm }));
             const w1 = applySubsts(baseT1, substs);
             const w2 = applySubsts(baseT2, substs);
-            const r1 = normalize(w1, cfg);
-            const r2 = normalize(w2, cfg);
+            const compStr = combo.map(c => `${c.name}=${c.valueSrc}`).join(",");
+            const sym = stmt.negated ? "≢" : "≡";
+            const r1 = timedNorm(`${sym} ${shortSrc(src1)} [${compStr}] (lhs)`, w1, cfg);
+            const r2 = timedNorm(`${sym} ${shortSrc(src2)} [${compStr}] (rhs)`, w2, cfg);
             const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
             const equivalent = terminated && alphaEq(r1.term, r2.term);
             const passed = stmt.negated ? !equivalent : equivalent;
@@ -550,8 +578,9 @@ export function parseProgram(
         } else {
           const t1 = expandDefs(swapInfix(stmt.atom1, infx), defs);
           const t2 = expandDefs(swapInfix(stmt.atom2, infx), defs);
-          const r1 = normalize(t1, cfg);
-          const r2 = normalize(t2, cfg);
+          const sym = stmt.negated ? "≢" : "≡";
+          const r1 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.atom1))} (lhs)`, t1, cfg);
+          const r2 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.atom2))} (rhs)`, t2, cfg);
           const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
           const equivalent = terminated && alphaEq(r1.term, r2.term);
           const passed = stmt.negated ? !equivalent : equivalent;
@@ -568,7 +597,6 @@ export function parseProgram(
           });
           if (!passed) {
             equivFailed.value = true;
-            const sym = stmt.negated ? "≢" : "≡";
             const detail = !terminated ? "(did not terminate)"
               : `${prettyPrint(r1.term)} ${stmt.negated ? "=" : "≠"} ${prettyPrint(r2.term)}`;
             errors.push({ message: `${sym} assertion failed: ${detail}`, offset: stmt.offset, kind: "assert-fail" });
@@ -598,6 +626,8 @@ export function parseProgram(
       }
     }
   }
+
+  traceSummary("eval total", evalTotal);
 
   return {
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,

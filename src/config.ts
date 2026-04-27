@@ -1,6 +1,8 @@
 // ── Shared Config type and defaults ──────────────────────────────────────────
 // Imported by App.tsx and SettingsModal.tsx.
 
+import type { TraceLevel } from "./trace";
+
 export type Config = {
   maxStepsPrint:   number;
   maxStepsRun:     number;
@@ -10,6 +12,7 @@ export type Config = {
   showPassingEquiv: boolean;
   wrapWidth:       number;
   autoSave:        boolean;
+  traceLevel:      TraceLevel;
 };
 
 export const DEFAULT_CONFIG: Config = {
@@ -21,4 +24,5 @@ export const DEFAULT_CONFIG: Config = {
   showPassingEquiv: false,
   wrapWidth:       80,
   autoSave:        false,
+  traceLevel:      "off",
 };

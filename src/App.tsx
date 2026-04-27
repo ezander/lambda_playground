@@ -21,6 +21,7 @@ import JSZip from "jszip";
 import { DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
 import { SAVE_PREFIX, getSavedSlots, resolveContent, KEY_CONFIG, KEY_SOURCE, KEY_KINO, KEY_KINO_SPLIT, KEY_PANEL_STEPS, KEY_PANEL_PRINT, KEY_PRINT_DESC } from "./storage";
 import { Config, DEFAULT_CONFIG } from "./config";
+import { setTraceLevel } from "./trace";
 import { useFocusTrap } from "./useFocusTrap";
 
 function loadConfig(): Config {
@@ -571,7 +572,12 @@ export default function App() {
   const [copiedKey,  setCopiedKey]    = useState(0);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
-  const [config, setConfig]         = useState<Config>(loadConfig);
+  const [config, setConfig]         = useState<Config>(() => {
+    const c = loadConfig();
+    setTraceLevel(c.traceLevel);
+    return c;
+  });
+  useEffect(() => { setTraceLevel(config.traceLevel); }, [config.traceLevel]);
   const [stepsOpen, setStepsOpen]   = useState(() => localStorage.getItem(KEY_PANEL_STEPS) !== "0");
   const [printOpen, setPrintOpen]   = useState(() => localStorage.getItem(KEY_PANEL_PRINT) !== "0");
   const [printDesc, setPrintDesc]   = useState(() => localStorage.getItem(KEY_PRINT_DESC) === "1");

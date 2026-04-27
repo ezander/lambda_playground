@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Config } from "./config";
+import { TraceLevel } from "./trace";
 import { useFocusTrap } from "./useFocusTrap";
 
 function parsePositiveInt(s: string, fallback: number): number {
@@ -20,6 +21,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
   const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
   const [autoSave,          setAutoSave]          = useState(config.autoSave);
+  const [traceLevel,        setTraceLevelState]   = useState<TraceLevel>(config.traceLevel);
 
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef);
@@ -33,6 +35,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
     showPassingEquiv,
     wrapWidth:        parsePositiveInt(wrapWidth,     config.wrapWidth),
     autoSave,
+    traceLevel,
   });
 
   useEffect(() => {
@@ -119,6 +122,18 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setAutoSave(e.target.checked)} />
               </td>
               <td className="settings-hint">save named buffers automatically on every edit</td>
+            </tr>
+            <tr>
+              <td>trace</td>
+              <td>
+                <select className="config-input" value={traceLevel}
+                  onChange={e => setTraceLevelState(e.target.value as TraceLevel)}>
+                  <option value="off">off</option>
+                  <option value="summary">summary</option>
+                  <option value="detail">detail</option>
+                </select>
+              </td>
+              <td className="settings-hint">log timings to console (filter by "λp"); detail uses console.debug — set DevTools to "Verbose"</td>
             </tr>
           </tbody>
         </table>
