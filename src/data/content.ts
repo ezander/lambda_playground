@@ -65,6 +65,7 @@ export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "e
   "Tuples",
   "Recursion",
   "SKI Calculus",
+  "Equivalence and the FLT",
 ]);
 
 export const TUTORIALS: { label: string; src: string }[] = ordered(tutorialMap, "tutorial", [

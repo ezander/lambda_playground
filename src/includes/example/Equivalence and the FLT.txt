@@ -1,0 +1,121 @@
+#*
+  αβ-Equivalence and FLT
+  ======================
+
+  In the λ playground we have the operators ≡ and ≢ to check whether two
+  λ terms are αβ-equivalent, i.e. can be brought to an α-equivalent form (i.e.
+  same form except for different binder names) via a couple of β-substitutions.
+
+  Now, you might want to check
+    ≡ (Y F) (F (Y F))
+  - the defining relation for the Y-combinator - and be somewhat annoyed that
+  this λ playground does not tell you that it's true. The problem is, however,
+  that for two λ terms, it is not possible in general to say whether they are
+  equivalent or not via some finite algorithm (this has been proven by Church
+  in the 1930s already). And even if it is possible for two terms, it can incur
+  a huge and unpredictable amount of storage and runtime. So, the notion we
+  adopted here, is
+    * if both expressions can be reduced to normal form within some given time and
+      space constraints (max-steps, max-size) those forms are compared for
+      α equivalence, and the assertion succeeds or fails accordingly
+    * if at least one of them can't be reduced, the assertion fails.
+
+  I.e. a failing assertion with a "did not terminate" message does not tell you
+  anything about whether the expressions were really equivalent or not. So, what
+  we could do in case of the Y-combinator is: just print the expressions one
+  after the other and use a different max-step setting for each, then compare
+  outputs.
+*#
+
+:mixin "std/Combinators"
+:set max-steps 2
+π (Y F)
+:set max-steps 1 # F (Y F) is one β-step into (Y F)'s reduction...
+π (F (Y F))
+:set max-steps 1000
+
+#*
+  Now you might think: why not do 1000 β-reductions on each term then, put them
+  into lists, and then cross-compare both lists to find a matching reduction. That
+  would work quite well in the preceding case, but still not in general.
+
+  As mentioned earlier already, there is no general way to do that. And as an
+  example of what that would encompass, we'll show here that such an algorithm
+  could also "prove" Fermat's Last Theorem (FLT), a feat that has taken
+  mathematicians more than 350 years and quite a lot of advanced math.
+*#
+
+
+# All the imports we need
+:import "std/Church Numerals Symbolic"
+:import "std/Church Booleans Symbolic"
+:import "std/Pairs"
+
+# We don't want defs to be normalized, most of them take too long and mostly
+# there's no point here anyway
+:set no-normalize-defs
+
+
+# Define a function, that determines whether three numbers a, b, c form
+# a valid triple for exponent n
+isTriple a b c n :=
+  (a ^^ n) + (b ^^ n) == (c ^^ n)
+
+≡ (isTriple 3 4 5 2) true # the prototypical Pythagorean triple
+
+# The next triple if you want to wait a bit...
+# :set max-steps 2000
+# ≡ (isTriple 5 12 13 2) true # the prototypical Pythagorean triple
+
+
+# Now, we define a function that determines whether a certain predicate (pred) holds
+# for some natural number larger than some minimum number (n). Note that if there
+# is no such number, the function does not halt (and thus cannot return false).
+# That's why in the last equation we cannot use "≡ ... false", but have to use ≢.
+_anyNat anyNat βn pred :=
+  if (pred n) true (anyNat (++ n) pred)
+anyNat := Y _anyNat
+
+# Do some tests with this function
+≡ (anyNat 2 (5 ==)) true
+≡ (anyNat 3 even?) true
+≢ (anyNat 7 (5 ==)) true  # The predicate is never true for n >= 7, but anyNat can't see that, and the LHS has no normal form.
+
+# We also need a function that does the same but for a limited range of natural
+# numbers. That one always halts with true or false.
+_any steps βn0 pred := steps
+  (λ p . p λa b . pair (a ∨ (pred b)) (++ b))
+  (pair false n0)
+any βn0 βn1 pred := first (_any (n1 - n0 + 1) n0 pred)
+
+# Test it with some simple cases
+≡ (any 2 5 (2 >=)) true
+≡ (any 2 5 (1 >=)) false
+≡ (any 2 5 (5 <=)) true
+≡ (any 2 5 (6 <=)) false
+
+# Now comes a function that tests whether there is any valid triple a, b, c with
+# 3 <= a < b < c <= max and exponent n, such that a^n+b^n=c^n.
+anyTriple βmax n :=
+  any 3 max λβa .
+  any (++ a) max λβb .
+  any (++ b) max λc . isTriple a b c n
+
+# Now the following is true, since it will find the 3, 4, 5 triple
+:set max-size 20000
+:set max-steps 10000
+≡ (anyTriple 5 2) true
+
+# Now, we define a function that for each n >= n0, finds any triple up to
+# max 2n+1. For n → ∞, if there is any such triple in the naturals, we
+# will eventually find it.
+anyPowTriple n0 :=
+  anyNat n0 λβn . anyTriple (n + n + 1) n
+
+# For n0 = 2, this actually finds one (the first triple: 3,4,5)
+π anyPowTriple 2
+
+# Now, if we really could disprove the following (i.e. n0 = 3), we would have
+# shown Fermat's Last Theorem to be true (which you didn't really expect from a
+# "λ playground", did you?)
+# ≡ (anyPowTriple 3) true
