@@ -136,3 +136,11 @@ isOdd n := n not false
 ≡ (isOdd zero) false
 ≡ (isOdd one) true
 ≡ (isOdd two) false
+
+:set no-normalize-defs
+lessEq a b := isZero (minus a b)
+less a b := isZero (minus (succ a) b)
+greaterEq a b := isZero (minus b a)
+greater a b := isZero (minus (succ b) a)
+equal a b := and (lessEq a b) (greaterEq a b)
+:set normalize-defs
