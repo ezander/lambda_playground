@@ -129,6 +129,83 @@ function formatSubstExpr(src: string, substs: { name: string; value: string }[])
 
 // ── Pragma processing ─────────────────────────────────────────────────────────
 
+// Handle :import "path" [modifiers...] and :mixin "path" [modifiers...]. Both
+// resolve a path, parse the content, fold the resulting defs into the current
+// scope, and propagate the quiet flag. They differ only in whether the parsed
+// content sees the current defs (mixin does, import doesn't) and in wording.
+// Returns true when the directive was an import/mixin (handled or rejected
+// with errors); false when neither pattern matched.
+function processIncludeLike(
+  text: string,
+  offset: number,
+  errors: LambdaError[],
+  defaultConfig: ProgramRunConfig,
+  resolver: IncludeResolver,
+  defs: Map<string, Term>,
+  defEntries: Map<string, DefEntry>,
+  includeStack: string[],
+  equivFailed: { value: boolean },
+): boolean {
+  const importMatch = text.match(/^import\s+"([^"]+)"(.*)$/);
+  const mixinMatch  = text.match(/^mixin\s+"([^"]+)"(.*)$/);
+  const match = importMatch ?? mixinMatch;
+  if (!match) return false;
+  const isMixin = !!mixinMatch;
+  const kindCap = isMixin ? "Mixin" : "Include";
+  const kindLow = isMixin ? "mixin" : "include";
+  const fileNoun = isMixin ? "mixin" : "included file";
+
+  const path = match[1];
+  // Modifiers are whitespace-separated tokens. Currently only "quiet" is
+  // recognized; unknown tokens warn individually so future modifiers can be
+  // added by extending this loop without touching the parsing.
+  const modTokens = match[2].trim().split(/\s+/).filter(t => t.length > 0);
+  let quiet = false;
+  for (const tok of modTokens) {
+    if (tok === "quiet") quiet = true;
+    else errors.push({ message: `Unknown ${kindLow} modifier: "${tok}" (expected "quiet" or none)`, offset, kind: "warning" });
+  }
+
+  if (includeStack.includes(path)) {
+    errors.push({ message: `Circular ${kindLow}: "${path}"`, offset });
+    return true;
+  }
+  const content = resolver(path);
+  if (content === null) {
+    errors.push({ message: `${kindCap} not found: "${path}"`, offset });
+    return true;
+  }
+  const result = isMixin
+    ? cachedParseMixin(path, content, defaultConfig, resolver, [...includeStack, path], defs)
+    : cachedParseInclude(path, content, defaultConfig, resolver, [...includeStack, path]);
+
+  for (const e of result.errors) {
+    const effectiveSource = e.source ?? path;
+    errors.push({ ...e, source: effectiveSource, location: e.location ?? (e.offset !== undefined ? errLocation(content, e.offset) : undefined), via: effectiveSource !== path ? path : undefined, offset });
+  }
+  if (!result.ok) {
+    equivFailed.value = true;
+    const hasRealErrors = result.errors.some(e => e.kind !== "warning");
+    if (!hasRealErrors)
+      errors.push({ message: `Assertion failed in ${fileNoun} "${path}"`, offset });
+  }
+
+  // Names starting with `_` are private — they don't cross import/mixin boundaries.
+  for (const [name, entry] of result.defs) {
+    if (name.startsWith("_")) continue;
+    const prev = defEntries.get(name);
+    if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
+      errors.push({ message: `Warning: '${name}' redefined with a different normal form (from ${kindLow} "${path}")`, offset, kind: "warning" });
+    defs.set(name, entry.term);
+    // quiet modifier on the directive forces all imported names quiet; otherwise
+    // we propagate whatever quiet flag the source file set on each name.
+    // offset = first time this name became available (keep existing if already known).
+    const isQuiet = quiet || entry.quiet;
+    defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
+  }
+  return true;
+}
+
 function processPragma(
   text: string,
   offset: number,
@@ -141,84 +218,7 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
-  const mixinMatch = text.match(/^mixin\s+"([^"]+)"(.*)$/);
-  if (mixinMatch) {
-    const path = mixinMatch[1];
-    const modifiers = mixinMatch[2].trim();
-    const quiet = modifiers === "quiet";
-    if (includeStack.includes(path)) {
-      errors.push({ message: `Circular mixin: "${path}"`, offset });
-      return;
-    }
-    const content = resolver(path);
-    if (content === null) {
-      errors.push({ message: `Mixin not found: "${path}"`, offset });
-      return;
-    }
-    const mixed = cachedParseMixin(path, content, defaultConfig, resolver, [...includeStack, path], defs);
-    for (const e of mixed.errors) {
-      const effectiveSource = e.source ?? path;
-      errors.push({ ...e, source: effectiveSource, location: e.location ?? (e.offset !== undefined ? errLocation(content, e.offset) : undefined), via: effectiveSource !== path ? path : undefined, offset });
-    }
-    if (!mixed.ok) {
-      equivFailed.value = true;
-      const hasRealErrors = mixed.errors.some(e => e.kind !== "warning");
-      if (!hasRealErrors)
-        errors.push({ message: `Assertion failed in mixin "${path}"`, offset });
-    }
-    for (const [name, entry] of mixed.defs) {
-      if (name.startsWith("_")) continue; // private — does not cross mixin boundary
-      const prev = defEntries.get(name);
-      if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
-        errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
-      defs.set(name, entry.term);
-      // Propagate quiet flags + canon from mixin; offset = this pragma line.
-      // mixin-quiet forces all names quiet (parallel to import-quiet).
-      const isQuiet = quiet || entry.quiet;
-      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
-    }
-    return;
-  }
-
-  const incMatch = text.match(/^import\s+"([^"]+)"(.*)$/);
-  if (incMatch) {
-    const path = incMatch[1];
-    const modifiers = incMatch[2].trim();
-    const quiet = modifiers === "quiet";
-    if (includeStack.includes(path)) {
-      errors.push({ message: `Circular include: "${path}"`, offset });
-      return;
-    }
-    const content = resolver(path);
-    if (content === null) {
-      errors.push({ message: `Include not found: "${path}"`, offset });
-      return;
-    }
-    const included = cachedParseInclude(path, content, defaultConfig, resolver, [...includeStack, path]);
-    for (const e of included.errors) {
-      const effectiveSource = e.source ?? path;
-      errors.push({ ...e, source: effectiveSource, location: e.location ?? (e.offset !== undefined ? errLocation(content, e.offset) : undefined), via: effectiveSource !== path ? path : undefined, offset });
-    }
-    if (!included.ok) {
-      equivFailed.value = true;
-      const hasRealErrors = included.errors.some(e => e.kind !== "warning");
-      if (!hasRealErrors)
-        errors.push({ message: `Assertion failed in included file "${path}"`, offset });
-    }
-    for (const [name, entry] of included.defs) {
-      if (name.startsWith("_")) continue; // private — does not cross include boundary
-      const prev = defEntries.get(name);
-      if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
-        errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
-      defs.set(name, entry.term);
-      // Propagate quiet flags: include-quiet forces all names quiet;
-      // normal include preserves quiet status from the included file.
-      // Offset = first time this name became available (keep existing if already known).
-      const isQuiet = quiet || entry.quiet;
-      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
-    }
-    return;
-  }
+  if (processIncludeLike(text, offset, errors, defaultConfig, resolver, defs, defEntries, includeStack, equivFailed)) return;
 
   const infixMatch = text.match(/^infix\s+(.+)$/);
   if (infixMatch) {

@@ -805,6 +805,28 @@ describe("include system", () => {
     expect(r.defs.get("bar")?.quiet).toBe(true);
   });
 
+  it("warns on unknown import/mixin modifiers per token", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    // Single unknown token: warns about that token, foo still imports normally.
+    const r1 = parseProgram(":import \"lib\" quie\n", {}, res);
+    expect(r1.defs.get("foo")?.quiet).toBe(false);
+    expect(r1.errors.find(e => e.message.includes("Unknown include modifier") && e.message.includes("quie"))).toBeDefined();
+
+    // quiet + unknown: quiet still applies, unknown still warns.
+    const r2 = parseProgram(":import \"lib\" quiet bogus\n", {}, res);
+    expect(r2.defs.get("foo")?.quiet).toBe(true);
+    expect(r2.errors.find(e => e.message.includes("\"bogus\""))).toBeDefined();
+
+    // Multiple unknowns: warn for each separately.
+    const r3 = parseProgram(":import \"lib\" foo bar\n", {}, res);
+    expect(r3.errors.filter(e => e.message.includes("Unknown include modifier")).length).toBe(2);
+
+    // Mixin uses "mixin" wording in the warning, not "include".
+    const r4 = parseProgram(":mixin \"lib\" oopz\n", {}, res);
+    expect(r4.errors.find(e => e.message.includes("Unknown mixin modifier"))).toBeDefined();
+  });
+
   it("normal include preserves quiet=false", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
