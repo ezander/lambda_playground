@@ -14,9 +14,13 @@ import {
   EquivInfo,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
-import { normalize, alphaEq, buildNormDefs, canonicalNormalForm, findMatch, RunResult } from "../evaluator/eval";
-import { prettyPrint } from "./pretty";
+import { normalize, alphaEq, canonicalForm, findMatch, RunResult } from "../evaluator/eval";
+import { prettyPrint as _prettyPrint } from "./pretty";
 import { traceSummary, traceDetail, isDetailEnabled } from "../trace";
+
+// Module-scope alias used by helpers outside parseProgram (e.g. defsKey for
+// mixin caching). parseProgram shadows this with a timed wrapper.
+const prettyPrint = _prettyPrint;
 
 // ── Definition expansion ───────────────────────────────────────────────────────
 
@@ -141,8 +145,6 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
-  const merged = { ...defaultConfig, ...pragmaConfig };
-  const normCfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
   const mixinMatch = text.match(/^mixin\s+"([^"]+)"\s*$/);
   if (mixinMatch) {
     const path = mixinMatch[1];
@@ -168,14 +170,12 @@ function processPragma(
     }
     for (const [name, entry] of mixed.defs) {
       if (name.startsWith("_")) continue; // private — does not cross mixin boundary
-      if (defs.has(name)) {
-        if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(entry.term, normCfg))
-          errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
-      }
+      const prev = defEntries.get(name);
+      if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
+        errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
       defs.set(name, entry.term);
-      // Propagate quiet flags from mixin; offset = this pragma line
-      const existing = defEntries.get(name);
-      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: entry.quiet, infix: entry.infix });
+      // Propagate quiet flags + canon from mixin; offset = this pragma line
+      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: entry.quiet, infix: entry.infix, canon: entry.canon });
     }
     return;
   }
@@ -207,17 +207,15 @@ function processPragma(
     }
     for (const [name, entry] of included.defs) {
       if (name.startsWith("_")) continue; // private — does not cross include boundary
-      if (defs.has(name)) {
-        if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(entry.term, normCfg))
-          errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
-      }
+      const prev = defEntries.get(name);
+      if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
+        errors.push({ message: `Warning: '${name}' redefined with a different normal form (from include "${path}")`, offset, kind: "warning" });
       defs.set(name, entry.term);
       // Propagate quiet flags: include-quiet forces all names quiet;
       // normal include preserves quiet status from the included file.
       // Offset = first time this name became available (keep existing if already known).
-      const existing = defEntries.get(name);
       const isQuiet = quiet || entry.quiet;
-      defEntries.set(name, { term: entry.term, offset: existing?.offset ?? offset, quiet: isQuiet, infix: entry.infix });
+      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
     }
     return;
   }
@@ -292,14 +290,22 @@ export function parseProgram(
   const pragmaConfig: PragmaConfig = {};
   const equivFailed = { value: false };
 
-  // Tracing — accumulate eval time for the summary total at the end.
-  let evalTotal = 0;
+  // Tracing — accumulate per-phase totals; logged at the end.
+  let evalTotal   = 0;
+  let prettyTotal = 0;
   const timedNorm = (label: string, term: Term, cfg: any): RunResult => {
     const t0 = performance.now();
     const r = normalize(term, cfg);
     const dt = performance.now() - t0;
     evalTotal += dt;
     if (isDetailEnabled()) traceDetail(label, dt, normMeta(r));
+    return r;
+  };
+  // Shadow the module-level prettyPrint so unmodified callers below pick up timing.
+  const prettyPrint = (t: Term): string => {
+    const t0 = performance.now();
+    const r = _prettyPrint(t);
+    prettyTotal += performance.now() - t0;
     return r;
   };
 
@@ -414,29 +420,33 @@ export function parseProgram(
         if (params.length > 0)
           body = params.reduceRight((acc, p) => Abs(tokenName(p), acc, isStrictBinder(p)), body);
 
+        // Normalize once at def time; canonicalize only if NF was reached.
+        // canon stays undefined for non-normalizing defs — they will not
+        // participate in match-finding at print/equiv time.
+        let canon: string | undefined;
         if (pragmaConfig.normalizeDefs ?? true) {
           const { term: normalized, kind } = timedNorm(`def ${name}`, body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           if (kind === "stepLimit")
             errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset, kind: "warning" });
           else if (kind === "sizeLimit")
             errors.push({ message: `Warning: definition '${name}' exceeded size limit during normalization — storing as-is`, offset, kind: "warning" });
-          else
+          else {
             body = normalized;
+            canon = canonicalForm(body);
+          }
         }
 
         if (stmt.redef) {
           if (!defs.has(name))
             errors.push({ message: `Warning: '${name}' is not defined before ::=`, offset, kind: "warning" });
         } else {
-          if (defs.has(name)) {
-            const normCfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
-            if (canonicalNormalForm(defs.get(name)!, normCfg) !== canonicalNormalForm(body, normCfg))
-              errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset, kind: "warning" });
-          }
+          const prev = defEntries.get(name);
+          if (prev && prev.canon !== undefined && canon !== undefined && prev.canon !== canon)
+            errors.push({ message: `Warning: '${name}' redefined with a different normal form`, offset, kind: "warning" });
         }
         defs.set(name, body);
         const existingEntry = defEntries.get(name);
-        defEntries.set(name, { term: body, offset: existingEntry?.offset ?? stmt.nameTok.startOffset, quiet: false, infix: false });
+        defEntries.set(name, { term: body, offset: existingEntry?.offset ?? stmt.nameTok.startOffset, quiet: false, infix: false, canon });
 
         defInfos.push({
           name,
@@ -458,8 +468,7 @@ export function parseProgram(
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
           const expandedBase = expandDefs(swapInfix(stmt.term, infx), defsFiltered);
           const baseSrc = prettyPrint(stmt.term);
-          const visibleDefs = new Map([...defs].filter(([k]) => !defEntries.get(k)?.quiet));
-          const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
+          const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
@@ -483,7 +492,7 @@ export function parseProgram(
               normal:    kind === "normalForm",
               steps,
               size:      kind === "sizeLimit" ? runResult.size : undefined,
-              match:     kind === "normalForm" ? findMatch(normalizedTerm, nd) : undefined,
+              match:     kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             });
           }
 
@@ -498,15 +507,14 @@ export function parseProgram(
           const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
           const runResult = timedNorm(`π ${shortSrc(prettyPrint(stmt.term))}`, expanded, cfg);
           const { term: normalizedTerm, kind, steps } = runResult;
-          const visibleDefs = new Map([...defs].filter(([k]) => !defEntries.get(k)?.quiet));
-          const nd = buildNormDefs(visibleDefs, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
+          const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
           printInfos.push({
             src:    prettyPrint(stmt.term),
             result: prettyPrint(normalizedTerm),
             normal: kind === "normalForm",
             steps,
             size:   kind === "sizeLimit" ? runResult.size : undefined,
-            match:  kind === "normalForm" ? findMatch(normalizedTerm, nd) : undefined,
+            match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             offset: stmt.offset,
             line:   currentLine,
           });
@@ -628,6 +636,7 @@ export function parseProgram(
   }
 
   traceSummary("eval total", evalTotal);
+  traceSummary("pretty total", prettyTotal);
 
   return {
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,

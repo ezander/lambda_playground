@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult } from "./parser/parser";
+import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, buildNormDefs, findMatch, termSize } from "./evaluator/eval";
+import { step, etaStep, findMatch, termSize } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -21,7 +21,7 @@ import JSZip from "jszip";
 import { DOCS, EXAMPLES, TUTORIALS, DEFAULT_SCRATCH } from "./data/content";
 import { SAVE_PREFIX, getSavedSlots, resolveContent, KEY_CONFIG, KEY_SOURCE, KEY_KINO, KEY_KINO_SPLIT, KEY_PANEL_STEPS, KEY_PANEL_PRINT, KEY_PRINT_DESC } from "./storage";
 import { Config, DEFAULT_CONFIG } from "./config";
-import { setTraceLevel } from "./trace";
+import { setTraceLevel, traceSummary } from "./trace";
 import { useFocusTrap } from "./useFocusTrap";
 
 function loadConfig(): Config {
@@ -92,11 +92,11 @@ type Loaded = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: numbe
 type HistoryEntry = { label: string; text: string; match?: string; status?: "normalForm" | "stepLimit" | "sizeLimit"; steps?: number; size?: number };
 
 
-function buildEntry(term: Term, stepNum: number, nd: Map<string, string>, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry {
+function buildEntry(term: Term, stepNum: number, defs: Map<string, DefEntry>, suffix = "", normal = true, status?: HistoryEntry["status"]): HistoryEntry {
   return {
     label: `${stepNum}:`,
     text: prettyPrint(term) + suffix,
-    match: normal ? findMatch(term, nd) : undefined,
+    match: normal ? findMatch(term, defs) : undefined,
     status,
   };
 }
@@ -542,7 +542,7 @@ export default function App() {
   }, [source]);
   const [loaded, setLoaded]           = useState<Loaded>(null);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
-  const [normDefs, setNormDefs]       = useState<Map<string, string>>(new Map());
+  const [normDefs, setNormDefs]       = useState<Map<string, DefEntry>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
   const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
   const [canUndo, setCanUndo]         = useState(false);
@@ -607,13 +607,21 @@ export default function App() {
 
   const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
-  const programResult = useMemo(() => parseProgram(debouncedSource, config, includeResolver), [debouncedSource, config, includeResolver]);
+  const programResult = useMemo(() => {
+    const t0 = performance.now();
+    const r  = parseProgram(debouncedSource, config, includeResolver);
+    traceSummary("memo total", performance.now() - t0);
+    return r;
+  }, [debouncedSource, config, includeResolver]);
   const programResultRef = useRef(programResult);
   programResultRef.current = programResult;
 
   // Push parse result into the CodeMirror StateField for syntax highlighting
   useEffect(() => {
-    editorViewRef.current?.dispatch({ effects: setParsed.of(programResult) });
+    if (!editorViewRef.current) return;
+    const t0 = performance.now();
+    editorViewRef.current.dispatch({ effects: setParsed.of(programResult) });
+    traceSummary("setParsed dispatch", performance.now() - t0);
   }, [programResult]);
 
   // Warn before page unload when a named buffer has unsaved changes
@@ -642,9 +650,8 @@ export default function App() {
   const handleLoad = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
-    const d = new Map([...programResult.defs].filter(([, e]) => !e.quiet).map(([k, e]) => [k, e.term] as const));
+    const nd = new Map([...programResult.defs].filter(([, e]) => !e.quiet));
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);
     const done = step(term) === null;
     setLoaded({ term, done, stepNum: 0, effectiveConfig });
@@ -934,9 +941,8 @@ export default function App() {
   const handleLoadRun = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
-    const d = new Map([...programResult.defs].filter(([, e]) => !e.quiet).map(([k, e]) => [k, e.term] as const));
+    const nd = new Map([...programResult.defs].filter(([, e]) => !e.quiet));
     const effectiveConfig = mergeConfig(programResult.pragmaConfig);
-    const nd = buildNormDefs(d, { maxSteps: effectiveConfig.maxStepsIdent, maxSize: effectiveConfig.maxSize });
     setNormDefs(nd);
     setLoadedSource(source);
     // Run immediately from the fresh term

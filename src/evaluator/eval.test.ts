@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Var, Abs, App, Subst, Term } from "../parser/ast";
-import { substitute, step, etaStep, freeVars, alphaEq, normalize, canonicalForm, termSize, buildNormDefs, findMatch } from "./eval";
+import { substitute, step, etaStep, freeVars, alphaEq, normalize, canonicalForm, termSize, findMatch } from "./eval";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -375,70 +375,51 @@ describe("termSize", () => {
   });
 });
 
-// ── buildNormDefs ─────────────────────────────────────────────────────────────
-
-describe("buildNormDefs", () => {
-  it("builds a map from names to canonical forms of their normal forms", () => {
-    const defs = new Map([["I", I], ["K", K]]);
-    const nd = buildNormDefs(defs);
-    expect(nd.has("I")).toBe(true);
-    expect(nd.has("K")).toBe(true);
-    expect(nd.get("I")).toBe(canonicalForm(I));
-    expect(nd.get("K")).toBe(canonicalForm(K));
-  });
-
-  it("alpha-equivalent definitions produce the same canonical form", () => {
-    const defs = new Map([
-      ["I1", Abs("x", Var("x"))],
-      ["I2", Abs("y", Var("y"))],
-    ]);
-    const nd = buildNormDefs(defs);
-    expect(nd.get("I1")).toBe(nd.get("I2"));
-  });
-
-  it("normalizes redex defs before storing", () => {
-    // (λx. x) a is not in normal form; buildNormDefs should store canonical(a)
-    const defs = new Map([["r", App(I, Var("a"))]]);
-    const nd = buildNormDefs(defs);
-    expect(nd.get("r")).toBe(canonicalForm(Var("a")));
-  });
-});
-
 // ── findMatch ─────────────────────────────────────────────────────────────────
 
+// Helper: build a {name → { canon }} map. Match-finding lives off the canonical
+// form computed once at def time; here we precompute it from already-normal terms.
+const defMap = (entries: [string, Term][]): Map<string, { canon: string }> =>
+  new Map(entries.map(([k, t]) => [k, { canon: canonicalForm(t) }] as const));
+
 describe("findMatch", () => {
-  const defs = new Map<string, Term>([
+  const defs = defMap([
     ["I",        I],
     ["K",        K],
-    ["_private", Abs("x", Var("x"))],   // same normal form as I, but private
+    ["_private", Abs("x", Var("x"))],   // same canonical form as I, but private
   ]);
-  const nd = buildNormDefs(defs);
 
   it("finds a matching definition by name", () => {
-    expect(findMatch(Abs("x", Var("x")), nd)).toBe("I");
+    expect(findMatch(Abs("x", Var("x")), defs)).toBe("I");
   });
 
   it("returns undefined when no definition matches", () => {
-    expect(findMatch(Var("z"), nd)).toBeUndefined();
-    expect(findMatch(Abs("x", Abs("y", Abs("z", Var("x")))), nd)).toBeUndefined();
+    expect(findMatch(Var("z"), defs)).toBeUndefined();
+    expect(findMatch(Abs("x", Abs("y", Abs("z", Var("x")))), defs)).toBeUndefined();
   });
 
   it("excludes _-prefixed (private) names from matches", () => {
-    // I and _private have the same form; only I should appear
-    const result = findMatch(Abs("x", Var("x")), nd);
+    const result = findMatch(Abs("x", Var("x")), defs);
     expect(result).toBe("I");
     expect(result).not.toContain("_private");
   });
 
   it("matches alpha-equivalent terms", () => {
-    // λa. a  is alpha-eq to I = λx. x
-    expect(findMatch(Abs("a", Var("a")), nd)).toBe("I");
+    expect(findMatch(Abs("a", Var("a")), defs)).toBe("I");
+  });
+
+  it("skips entries without a canon field (non-normalizing defs)", () => {
+    const defs2 = new Map<string, { canon?: string }>([
+      ["I",       { canon: canonicalForm(I) }],
+      ["unknown", {}],   // never normalized — no canon
+    ]);
+    expect(findMatch(Abs("x", Var("x")), defs2)).toBe("I");
+    expect(findMatch(Abs("z", Var("z")), defs2)).toBe("I");
   });
 
   it("returns multiple matches joined with ', '", () => {
-    const defs2 = new Map<string, Term>([["I", I], ["id", Abs("y", Var("y"))]]);
-    const nd2 = buildNormDefs(defs2);
-    const result = findMatch(Abs("z", Var("z")), nd2);
+    const defs2 = defMap([["I", I], ["id", Abs("y", Var("y"))]]);
+    const result = findMatch(Abs("z", Var("z")), defs2);
     expect(result).toBeDefined();
     expect(result).toContain("I");
     expect(result).toContain("id");

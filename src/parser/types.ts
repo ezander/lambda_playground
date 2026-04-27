@@ -37,6 +37,7 @@ export type DefEntry = {
   offset: number;     // source offset where name becomes available (def line or :import line)
   quiet:  boolean;    // hidden from autocomplete and match list
   infix:  boolean;    // marked as infix operator via :infix directive
+  canon?: string;     // alpha-canonical form, set only when the def's body reaches normal form
 };
 
 export type DefInfo = {

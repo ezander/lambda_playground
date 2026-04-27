@@ -213,33 +213,20 @@ export function etaStep(term: Term): Term | null {
   }
 }
 
-// ── Definition matching helpers ───────────────────────────────────────────────
+// ── Definition matching ───────────────────────────────────────────────────────
 
-// Cached canonical form of a term's normal form, keyed by Term identity.
-// Only normalForm results are cached — step/size-limited results depend on cfg.
-const canonNormCache = new WeakMap<Term, string>();
-
-export function canonicalNormalForm(term: Term, cfg: EvalConfig = {}): string {
-  const cached = canonNormCache.get(term);
-  if (cached !== undefined) return cached;
-  const r = normalize(term, cfg);
-  const canon = canonicalForm(r.term);
-  if (r.kind === "normalForm") canonNormCache.set(term, canon);
-  return canon;
-}
-
-export function buildNormDefs(defs: Map<string, Term>, cfg: EvalConfig = {}): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const [name, term] of defs)
-    m.set(name, canonicalNormalForm(term, cfg));
-  return m;
-}
-
-export function findMatch(term: Term, nd: Map<string, string>): string | undefined {
+// Match a (normalized) term against a set of definitions whose canonical forms
+// were precomputed at def time. Defs without a `canon` field (i.e. those whose
+// bodies didn't reach normal form when defined) and `_`-prefixed names are
+// skipped. Returns a comma-joined name list, or undefined if no match.
+export function findMatch(
+  term: Term,
+  defs: Map<string, { canon?: string }>,
+): string | undefined {
   const key = canonicalForm(term);
   const matches: string[] = [];
-  for (const [name, canon] of nd)
-    if (!name.startsWith("_") && key === canon) matches.push(name);
+  for (const [name, e] of defs)
+    if (e.canon !== undefined && !name.startsWith("_") && key === e.canon) matches.push(name);
   return matches.length > 0 ? matches.join(", ") : undefined;
 }
 
