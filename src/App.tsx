@@ -1019,7 +1019,7 @@ export default function App() {
       }
       if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
       if (e.key === "s" && e.ctrlKey) { e.preventDefault(); handleSaveOverwrite(); }
-      if (e.key === "F5")  { e.preventDefault(); handleLoadRun(); }
+      if (e.key === "F5")  { e.preventDefault(); setRunForSource(debouncedSource); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
       if (e.key === "F10") { e.preventDefault(); handleStep(); }
@@ -1027,7 +1027,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen, debouncedSource]);
 
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
