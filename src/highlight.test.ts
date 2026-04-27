@@ -128,6 +128,20 @@ describe("computeHighlightRanges", () => {
     it("directive line", () => {
       expect(tagged(":set max-steps 100\n")).toBe("<pg>:set max-steps 100</pg>\n");
     });
+
+    it("trailing # in directive splits into pragma + comment", () => {
+      expect(tagged(":set max-steps 100 # bump\n")).toBe(
+        "<pg>:set max-steps 100 </pg><cm># bump</cm>\n"
+      );
+    });
+
+    it("# inside quoted directive path is not flagged as a comment", () => {
+      // The error overlay (er) covers the line because the path doesn't resolve,
+      // but the key check is that no <cm> (comment) class appears — the # is
+      // inside quotes, so it's part of the path, not a trailing line comment.
+      const out = tagged(":import \"lib#hash\"\n");
+      expect(out).not.toContain("<cm>");
+    });
   });
 
   describe("warnings and errors", () => {

@@ -21,6 +21,7 @@ import {
   DefAssign,
   Dot,
   NEquiv,
+  findDirectiveCommentStart,
 } from "./parser/lexer";
 
 // ── StateField: receives ProgramResult from React on every parse ──────────────
@@ -52,9 +53,18 @@ function applyTokenRanges(
   for (const tok of lexResult.tokens) {
     const from = tok.startOffset;
     const to = (tok.endOffset ?? tok.startOffset) + 1;
-    if (tok.tokenType === Directive)
-      out.push({ from, to, cls: "cml-pragma" });
-    else if (tokenMatcher(tok, DefAssign) || tok.tokenType === RedefAssign)
+    if (tok.tokenType === Directive) {
+      // Split off the trailing line-comment if present, so '# ...' inside a
+      // directive line is highlighted as a comment rather than as part of the
+      // pragma. # inside the quoted path stays part of the directive.
+      const commentStart = findDirectiveCommentStart(tok.image);
+      if (commentStart === -1) {
+        out.push({ from, to, cls: "cml-pragma" });
+      } else {
+        out.push({ from, to: from + commentStart,            cls: "cml-pragma" });
+        out.push({ from: from + commentStart, to,             cls: "cml-comment" });
+      }
+    } else if (tokenMatcher(tok, DefAssign) || tok.tokenType === RedefAssign)
       out.push({ from, to, cls: "cml-op" });
     else if (tokenMatcher(tok, Lambda) || tokenMatcher(tok, Dot))
       out.push({ from, to, cls: "cml-lambda" });

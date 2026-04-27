@@ -827,6 +827,31 @@ describe("include system", () => {
     expect(r4.errors.find(e => e.message.includes("Unknown mixin modifier"))).toBeDefined();
   });
 
+  it("strips trailing # comments from directive lines", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+
+    // Comment after path: import succeeds, no quiet, no warnings.
+    const r1 = parseProgram(":import \"lib\" # quiet was a typo\n", {}, res);
+    expect(r1.defs.has("foo")).toBe(true);
+    expect(r1.defs.get("foo")?.quiet).toBe(false);
+    expect(r1.errors).toEqual([]);
+
+    // Comment after a recognized modifier: modifier still applies.
+    const r2 = parseProgram(":import \"lib\" quiet # justification\n", {}, res);
+    expect(r2.defs.get("foo")?.quiet).toBe(true);
+    expect(r2.errors).toEqual([]);
+
+    // Comment on a :set line: pragma applies, comment ignored, no junk warning.
+    const r3 = parseProgram(":set max-size 1234 # bump for big terms\n", {}, res);
+    expect(r3.pragmaConfig.maxSize).toBe(1234);
+    expect(r3.errors).toEqual([]);
+
+    // # inside the quoted path is part of the path, not a comment.
+    const r4 = parseProgram(":import \"lib#weird\"\n", {}, res);
+    expect(r4.errors.find(e => e.message.includes("Include not found"))?.message).toContain("lib#weird");
+  });
+
   it("normal include preserves quiet=false", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;

@@ -39,6 +39,20 @@ export const Directive = createToken({
   start_chars_hint: [":"],
 });
 
+// Find the offset of `#` that starts a trailing line comment inside a directive's
+// captured text. `#` inside the path's double-quoted string doesn't count.
+// Returns -1 when there's no comment. Shared between semantics (for parsing) and
+// highlight (for splitting the directive token into pragma + comment ranges).
+export function findDirectiveCommentStart(text: string): number {
+  let inQuote = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') inQuote = !inQuote;
+    else if (c === "#" && !inQuote) return i;
+  }
+  return -1;
+}
+
 // Command keywords — alternatives to π / ≡ / ≢ symbols.
 export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),      start_chars_hint: [":"] });
 export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert(?!-)\b/y), start_chars_hint: [":"] });

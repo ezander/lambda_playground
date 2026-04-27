@@ -1,5 +1,5 @@
 import { tokenMatcher } from "chevrotain";
-import { LambdaLexer, NewLine } from "./lexer";
+import { LambdaLexer, NewLine, findDirectiveCommentStart } from "./lexer";
 import { Term, App, Abs } from "./ast";
 import { parser, astBuilder, tokenName, isStrictBinder, RawStmt, RawBinding } from "./grammar";
 import {
@@ -206,6 +206,13 @@ function processIncludeLike(
   return true;
 }
 
+// Strip a trailing line-comment from a directive text using the shared
+// quote-aware finder.
+function stripDirectiveComment(text: string): string {
+  const i = findDirectiveCommentStart(text);
+  return i === -1 ? text : text.slice(0, i).trimEnd();
+}
+
 function processPragma(
   text: string,
   offset: number,
@@ -218,6 +225,7 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
+  text = stripDirectiveComment(text);
   if (processIncludeLike(text, offset, errors, defaultConfig, resolver, defs, defEntries, includeStack, equivFailed)) return;
 
   const infixMatch = text.match(/^infix\s+(.+)$/);
