@@ -4,7 +4,6 @@ import { RangeSetBuilder, StateField, StateEffect, Extension } from "@codemirror
 import { IToken, tokenMatcher } from "chevrotain";
 import { ProgramResult, PositionMap, DefEntry } from "./parser/parser";
 import { Term, Var, Abs } from "./parser/ast";
-import { traceSummary } from "./trace";
 import {
   LambdaLexer,
   Directive,
@@ -110,7 +109,6 @@ export function computeHighlightRanges(
   fullText: string,
   parsed: ProgramResult | null,
 ): HighlightRange[] {
-  const t0 = performance.now();
   const out: HighlightRange[] = [];
 
   const lexResult = LambdaLexer.tokenize(fullText);
@@ -158,7 +156,6 @@ export function computeHighlightRanges(
   }
 
   out.sort((a, b) => a.from - b.from || a.to - b.to);
-  traceSummary("highlight ranges", performance.now() - t0);
   return out;
 }
 

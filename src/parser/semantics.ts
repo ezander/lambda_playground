@@ -15,12 +15,8 @@ import {
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
 import { normalize, alphaEq, canonicalForm, findMatch, RunResult } from "../evaluator/eval";
-import { prettyPrint as _prettyPrint } from "./pretty";
+import { prettyPrint } from "./pretty";
 import { traceSummary, traceDetail, isDetailEnabled } from "../trace";
-
-// Module-scope alias used by helpers outside parseProgram (e.g. defsKey for
-// mixin caching). parseProgram shadows this with a timed wrapper.
-const prettyPrint = _prettyPrint;
 
 // ── Definition expansion ───────────────────────────────────────────────────────
 
@@ -290,22 +286,14 @@ export function parseProgram(
   const pragmaConfig: PragmaConfig = {};
   const equivFailed = { value: false };
 
-  // Tracing — accumulate per-phase totals; logged at the end.
-  let evalTotal   = 0;
-  let prettyTotal = 0;
+  // Tracing — accumulate eval time across all normalize calls.
+  let evalTotal = 0;
   const timedNorm = (label: string, term: Term, cfg: any): RunResult => {
     const t0 = performance.now();
     const r = normalize(term, cfg);
     const dt = performance.now() - t0;
     evalTotal += dt;
     if (isDetailEnabled()) traceDetail(label, dt, normMeta(r));
-    return r;
-  };
-  // Shadow the module-level prettyPrint so unmodified callers below pick up timing.
-  const prettyPrint = (t: Term): string => {
-    const t0 = performance.now();
-    const r = _prettyPrint(t);
-    prettyTotal += performance.now() - t0;
     return r;
   };
 
@@ -374,7 +362,7 @@ export function parseProgram(
     paramPositions: bindings.map(b => ({ from: b.nameTok.startOffset, to: (b.nameTok.endOffset ?? b.nameTok.startOffset) + 1 })),
   } : {};
 
-  traceSummary("parse", performance.now() - tParseStart);
+  traceSummary("parse total", performance.now() - tParseStart);
 
   // ── Semantic analysis ──────────────────────────────────────────────────────
   for (const stmt of stmts) {
@@ -636,7 +624,6 @@ export function parseProgram(
   }
 
   traceSummary("eval total", evalTotal);
-  traceSummary("pretty total", prettyTotal);
 
   return {
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,

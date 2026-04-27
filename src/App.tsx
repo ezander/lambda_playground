@@ -610,7 +610,7 @@ export default function App() {
   const programResult = useMemo(() => {
     const t0 = performance.now();
     const r  = parseProgram(debouncedSource, config, includeResolver);
-    traceSummary("memo total", performance.now() - t0);
+    traceSummary("program total", performance.now() - t0);
     return r;
   }, [debouncedSource, config, includeResolver]);
   const programResultRef = useRef(programResult);
@@ -618,10 +618,7 @@ export default function App() {
 
   // Push parse result into the CodeMirror StateField for syntax highlighting
   useEffect(() => {
-    if (!editorViewRef.current) return;
-    const t0 = performance.now();
-    editorViewRef.current.dispatch({ effects: setParsed.of(programResult) });
-    traceSummary("setParsed dispatch", performance.now() - t0);
+    editorViewRef.current?.dispatch({ effects: setParsed.of(programResult) });
   }, [programResult]);
 
   // Warn before page unload when a named buffer has unsaved changes
