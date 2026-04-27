@@ -137,8 +137,10 @@ export const BacktickIdent = createToken({
 });
 
 // Mixed charset: alphanumeric/Greek + operator chars + free logic symbols.
-// Excludes λ (\u03BB) and π (\u03C0) so those always lex as Lambda / Pi.
-const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
+// Excludes the reserved Greek letters λ (\u03BB), π (\u03C0), α (\u03B1), β (\u03B2),
+// η (\u03B7) so those are always standalone tokens, never absorbed into a
+// PlainIdent (or a strictBinder's name suffix) regardless of position.
+const MIXED = /[a-zA-Z0-9_'\u0370-\u03B0\u03B3-\u03B6\u03B8-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
 // Strict binder: β fused immediately to an identifier (no whitespace).
 // Marks the parameter as call-by-value — the argument is reduced before substitution.

@@ -199,6 +199,17 @@ describe("strict binders", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("α/β/η are reserved everywhere, not absorbed into surrounding identifiers", () => {
+    // These used to lex as a single PlainIdent (reserved letter mid-run).
+    // Now they always tokenize as a separate reserved letter, so the parse
+    // fails downstream.
+    expect(parse("xβ").ok).toBe(false);
+    expect(parse("xα").ok).toBe(false);
+    expect(parse("xη").ok).toBe(false);
+    // Other Greek letters still work mid-identifier:
+    expect(parse("xγ").ok).toBe(true);
+  });
+
   it("mixes strict and lazy binders in one λ", () => {
     const r = parse("λβx y. x");
     expect(r.ok).toBe(true);
