@@ -115,7 +115,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
                 <input type="checkbox" checked={showPassingEquiv}
                   onChange={e => setShowPassingEquiv(e.target.checked)} />
               </td>
-              <td className="settings-hint">show passing assertions in output (default: only failures)</td>
+              <td className="settings-hint">show passing assertions in output</td>
             </tr>
             <tr>
               <td>auto-save</td>

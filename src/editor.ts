@@ -147,7 +147,7 @@ function insertAtLineStart(view: EditorView, text: string): boolean {
 // ── Greek symbol table ────────────────────────────────────────────────────────
 // Shared by Tab-expansion and the symbol picker in App.tsx.
 
-export type GreekSymbol = { sym: string; name: string; reserved?: boolean; shortcut?: string };
+export type GreekSymbol = { sym: string; name: string; aliases?: string[]; reserved?: boolean; shortcut?: string };
 
 export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "≡", name: "equiv",  shortcut: "alt-e"  },  // equivalence assertion
@@ -157,8 +157,8 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "¬", name: "not"      },
   { sym: "→", name: "implies"  },
   { sym: "↔", name: "iff"      },
-  { sym: "⊤", name: "top"      },
-  { sym: "⊥", name: "bot"      },
+  { sym: "⊤", name: "top",      aliases: ["true"]  },
+  { sym: "⊥", name: "bot",      aliases: ["false"] },
   { sym: "⊕", name: "oplus"    },
   { sym: "⊗", name: "otimes"   },
   { sym: "∘", name: "compose"  },
@@ -167,6 +167,25 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
   { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
   { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
+];
+
+// Math operators — set theory, arithmetic extras, comparison.
+// All chars are in the lexer's MIXED charset, so they're accepted as identifier characters
+// (single-symbol or fused). `:infix` declarations turn them into infix operators.
+export const MATH_SYMBOLS: GreekSymbol[] = [
+  // set theory
+  { sym: "∪", name: "cup"      },
+  { sym: "∩", name: "cap"      },
+  { sym: "⊆", name: "subseteq" },
+  { sym: "∈", name: "in"       },
+  // arithmetic
+  { sym: "±", name: "pm"       },
+  { sym: "×", name: "times"    },
+  { sym: "÷", name: "div"      },
+  { sym: "∞", name: "infty"    },
+  // comparison
+  { sym: "≤", name: "leq"      },
+  { sym: "≥", name: "geq"      },
 ];
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
@@ -192,9 +211,14 @@ export const GREEK_SYMBOLS: GreekSymbol[] = [
   { sym: "Ω", name: "Omega"   },
 ];
 
-const GREEK_MAP: Record<string, string> = Object.fromEntries(
-  [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS].map(({ sym, name }) => [name, sym])
-);
+const GREEK_MAP: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  for (const { sym, name, aliases } of [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS, ...MATH_SYMBOLS]) {
+    m[name] = sym;
+    for (const a of aliases ?? []) m[a] = sym;
+  }
+  return m;
+})();
 
 // Auto-close block comment: typing * immediately after # inserts #* *# with cursor
 // between the two markers.

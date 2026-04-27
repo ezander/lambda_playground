@@ -9,7 +9,7 @@ import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-code
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
-import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS } from "./editor";
+import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS, MATH_SYMBOLS } from "./editor";
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap, autocompleteWheelPlugin } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
@@ -316,6 +316,14 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
                 {LOGIC_SYMBOLS.map(g => (
                   <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
                     title={g.reserved ? `\\${g.name} (reserved)` : g.shortcut ? `\\${g.name}  (${g.shortcut})` : `\\${g.name}`}
+                    onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
+                ))}
+              </div>
+              <div className="sym-section-label">math</div>
+              <div className="sym-row">
+                {MATH_SYMBOLS.map(g => (
+                  <button key={g.name} className="sym-item"
+                    title={`\\${g.name}`}
                     onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
                 ))}
               </div>

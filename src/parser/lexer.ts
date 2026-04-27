@@ -154,7 +154,7 @@ export const BacktickIdent = createToken({
 // Excludes the reserved Greek letters λ (\u03BB), π (\u03C0), α (\u03B1), β (\u03B2),
 // η (\u03B7) so those are always standalone tokens, never absorbed into a
 // PlainIdent (or an eagerBinder's name suffix) regardless of position.
-const MIXED = /[a-zA-Z0-9_'\u0370-\u03B0\u03B3-\u03B6\u03B8-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
+const MIXED = /[a-zA-Z0-9_'\u0370-\u03B0\u03B3-\u03B6\u03B8-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u00B1\u00D7\u00F7\u2190-\u21FF\u2205\u2208\u2218\u221E\u2227-\u222A\u2260\u2264-\u2265\u2286\u2295\u2297\u22A4-\u22A5]/.source;
 
 // Eager binder: β fused immediately to an identifier (plain or backtick-quoted),
 // no whitespace between β and the name.
