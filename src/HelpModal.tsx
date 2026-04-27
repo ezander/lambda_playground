@@ -86,6 +86,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:import "ns/…"</code></td><td>import definitions from <code>std/</code>, <code>doc/</code>, <code>example/</code>, <code>tutorial/</code>, or <code>user/</code> namespace; Ctrl-click path to navigate</td></tr>
             <tr><td><code>:import "…" quiet</code></td><td>like import, but imported names are hidden from match list and autocomplete</td></tr>
             <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending)</td></tr>
+            <tr><td><code>:mixin "…" quiet</code></td><td>like mixin, with names hidden from match list and autocomplete</td></tr>
             <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>
             <tr><td><code>:assert atom1 atom2</code></td><td>alternative to <code>≡</code></td></tr>
             <tr><td><code>:assert-not atom1 atom2</code></td><td>alternative to <code>≢</code></td></tr>

@@ -795,6 +795,16 @@ describe("include system", () => {
     expect(r.defs.get("bar")?.quiet).toBe(true);
   });
 
+  it("mixin quiet marks all mixed-in names as quiet", () => {
+    const lib = "foo := λx. x\nbar := λy. y\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":mixin \"lib\" quiet\n", {}, res);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.defs.has("bar")).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(true);
+    expect(r.defs.get("bar")?.quiet).toBe(true);
+  });
+
   it("normal include preserves quiet=false", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;

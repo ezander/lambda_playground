@@ -141,9 +141,11 @@ function processPragma(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): void {
-  const mixinMatch = text.match(/^mixin\s+"([^"]+)"\s*$/);
+  const mixinMatch = text.match(/^mixin\s+"([^"]+)"(.*)$/);
   if (mixinMatch) {
     const path = mixinMatch[1];
+    const modifiers = mixinMatch[2].trim();
+    const quiet = modifiers === "quiet";
     if (includeStack.includes(path)) {
       errors.push({ message: `Circular mixin: "${path}"`, offset });
       return;
@@ -170,8 +172,10 @@ function processPragma(
       if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
         errors.push({ message: `Warning: '${name}' redefined with a different normal form (from mixin "${path}")`, offset, kind: "warning" });
       defs.set(name, entry.term);
-      // Propagate quiet flags + canon from mixin; offset = this pragma line
-      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: entry.quiet, infix: entry.infix, canon: entry.canon });
+      // Propagate quiet flags + canon from mixin; offset = this pragma line.
+      // mixin-quiet forces all names quiet (parallel to import-quiet).
+      const isQuiet = quiet || entry.quiet;
+      defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
     }
     return;
   }
