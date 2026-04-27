@@ -1,4 +1,4 @@
-import { CstParser, CstNode, IToken, tokenMatcher, EOF } from "chevrotain";
+import { CstParser, CstNode, IToken, EOF } from "chevrotain";
 import {
   allTokens,
   LambdaLexer,
@@ -92,7 +92,11 @@ class LambdaParser extends CstParser {
       { ALT: () => this.SUBRULE(this.equivStmt) },
       { ALT: () => this.SUBRULE(this.nequivStmt) },
       { ALT: () => this.SUBRULE(this.evalStmt) },
-      { GATE: () => this.isDefinition(), ALT: () => this.SUBRULE(this.definition) },
+      // Gate via BACKTRACK: try parsing `definition` non-committed; if it
+      // succeeds, take this alt. Cheaper than it looks (Chevrotain snapshots
+      // are lightweight) and stays correct under future grammar changes —
+      // no manual lookahead to keep in sync.
+      { GATE: this.BACKTRACK(this.definition), ALT: () => this.SUBRULE(this.definition) },
       { ALT: () => this.SUBRULE(this.term) },
     ]);
   });
@@ -101,14 +105,6 @@ class LambdaParser extends CstParser {
     this.CONSUME(Directive);
     this.CONSUME(NewLine);
   });
-
-  private isDefinition(): boolean {
-    // Lookahead: Identifier (name) followed by zero or more binders
-    // (Identifier or StrictBinder), then := or ::=.
-    let i = 1;
-    while (tokenMatcher(this.LA(i), Identifier) || this.LA(i).tokenType === StrictBinder) i++;
-    return tokenMatcher(this.LA(i), DefAssign) || tokenMatcher(this.LA(i), RedefAssign);
-  }
 
   printStmt = this.RULE("printStmt", () => {
     this.OR([
