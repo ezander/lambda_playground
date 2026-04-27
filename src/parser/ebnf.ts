@@ -48,6 +48,11 @@ function needsParens(defs: Gast[]): boolean {
 }
 
 function wrap(defs: Gast[], suffix: string): string {
+  // Special case: a single Alternation. fmtSeq → fmtAtom would add parens, and
+  // we'd add them again here — call fmtGroup directly to keep it to one pair.
+  if (defs.length === 1 && defs[0].type === "Alternation") {
+    return `(${fmtGroup(defs[0])})${suffix}`;
+  }
   const inner = fmtSeq(defs);
   return needsParens(defs) ? `(${inner})${suffix}` : `${inner}${suffix}`;
 }

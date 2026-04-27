@@ -57,7 +57,10 @@ function emptyPositionMap(): PositionMap {
 
 class LambdaParser extends CstParser {
   constructor() {
-    super(allTokens);
+    // nodeLocationTracking: needed by the application visitor to re-interleave
+    // atoms and abstractions by source order (Chevrotain groups CST children by
+    // name, losing the interleaved order otherwise).
+    super(allTokens, { nodeLocationTracking: "onlyOffset" });
     this.performSelfAnalysis();
   }
 
@@ -178,23 +181,24 @@ class LambdaParser extends CstParser {
   // ── Term-level rules ───────────────────────────────────────────────────────
 
   term = this.RULE("term", () => {
-    this.SUBRULE(this.application);
+    this.OR([
+      { ALT: () => this.SUBRULE(this.abstraction) },
+      { ALT: () => this.SUBRULE(this.application) },
+    ]);
   });
 
   application = this.RULE("application", () => {
-    this.AT_LEAST_ONE(() => {
-      this.SUBRULE(this.atom);
+    this.SUBRULE(this.atom);
+    this.MANY(() => {
+      this.OR([
+        { ALT: () => this.SUBRULE2(this.atom) },
+        { ALT: () => this.SUBRULE2(this.abstraction) },
+      ]);
     });
   });
 
   atom = this.RULE("atom", () => {
-    this.SUBRULE(this.primary);
-    this.MANY(() => this.SUBRULE(this.subst));
-  });
-
-  primary = this.RULE("primary", () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.abstraction) },
       { ALT: () => this.CONSUME(Identifier) },
       {
         ALT: () => {
@@ -204,6 +208,7 @@ class LambdaParser extends CstParser {
         },
       },
     ]);
+    this.MANY(() => this.SUBRULE(this.subst));
   });
 
   subst = this.RULE("subst", () => {
@@ -375,16 +380,30 @@ export class AstBuilder extends BaseCstVisitor {
   // ── Term-level visitors ────────────────────────────────────────────────────
 
   term(ctx: any): Term {
-    return this.visit(ctx.application);
+    if (ctx.abstraction) return this.visit(ctx.abstraction[0]);
+    return this.visit(ctx.application[0]);
   }
 
   application(ctx: any): Term {
-    const atoms: Term[] = ctx.atom.map((a: CstNode) => this.visit(a));
-    return atoms.reduce((func, arg) => App(func, arg));
+    // Chevrotain groups CST children by name, so atoms and abstractions arrive
+    // in two separate arrays. Re-interleave by source offset to recover
+    // left-associative juxtaposition order.
+    const items: CstNode[] = [...(ctx.atom ?? []), ...(ctx.abstraction ?? [])];
+    items.sort((a, b) => (a.location?.startOffset ?? 0) - (b.location?.startOffset ?? 0));
+    const terms = items.map(n => this.visit(n) as Term);
+    return terms.reduce((func, arg) => App(func, arg));
   }
 
   atom(ctx: any): Term {
-    let base: Term = this.visit(ctx.primary);
+    let base: Term;
+    if (ctx.Identifier) {
+      const tok = ctx.Identifier[0] as IToken;
+      const v = Var(tokenName(tok));
+      this.positions.vars.set(v, this.pos(tok));
+      base = v;
+    } else {
+      base = this.visit(ctx.term[0]);
+    }
     for (const s of (ctx.subst ?? [])) {
       const { param, paramTok, arg, strict } = this.visit(s) as { param: string; paramTok: IToken; arg: Term; strict: boolean };
       const abs = Abs(param, base, strict);
@@ -392,17 +411,6 @@ export class AstBuilder extends BaseCstVisitor {
       base = App(abs, arg);
     }
     return base;
-  }
-
-  primary(ctx: any): Term {
-    if (ctx.abstraction) return this.visit(ctx.abstraction);
-    if (ctx.Identifier) {
-      const tok = ctx.Identifier[0] as IToken;
-      const v = Var(tokenName(tok));
-      this.positions.vars.set(v, this.pos(tok));
-      return v;
-    }
-    return this.visit(ctx.term);
   }
 
   subst(ctx: any): { param: string; paramTok: IToken; arg: Term; strict: boolean } {

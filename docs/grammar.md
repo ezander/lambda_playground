@@ -16,10 +16,9 @@ evalStmt           ::=  ':eval' term
 definition         ::=  identifier binder* (':=' | '::=') term
 comprehensionSpec  ::=  '[' compBinding (',' compBinding)* ']'
 compBinding        ::=  identifier ':=' '{' term (',' term)* '}'
-term               ::=  application
-application        ::=  atom+
-atom               ::=  primary subst*
-primary            ::=  abstraction | identifier | '(' term ')'
+term               ::=  abstraction | application
+application        ::=  atom (atom | abstraction)*
+atom               ::=  (identifier | '(' term ')') subst*
 subst              ::=  '[' binder ':=' term ']'
 abstraction        ::=  'λ' binder+ '.' term
 binder             ::=  identifier | strictBinder
