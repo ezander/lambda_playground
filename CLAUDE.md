@@ -58,12 +58,14 @@ equiv-comp  ::= ('≡' | ':assert') '[' bindings ']' atom atom
 nequiv      ::= ('≢' | ':assert-not') atom atom
 term        ::= application
 application ::= atom+
-atom        ::= primary ('[' identLike ':=' term ']')*
-primary     ::= identLike | '(' term ')' | function
-function    ::= ('\' | 'λ') identLike+ '.' term
+atom        ::= primary ('[' binder ':=' term ']')*
+primary     ::= identLike | '(' term ')' | abstraction
+abstraction ::= ('\' | 'λ') binder+ '.' term
+binder      ::= identLike | strictBinder
+strictBinder ::= 'β' (alnum | '_' | "'" | greek | op-sym)+   -- β fused to name, no whitespace; call-by-value
 bindings    ::= identLike ':=' '{' term (',' term)* '}' (',' …)*
 identLike   ::= plainIdent | '`' [^`\n]+ '`'
-plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α β η ∀ ∃ ⊢ reserved
+plainIdent  ::= (alnum | '_' | "'" | greek | op-sym)+   -- excluding λ π; α η ∀ ∃ ⊢ reserved (β reserved unless fused as strictBinder)
 directive   ::= ':import' '"path"' modifier* | ':mixin' '"path"' | ':set' key value? | ':eval' term | ':infix' name+
 ```
 

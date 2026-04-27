@@ -187,6 +187,18 @@ describe("strict binders", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("rejects β prefix on a definition name", () => {
+    // The LHS of a def is a name slot, not a binder slot — β is illegal here.
+    const r = parseProgram("βf := λx. x\n");
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects β prefix on a free variable reference", () => {
+    // Variable references are name slots — β has no role here.
+    const r = parse("βx");
+    expect(r.ok).toBe(false);
+  });
+
   it("mixes strict and lazy binders in one λ", () => {
     const r = parse("λβx y. x");
     expect(r.ok).toBe(true);

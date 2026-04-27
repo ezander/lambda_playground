@@ -143,11 +143,12 @@ const MIXED = /[a-zA-Z0-9_'\u0370-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?
 // Strict binder: β fused immediately to an identifier (no whitespace).
 // Marks the parameter as call-by-value — the argument is reduced before substitution.
 // Listed before Beta and PlainIdent: "βx" lexes as one StrictBinder; "β x" still
-// lexes as Beta + PlainIdent (which the parser will reject in binder position).
+// lexes as Beta + PlainIdent. Deliberately NOT in the Identifier category — the
+// parser allows StrictBinder only in binder positions (λ params, [x:=a] sugar),
+// never as a definition name or a free variable reference.
 export const StrictBinder = createToken({
   name: "StrictBinder",
   pattern: new RegExp(`β${MIXED}+`),
-  categories: [Identifier],
 });
 
 // Plain identifier: one or more characters from the mixed charset.

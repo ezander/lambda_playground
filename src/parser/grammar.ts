@@ -65,9 +65,10 @@ function emptyPositionMap(): PositionMap {
 //   term        ::= application
 //   application ::= atom+                  (left-associative fold)
 //   atom        ::= primary subst*
-//   primary     ::= identLike | '(' term ')' | function
-//   function    ::= '\' identLike+ '.' term
-//   subst       ::= '[' identLike ':=' term ']'
+//   primary     ::= identLike | '(' term ')' | abstraction
+//   abstraction ::= ('\' | 'λ') binder+ '.' term
+//   binder      ::= identLike | strictBinder            -- strictBinder = β fused to a name (call-by-value)
+//   subst       ::= '[' (identLike | strictBinder) ':=' term ']'
 //   identifier  ::= plainIdent | backtickIdent
 
 class LambdaParser extends CstParser {
@@ -121,8 +122,10 @@ class LambdaParser extends CstParser {
   });
 
   private isDefinition(): boolean {
+    // Lookahead: Identifier (name) followed by zero or more binders
+    // (Identifier or StrictBinder), then := or ::=.
     let i = 1;
-    while (tokenMatcher(this.LA(i), Identifier)) i++;
+    while (tokenMatcher(this.LA(i), Identifier) || this.LA(i).tokenType === StrictBinder) i++;
     return tokenMatcher(this.LA(i), DefAssign) || tokenMatcher(this.LA(i), RedefAssign);
   }
 
@@ -161,7 +164,8 @@ class LambdaParser extends CstParser {
   });
 
   definition = this.RULE("definition", () => {
-    this.AT_LEAST_ONE(() => this.CONSUME(Identifier));
+    this.CONSUME(Identifier);                     // name — plain identifier only (β not allowed)
+    this.MANY(() => this.SUBRULE(this.binder));   // params — may be strict (βx)
     this.OR([
       { ALT: () => this.CONSUME(DefAssign) },
       { ALT: () => this.CONSUME(RedefAssign) },
@@ -210,7 +214,7 @@ class LambdaParser extends CstParser {
 
   primary = this.RULE("primary", () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.func) },
+      { ALT: () => this.SUBRULE(this.abstraction) },
       { ALT: () => this.CONSUME(Identifier) },
       {
         ALT: () => {
@@ -224,19 +228,27 @@ class LambdaParser extends CstParser {
 
   subst = this.RULE("subst", () => {
     this.CONSUME(LBracket);
-    this.CONSUME(Identifier);
+    this.SUBRULE(this.binder);
     this.CONSUME(DefAssign);
     this.SUBRULE(this.term);
     this.CONSUME(RBracket);
   });
 
-  func = this.RULE("func", () => {
+  abstraction = this.RULE("abstraction", () => {
     this.CONSUME(Lambda);
-    this.AT_LEAST_ONE(() => {
-      this.CONSUME(Identifier);
-    });
+    this.AT_LEAST_ONE(() => this.SUBRULE(this.binder));
     this.CONSUME(Dot);
     this.SUBRULE(this.term);
+  });
+
+  // A binder is a parameter slot: a plain identifier, or a β-prefixed strict
+  // binder. Strict binders are restricted to binder positions — definition
+  // names and comprehension targets cannot carry β.
+  binder = this.RULE("binder", () => {
+    this.OR([
+      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(StrictBinder) },
+    ]);
   });
 }
 
@@ -356,9 +368,8 @@ export class AstBuilder extends BaseCstVisitor {
 
   definition(ctx: any): RawDef | RawEmpty {
     if (!ctx.Identifier || !ctx.term) return { kind: "empty" };
-    const toks = ctx.Identifier as IToken[];
-    const nameTok = toks[0];
-    const params = toks.slice(1);
+    const nameTok = (ctx.Identifier as IToken[])[0];
+    const params  = (ctx.binder ?? []).map((b: CstNode) => this.visit(b) as IToken);
     const bodyTerm = this.visit(ctx.term[0]) as Term;
     let rawBody: Term = bodyTerm;
     for (let i = params.length - 1; i >= 0; i--) {
@@ -404,7 +415,7 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   primary(ctx: any): Term {
-    if (ctx.func) return this.visit(ctx.func);
+    if (ctx.abstraction) return this.visit(ctx.abstraction);
     if (ctx.Identifier) {
       const tok = ctx.Identifier[0] as IToken;
       const v = Var(tokenName(tok));
@@ -415,12 +426,12 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   subst(ctx: any): { param: string; paramTok: IToken; arg: Term; strict: boolean } {
-    const tok = ctx.Identifier[0] as IToken;
+    const tok = this.visit(ctx.binder[0]) as IToken;
     return { param: tokenName(tok), paramTok: tok, arg: this.visit(ctx.term), strict: isStrictBinder(tok) };
   }
 
-  func(ctx: any): Term {
-    const toks: IToken[] = ctx.Identifier;
+  abstraction(ctx: any): Term {
+    const toks: IToken[] = (ctx.binder as CstNode[]).map(b => this.visit(b) as IToken);
     const body: Term = this.visit(ctx.term);
     let result = body;
     for (let i = toks.length - 1; i >= 0; i--) {
@@ -429,6 +440,11 @@ export class AstBuilder extends BaseCstVisitor {
       result = abs;
     }
     return result;
+  }
+
+  binder(ctx: any): IToken {
+    // ctx will have either Identifier or StrictBinder, never both — return the one present.
+    return (ctx.Identifier ?? ctx.StrictBinder)[0] as IToken;
   }
 }
 
