@@ -22,9 +22,9 @@ export const DEFAULT_CONFIG: Config = {
   maxStepsIdent:   1000,
   maxHistory:      200,
   maxSize:         3000,
-  showPassingEquiv: false,
+  showPassingEquiv: true,
   wrapWidth:       80,
-  autoSave:        false,
+  autoSave:        true,
   autoRun:         true,
   traceLevel:      "off",
 };
