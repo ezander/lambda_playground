@@ -157,27 +157,26 @@ export const LOGIC_SYMBOLS: GreekSymbol[] = [
   { sym: "¬", name: "not"      },
   { sym: "→", name: "implies"  },
   { sym: "↔", name: "iff"      },
-  { sym: "⊤", name: "top",      aliases: ["true"]  },
-  { sym: "⊥", name: "bot",      aliases: ["false"] },
-  { sym: "⊕", name: "oplus"    },
-  { sym: "⊗", name: "otimes"   },
-  { sym: "∘", name: "compose"  },
-  { sym: "≠", name: "neq"      },
-  { sym: "∅", name: "emptyset" },
-  { sym: "∀", name: "forall",   reserved: true  },  // reserved for types
-  { sym: "∃", name: "exists",   reserved: true  },  // reserved for types
-  { sym: "⊢", name: "vdash",    reserved: true  },  // reserved for proof notation
+  { sym: "⊤", name: "top",     aliases: ["true"]  },
+  { sym: "⊥", name: "bot",     aliases: ["false"] },
+  { sym: "∀", name: "forall",  reserved: true  },  // reserved for types
+  { sym: "∃", name: "exists",  reserved: true  },  // reserved for types
+  { sym: "⊢", name: "vdash",   reserved: true  },  // reserved for proof notation
 ];
 
-// Math operators — set theory, arithmetic extras, comparison.
-// All chars are in the lexer's MIXED charset, so they're accepted as identifier characters
-// (single-symbol or fused). `:infix` declarations turn them into infix operators.
-export const MATH_SYMBOLS: GreekSymbol[] = [
-  // set theory
+// Set-theory operators.
+export const SET_SYMBOLS: GreekSymbol[] = [
   { sym: "∪", name: "cup"      },
   { sym: "∩", name: "cap"      },
   { sym: "⊆", name: "subseteq" },
   { sym: "∈", name: "in"       },
+  { sym: "∅", name: "emptyset" },
+];
+
+// Math operators — arithmetic, comparison, structural.
+// All chars are in the lexer's MIXED charset, so they're accepted as identifier characters
+// (single-symbol or fused). `:infix` declarations turn them into infix operators.
+export const MATH_SYMBOLS: GreekSymbol[] = [
   // arithmetic
   { sym: "±", name: "pm"       },
   { sym: "×", name: "times"    },
@@ -186,6 +185,11 @@ export const MATH_SYMBOLS: GreekSymbol[] = [
   // comparison
   { sym: "≤", name: "leq"      },
   { sym: "≥", name: "geq"      },
+  { sym: "≠", name: "neq"      },
+  // structural
+  { sym: "⊕", name: "oplus"    },
+  { sym: "⊗", name: "otimes"   },
+  { sym: "∘", name: "compose"  },
 ];
 
 export const GREEK_SYMBOLS: GreekSymbol[] = [
@@ -213,7 +217,7 @@ export const GREEK_SYMBOLS: GreekSymbol[] = [
 
 const GREEK_MAP: Record<string, string> = (() => {
   const m: Record<string, string> = {};
-  for (const { sym, name, aliases } of [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS, ...MATH_SYMBOLS]) {
+  for (const { sym, name, aliases } of [...GREEK_SYMBOLS, ...LOGIC_SYMBOLS, ...SET_SYMBOLS, ...MATH_SYMBOLS]) {
     m[name] = sym;
     for (const a of aliases ?? []) m[a] = sym;
   }

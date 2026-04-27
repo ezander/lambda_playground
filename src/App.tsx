@@ -9,7 +9,7 @@ import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-code
 import { lineNumbers } from "@codemirror/view";
 import { undo, redo, undoDepth, redoDepth, history as cmHistory } from "@codemirror/commands";
 import { openSearchPanel } from "@codemirror/search";
-import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS, MATH_SYMBOLS } from "./editor";
+import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS, SET_SYMBOLS, MATH_SYMBOLS } from "./editor";
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap, autocompleteWheelPlugin } from "./autocomplete";
 import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
@@ -319,6 +319,14 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
                     onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
                 ))}
               </div>
+              <div className="sym-section-label">set theory</div>
+              <div className="sym-row">
+                {SET_SYMBOLS.map(g => (
+                  <button key={g.name} className="sym-item"
+                    title={`\\${g.name}`}
+                    onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
+                ))}
+              </div>
               <div className="sym-section-label">math</div>
               <div className="sym-row">
                 {MATH_SYMBOLS.map(g => (
@@ -327,7 +335,7 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
                     onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
                 ))}
               </div>
-              <div className="sym-section-label">lowercase</div>
+              <div className="sym-section-label">Greek lowercase</div>
               <div className="sym-row">
                 {GREEK_SYMBOLS.filter(g => g.sym === g.sym.toLowerCase()).map(g => (
                   <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
@@ -335,7 +343,7 @@ function ContentToolbar({ onLoadExample, symPickerRef, symOpen, onToggleSymOpen,
                     onClick={() => { onInsertSym(g.sym); onToggleSymOpen(); }}>{g.sym}</button>
                 ))}
               </div>
-              <div className="sym-section-label">uppercase</div>
+              <div className="sym-section-label">Greek uppercase</div>
               <div className="sym-row">
                 {GREEK_SYMBOLS.filter(g => g.sym !== g.sym.toLowerCase()).map(g => (
                   <button key={g.name} className={`sym-item${g.reserved ? " sym-item-reserved" : ""}`}
