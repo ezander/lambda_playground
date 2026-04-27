@@ -1,7 +1,7 @@
 import { tokenMatcher } from "chevrotain";
 import { LambdaLexer, NewLine, findDirectiveCommentStart } from "./lexer";
 import { Term, App, Abs } from "./ast";
-import { parser, astBuilder, tokenName, isStrictBinder, RawStmt, RawBinding } from "./grammar";
+import { parser, astBuilder, tokenName, isEagerBinder, RawStmt, RawBinding } from "./grammar";
 import {
   LambdaError, errLocation,
   PositionMap,
@@ -27,10 +27,10 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
     case "App":
       return App(expandDefs(term.func, defs), expandDefs(term.arg, defs));
     case "Abs": {
-      if (!defs.has(term.param)) return Abs(term.param, expandDefs(term.body, defs), term.strict);
+      if (!defs.has(term.param)) return Abs(term.param, expandDefs(term.body, defs), term.eager);
       const inner = new Map(defs);
       inner.delete(term.param);
-      return Abs(term.param, expandDefs(term.body, inner), term.strict);
+      return Abs(term.param, expandDefs(term.body, inner), term.eager);
     }
     case "Subst":
       return term;
@@ -44,7 +44,7 @@ export function expandDefs(term: Term, defs: Map<string, Term>): Term {
 function swapInfix(term: Term, infixNames: Set<string>): Term {
   switch (term.kind) {
     case "Var":   return term;
-    case "Abs":   return Abs(term.param, swapInfix(term.body, infixNames), term.strict);
+    case "Abs":   return Abs(term.param, swapInfix(term.body, infixNames), term.eager);
     case "Subst": return term;
     case "App": {
       const func = swapInfix(term.func, infixNames);
@@ -423,7 +423,7 @@ export function parseProgram(
         let body = expandDefs(swapInfix(bodyTerm, infx), innerDefs);
 
         if (params.length > 0)
-          body = params.reduceRight((acc, p) => Abs(tokenName(p), acc, isStrictBinder(p)), body);
+          body = params.reduceRight((acc, p) => Abs(tokenName(p), acc, isEagerBinder(p)), body);
 
         // Normalize once at def time; canonicalize only if NF was reached.
         // canon stays undefined for non-normalizing defs — they will not

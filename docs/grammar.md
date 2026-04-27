@@ -21,9 +21,9 @@ application        ::=  atom (atom | abstraction)*
 atom               ::=  (identifier | '(' term ')') subst*
 subst              ::=  '[' binder ':=' term ']'
 abstraction        ::=  'λ' binder+ '.' term
-binder             ::=  identifier | strictBinder
+binder             ::=  identifier | eagerBinder
 identifier         ::=  plainIdent | backtickIdent
 plainIdent         ::=  (alnum | '_' | "'" | greek | op-sym)+
 backtickIdent      ::=  '`' [^`\n]+ '`'
-strictBinder       ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)
+eagerBinder        ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)
 ```

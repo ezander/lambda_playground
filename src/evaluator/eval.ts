@@ -92,14 +92,14 @@ export function substitute(term: Term, x: string, replacement: Term): Term {
 
       // No capture risk — substitute freely
       if (!fvRepl.has(term.param)) {
-        return Abs(term.param, substitute(term.body, x, replacement), term.strict);
+        return Abs(term.param, substitute(term.body, x, replacement), term.eager);
       }
 
       // Capture would occur — alpha-rename the bound variable first
       const avoid = new Set([...fvRepl, ...freeVars(term.body), x]);
       const fresh = freshName(term.param, avoid);
       const renamedBody = substitute(term.body, term.param, Var(fresh));
-      return Abs(fresh, substitute(renamedBody, x, replacement), term.strict);
+      return Abs(fresh, substitute(renamedBody, x, replacement), term.eager);
     }
 
     case "Subst": {
@@ -144,10 +144,10 @@ export function step(term: Term, showSubst = false): Term | null {
     case "App": {
       // Is this a redex?
       if (term.func.kind === "Abs") {
-        // Strict (call-by-value): reduce arg to normal form before substituting.
+        // Eager (call-by-value): reduce arg to normal form before substituting.
         // Each visible step shows one reduction inside the arg; only when arg is
         // irreducible do we fall through to the actual beta.
-        if (term.func.strict) {
+        if (term.func.eager) {
           const arg2 = step(term.arg, showSubst);
           if (arg2 !== null) return App(term.func, arg2);
         }
@@ -170,7 +170,7 @@ export function step(term: Term, showSubst = false): Term | null {
     case "Abs": {
       // Reduce under the lambda (normal order goes under binders)
       const body2 = step(term.body, showSubst);
-      if (body2 !== null) return Abs(term.param, body2, term.strict);
+      if (body2 !== null) return Abs(term.param, body2, term.eager);
       return null;
     }
   }
@@ -185,10 +185,10 @@ export function etaStep(term: Term): Term | null {
     case "Var":
       return null;
     case "Abs": {
-      // Check for eta-redex at this node. Strict abstractions are excluded:
+      // Check for eta-redex at this node. Eager abstractions are excluded:
       // λβx. f x forces evaluation of x, but f does not — eta would change semantics.
       if (
-        !term.strict &&
+        !term.eager &&
         term.body.kind === "App" &&
         term.body.arg.kind === "Var" &&
         term.body.arg.name === term.param &&
@@ -196,7 +196,7 @@ export function etaStep(term: Term): Term | null {
       ) return term.body.func;
       // Otherwise recurse into body
       const b = etaStep(term.body);
-      return b !== null ? Abs(term.param, b, term.strict) : null;
+      return b !== null ? Abs(term.param, b, term.eager) : null;
     }
     case "App": {
       const f = etaStep(term.func);

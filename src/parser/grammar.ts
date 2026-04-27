@@ -25,24 +25,24 @@ import {
   Semi,
   Identifier,
   BacktickIdent,
-  StrictBinder,
+  EagerBinder,
 } from "./lexer";
 import { Term, Var, Abs, App, Pos } from "./ast";
 import { LambdaError, ParseResult, PositionMap } from "./types";
 
 // Strip backtick quotes from a BacktickIdent token; strip leading β (and any
-// backtick wrap) from a StrictBinder; leave plain identifiers unchanged.
+// backtick wrap) from an EagerBinder; leave plain identifiers unchanged.
 export function tokenName(tok: IToken): string {
   if (tok.tokenType === BacktickIdent) return tok.image.slice(1, -1);
-  if (tok.tokenType === StrictBinder) {
+  if (tok.tokenType === EagerBinder) {
     const rest = tok.image.slice(1);  // strip leading β
     return rest.startsWith("`") ? rest.slice(1, -1) : rest;
   }
   return tok.image;
 }
 
-export function isStrictBinder(tok: IToken): boolean {
-  return tok.tokenType === StrictBinder;
+export function isEagerBinder(tok: IToken): boolean {
+  return tok.tokenType === EagerBinder;
 }
 
 function emptyPositionMap(): PositionMap {
@@ -148,7 +148,7 @@ class LambdaParser extends CstParser {
 
   definition = this.RULE("definition", () => {
     this.CONSUME(Identifier);                     // name — plain identifier only (β not allowed)
-    this.MANY(() => this.SUBRULE(this.binder));   // params — may be strict (βx)
+    this.MANY(() => this.SUBRULE(this.binder));   // params — may be eager (βx)
     this.OR([
       { ALT: () => this.CONSUME(DefAssign) },
       { ALT: () => this.CONSUME(RedefAssign) },
@@ -226,13 +226,13 @@ class LambdaParser extends CstParser {
     this.SUBRULE(this.term);
   });
 
-  // A binder is a parameter slot: a plain identifier, or a β-prefixed strict
-  // binder. Strict binders are restricted to binder positions — definition
+  // A binder is a parameter slot: a plain identifier, or a β-prefixed eager
+  // binder. Eager binders are restricted to binder positions — definition
   // names and comprehension targets cannot carry β.
   binder = this.RULE("binder", () => {
     this.OR([
       { ALT: () => this.CONSUME(Identifier) },
-      { ALT: () => this.CONSUME(StrictBinder) },
+      { ALT: () => this.CONSUME(EagerBinder) },
     ]);
   });
 }
@@ -359,7 +359,7 @@ export class AstBuilder extends BaseCstVisitor {
     let rawBody: Term = bodyTerm;
     for (let i = params.length - 1; i >= 0; i--) {
       const tok = params[i];
-      const abs = Abs(tokenName(tok), rawBody, isStrictBinder(tok));
+      const abs = Abs(tokenName(tok), rawBody, isEagerBinder(tok));
       this.positions.params.set(abs, this.pos(tok));
       rawBody = abs;
     }
@@ -405,17 +405,17 @@ export class AstBuilder extends BaseCstVisitor {
       base = this.visit(ctx.term[0]);
     }
     for (const s of (ctx.subst ?? [])) {
-      const { param, paramTok, arg, strict } = this.visit(s) as { param: string; paramTok: IToken; arg: Term; strict: boolean };
-      const abs = Abs(param, base, strict);
+      const { param, paramTok, arg, eager } = this.visit(s) as { param: string; paramTok: IToken; arg: Term; eager: boolean };
+      const abs = Abs(param, base, eager);
       this.positions.params.set(abs, this.pos(paramTok));
       base = App(abs, arg);
     }
     return base;
   }
 
-  subst(ctx: any): { param: string; paramTok: IToken; arg: Term; strict: boolean } {
+  subst(ctx: any): { param: string; paramTok: IToken; arg: Term; eager: boolean } {
     const tok = this.visit(ctx.binder[0]) as IToken;
-    return { param: tokenName(tok), paramTok: tok, arg: this.visit(ctx.term), strict: isStrictBinder(tok) };
+    return { param: tokenName(tok), paramTok: tok, arg: this.visit(ctx.term), eager: isEagerBinder(tok) };
   }
 
   abstraction(ctx: any): Term {
@@ -423,7 +423,7 @@ export class AstBuilder extends BaseCstVisitor {
     const body: Term = this.visit(ctx.term);
     let result = body;
     for (let i = toks.length - 1; i >= 0; i--) {
-      const abs = Abs(tokenName(toks[i]), result, isStrictBinder(toks[i]));
+      const abs = Abs(tokenName(toks[i]), result, isEagerBinder(toks[i]));
       this.positions.params.set(abs, this.pos(toks[i]));
       result = abs;
     }
@@ -431,8 +431,8 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   binder(ctx: any): IToken {
-    // ctx will have either Identifier or StrictBinder, never both — return the one present.
-    return (ctx.Identifier ?? ctx.StrictBinder)[0] as IToken;
+    // ctx will have either Identifier or EagerBinder, never both — return the one present.
+    return (ctx.Identifier ?? ctx.EagerBinder)[0] as IToken;
   }
 }
 

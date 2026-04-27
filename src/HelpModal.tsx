@@ -54,7 +54,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <table className="help-table"><tbody>
             <tr><td><code>λx. body</code></td><td>lambda abstraction (<code>\</code> also accepted)</td></tr>
             <tr><td><code>λx y. body</code></td><td>multi-param (desugars to nested lambdas)</td></tr>
-            <tr><td><code>λβx. body</code></td><td>strict binder (call-by-value): argument reduced before substitution; per-binder, no whitespace between <code>β</code> and the name</td></tr>
+            <tr><td><code>λβx. body</code></td><td>eager binder (call-by-value): argument reduced before substitution; per-binder, no whitespace between <code>β</code> and the name</td></tr>
             <tr><td><code>f x y</code></td><td>application (left-associative)</td></tr>
             <tr><td><code>e[x:=a]</code></td><td>substitution: desugars to <code>(\x. e) a</code></td></tr>
             <tr><td><code># comment</code></td><td>line comment; <code>#* … *#</code> for block comments</td></tr>
@@ -140,7 +140,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>`</code> with selection</td><td>wrap selected text in backticks</td></tr>
             <tr><td><code>`</code> without selection</td><td>insert paired backticks, cursor inside</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
-            <tr><td><code>Alt-B</code></td><td>insert β at cursor (for strict binders, e.g. <code>λβx. body</code>)</td></tr>
+            <tr><td><code>Alt-B</code></td><td>insert β at cursor (for eager binders, e.g. <code>λβx. body</code>)</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
             <tr><td><code>Alt-E</code></td><td>insert ≡ at start of line</td></tr>
             <tr><td><code>Alt-N</code></td><td>insert ≢ at start of line</td></tr>

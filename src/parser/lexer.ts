@@ -153,18 +153,18 @@ export const BacktickIdent = createToken({
 // Mixed charset: alphanumeric/Greek + operator chars + free logic symbols.
 // Excludes the reserved Greek letters λ (\u03BB), π (\u03C0), α (\u03B1), β (\u03B2),
 // η (\u03B7) so those are always standalone tokens, never absorbed into a
-// PlainIdent (or a strictBinder's name suffix) regardless of position.
+// PlainIdent (or an eagerBinder's name suffix) regardless of position.
 const MIXED = /[a-zA-Z0-9_'\u0370-\u03B0\u03B3-\u03B6\u03B8-\u03BA\u03BC-\u03BF\u03C1-\u03FF+\-*\/^~&|<>!?=\u00AC\u2190-\u21FF\u2205\u2218\u2227-\u2228\u2260\u2295\u2297\u22A4-\u22A5]/.source;
 
-// Strict binder: β fused immediately to an identifier (plain or backtick-quoted),
+// Eager binder: β fused immediately to an identifier (plain or backtick-quoted),
 // no whitespace between β and the name.
 // Marks the parameter as call-by-value — the argument is reduced before substitution.
-// Listed before Beta and PlainIdent: "βx" lexes as one StrictBinder; "β x" still
+// Listed before Beta and PlainIdent: "βx" lexes as one EagerBinder; "β x" still
 // lexes as Beta + PlainIdent. Deliberately NOT in the Identifier category — the
-// parser allows StrictBinder only in binder positions (λ params, [x:=a] sugar),
+// parser allows EagerBinder only in binder positions (λ params, [x:=a] sugar),
 // never as a definition name or a free variable reference.
-export const StrictBinder = createToken({
-  name: "StrictBinder",
+export const EagerBinder = createToken({
+  name: "EagerBinder",
   pattern: new RegExp(`β(?:${MIXED}+|\`[^\`\\n]+\`)`),
 });
 
@@ -195,7 +195,7 @@ export const allTokens = [
   Dot,
   Lambda,
   Pi,
-  StrictBinder,                           // βident must win over Beta+Ident (longest match)
+  EagerBinder,                            // βident must win over Beta+Ident (longest match)
   Alpha, Beta, Eta,                       // reserved Greek — before PlainIdent (same-length tie → first wins)
   ForAll, Exists, Equiv, NEquiv, Turnstile, // reserved logic — same strategy
   LParen,

@@ -28,7 +28,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 ```
 λx. body             # lambda abstraction
 λx y z. body         # multi-param (desugars to nested abstractions)
-λβx. body            # strict binder: argument reduced before substitution (call-by-value)
+λβx. body            # eager binder: argument reduced before substitution (call-by-value)
 f x y                # application (left-associative)
 e[x:=a]              # explicit substitution: desugars to (λx. e) a
 + m n := m S n       # operator identifier as definition name

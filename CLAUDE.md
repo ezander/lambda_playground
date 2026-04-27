@@ -48,9 +48,9 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 
 Top-level surface forms:
 
-- **Lambdas**: `λx. body`, `λx y z. body` (multi-param), `λβx. body` (strict / call-by-value binder).
+- **Lambdas**: `λx. body`, `λx y z. body` (multi-param), `λβx. body` (eager / call-by-value binder).
 - **Application**: juxtaposition, left-associative (`f x y` = `(f x) y`).
-- **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Strict variant: `e[βx:=a]`.
+- **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Eager variant: `e[βx:=a]`.
 - **Definitions**: `name params := body` (`::=` for redefinition). The name slot rejects β; param slots accept it.
 - **Statements**: `π expr` / `:print` (evaluate and show), `≡ a b` / `:assert`, `≢ a b` / `:assert-not`, `:eval expr`. Each accepts a comprehension prefix `[x := {a,b,c}]`.
 - **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`. Pragmas `#! key value` inside line comments overlap with `:set`.

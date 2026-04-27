@@ -31,7 +31,7 @@ const TOKEN_LABELS: Record<string, string> = {
   Identifier:    "identifier",
   PlainIdent:    "plainIdent",
   BacktickIdent: "backtickIdent",
-  StrictBinder:  "strictBinder",
+  EagerBinder:   "eagerBinder",
 };
 
 function fmtAtom(g: Gast): string {
@@ -91,5 +91,5 @@ export function generateEBNF(): string {
     + `\n${pad("identifier")}  ::=  plainIdent | backtickIdent`
     + `\n${pad("plainIdent")}  ::=  (alnum | '_' | "'" | greek | op-sym)+`
     + `\n${pad("backtickIdent")}  ::=  '\`' [^\`\\n]+ '\`'`
-    + `\n${pad("strictBinder")}  ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)`;
+    + `\n${pad("eagerBinder")}  ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)`;
 }
