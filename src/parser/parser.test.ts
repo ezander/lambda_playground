@@ -222,6 +222,17 @@ describe("strict binders", () => {
     if (r.ok) expect(r.term).toEqual(App(Abs("x", Var("e"), true), Var("a")));
   });
 
+  it("accepts β fused to a backtick-quoted name", () => {
+    const r = parse("λβ`weird name`. x");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.term).toEqual(Abs("weird name", Var("x"), true));
+  });
+
+  it("rejects β + whitespace + backtick name (whitespace breaks fusion)", () => {
+    const r = parse("λβ `weird name`. x");
+    expect(r.ok).toBe(false);
+  });
+
   it("pretty-prints β prefix on strict binders", () => {
     expect(prettyPrint(Abs("x", Var("x"), true))).toBe("λβx. x");
     expect(prettyPrint(Abs("x", Abs("y", Var("x"), false), true))).toBe("λβx y. x");

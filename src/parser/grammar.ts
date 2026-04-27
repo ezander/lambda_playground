@@ -30,11 +30,14 @@ import {
 import { Term, Var, Abs, App, Pos } from "./ast";
 import { LambdaError, ParseResult, PositionMap } from "./types";
 
-// Strip backtick quotes from a BacktickIdent token; strip leading β from a StrictBinder;
-// leave plain identifiers unchanged.
+// Strip backtick quotes from a BacktickIdent token; strip leading β (and any
+// backtick wrap) from a StrictBinder; leave plain identifiers unchanged.
 export function tokenName(tok: IToken): string {
   if (tok.tokenType === BacktickIdent) return tok.image.slice(1, -1);
-  if (tok.tokenType === StrictBinder)  return tok.image.slice(1);  // strip leading β
+  if (tok.tokenType === StrictBinder) {
+    const rest = tok.image.slice(1);  // strip leading β
+    return rest.startsWith("`") ? rest.slice(1, -1) : rest;
+  }
   return tok.image;
 }
 

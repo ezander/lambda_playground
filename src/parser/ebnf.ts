@@ -79,5 +79,5 @@ export function generateEBNF(): string {
     + `\n${pad("identifier")}  ::=  plainIdent | backtickIdent`
     + `\n${pad("plainIdent")}  ::=  (alnum | '_' | "'" | greek | op-sym)+`
     + `\n${pad("backtickIdent")}  ::=  '\`' [^\`\\n]+ '\`'`
-    + `\n${pad("strictBinder")}  ::=  'β' (alnum | '_' | "'" | greek | op-sym)+    -- β fused to name (call-by-value binder)`;
+    + `\n${pad("strictBinder")}  ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)`;
 }

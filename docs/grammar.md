@@ -26,5 +26,5 @@ binder             ::=  (identifier | strictBinder)
 identifier         ::=  plainIdent | backtickIdent
 plainIdent         ::=  (alnum | '_' | "'" | greek | op-sym)+
 backtickIdent      ::=  '`' [^`\n]+ '`'
-strictBinder       ::=  'β' (alnum | '_' | "'" | greek | op-sym)+    -- β fused to name (call-by-value binder)
+strictBinder       ::=  'β' identifier    -- β fused to name, no whitespace (call-by-value binder)
 ```
