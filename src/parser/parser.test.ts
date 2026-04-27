@@ -1120,3 +1120,40 @@ describe("redef (::=)", () => {
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
 });
+
+describe("runEval flag", () => {
+  it("runEval=false marks π results as notRun and skips evaluation", () => {
+    const r = parseProgram("π (λx. x x) (λx. x x)", { runEval: false });
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].notRun).toBe(true);
+    expect(r.printInfos[0].src).toBe("(λx. x x) (λx. x x)");
+    expect(r.printInfos[0].result).toBe("");
+  });
+
+  it("runEval=false marks ≡ assertions as notRun, no equivFailed", () => {
+    const r = parseProgram("≡ I (λx. x)\n≡ K (λx. x)", { runEval: false });
+    expect(r.equivInfos).toHaveLength(2);
+    expect(r.equivInfos.every(e => e.notRun === true)).toBe(true);
+    expect(r.ok).toBe(true);  // assertion failures don't propagate when not run
+  });
+
+  it("runEval=false skips def normalization (canon undefined)", () => {
+    const r = parseProgram("I := λx. x", { runEval: false });
+    expect(r.defs.get("I")?.canon).toBeUndefined();
+  });
+
+  it("runEval=true (default) still evaluates normally", () => {
+    const r = parseProgram("π (λx. x) y");
+    expect(r.printInfos[0].notRun).toBeUndefined();
+    expect(r.printInfos[0].result).toBe("y");
+    expect(r.printInfos[0].normal).toBe(true);
+  });
+
+  it("runEval=false marks comprehensions as notRun with empty rows", () => {
+    const r = parseProgram("π[x:={a,b}] x", { runEval: false });
+    expect(r.printComprehensionInfos).toHaveLength(1);
+    expect(r.printComprehensionInfos[0].notRun).toBe(true);
+    expect(r.printComprehensionInfos[0].rows).toEqual([]);
+    expect(r.printComprehensionInfos[0].bindings[0].values).toEqual(["a", "b"]);
+  });
+});

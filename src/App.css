@@ -603,6 +603,8 @@ label {
 .normal-form { color: var(--ok); }
 .did-not-terminate { color: var(--warn); }
 .paused { color: var(--accent); }
+.not-run { color: var(--muted); font-style: italic; }
+.print-not-run { opacity: 0.6; }
 
 .subst-toggle {
   font-family: var(--mono);
@@ -647,6 +649,24 @@ label {
 }
 
 .panel-header-extra { margin-left: auto; margin-right: 0.75rem; }
+.panel-autorun-toggle + .panel-sort-btn { margin-left: 1.25rem; }
+.panel-header-extra > .panel-sort-btn:last-child { margin-left: 2.5rem; }
+
+.panel-autorun-toggle {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+  top: 0.2rem;
+}
+.panel-autorun-toggle input { cursor: pointer; }
+.panel-sort-btn:disabled { opacity: 0.4; cursor: default; }
 
 .panel-sort-btn {
   font-family: var(--mono);

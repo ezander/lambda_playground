@@ -417,11 +417,12 @@ function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, 
   );
 }
 
-function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo }: {
+function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale }: {
   open: boolean; onToggle: () => void;
   printDesc: boolean; onTogglePrintDesc: () => void;
   programResult: ProgramResult; showPassingEquiv: boolean;
   onJumpTo: (offset: number) => void;
+  autoRun: boolean; onToggleAutoRun: () => void; onRun: () => void; runStale: boolean;
 }) {
   const hasContent = programResult.printInfos.length > 0 || programResult.equivInfos.length > 0
     || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0;
@@ -438,57 +439,70 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
 
   return (
     <Panel label="output" open={open} onToggle={onToggle}
-      headerExtra={<button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>}>
+      headerExtra={<>
+        <label className="panel-autorun-toggle" title="Auto-run: re-evaluate π/≡ on every edit">
+          <input type="checkbox" checked={autoRun} onChange={onToggleAutoRun} /> auto-run
+        </label>
+        <button className="panel-sort-btn" onClick={onRun} disabled={!runStale}
+          style={autoRun ? { visibility: "hidden" } : undefined}
+          title="Run π/≡ for current source">run</button>
+        <button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>
+      </>}>
       {hasContent ? (
         <div className="print-section">
           {items.map((item, i) => item.kind === "print" ? (
-            <div key={i} className="print-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" π "}{item.data.src}
               </code>
-              <code className="print-result">
-                <span className="print-result-text"><Truncated text={item.data.result} /></span>
-                <span className="print-result-status">
-                  {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
-                  {item.data.normal
-                    ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
-                    : item.data.size !== undefined
-                      ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
-                      : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
-                </span>
-              </code>
+              {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
+                <code className="print-result">
+                  <span className="print-result-text"><Truncated text={item.data.result} /></span>
+                  <span className="print-result-status">
+                    {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
+                    {item.data.normal
+                      ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
+                      : item.data.size !== undefined
+                        ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
+                        : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
+                  </span>
+                </code>
+              )}
             </div>
           ) : item.kind === "equiv" ? (
-            <div key={i} className="print-entry equiv-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" "}{item.data.src1}
-                <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
+                <span className={`equiv-op ${item.data.notRun ? "" : item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
                 {item.data.src2}
               </code>
-              <code className="print-result">
-                <span className="print-result-text">
-                  <Truncated text={item.data.norm1} />
-                  <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
-                  <Truncated text={item.data.norm2} />
-                </span>
-                <span className="print-result-status">
-                  {item.data.equivalent
-                    ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
-                    : item.data.terminated
-                      ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
-                      : <span className="eval-status did-not-terminate">no normal form</span>}
-                </span>
-              </code>
+              {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
+                <code className="print-result">
+                  <span className="print-result-text">
+                    <Truncated text={item.data.norm1} />
+                    <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
+                    <Truncated text={item.data.norm2} />
+                  </span>
+                  <span className="print-result-status">
+                    {item.data.equivalent
+                      ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>equivalent</span>
+                      : item.data.terminated
+                        ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
+                        : <span className="eval-status did-not-terminate">no normal form</span>}
+                  </span>
+                </code>
+              )}
             </div>
           ) : item.kind === "print-comp" ? (
-            <div key={i} className="print-entry print-comp-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" π "}{item.data.src}
                 <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
               </code>
+              {item.data.notRun && <span className="eval-status not-run">not run</span>}
               <div className="comp-rows">
                 {item.data.rows.map((row, ri) => (
                   <div key={ri} className="comp-row">
@@ -512,14 +526,15 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               </div>
             </div>
           ) : (
-            <div key={i} className="print-entry equiv-comp-entry" onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-comp-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" "}{item.data.src1}
-                <span className={`equiv-op ${item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
+                <span className={`equiv-op ${item.data.notRun ? "" : item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
                 {item.data.src2}
                 <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
               </code>
+              {item.data.notRun && <span className="eval-status not-run">not run</span>}
               <div className="comp-rows">
                 {item.data.rows.map((row, ri) => {
                   const rowPassed = item.data.negated ? !row.equivalent : row.equivalent;
@@ -651,12 +666,18 @@ export default function App() {
 
   const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
+  // Source for which the user explicitly requested a one-shot eval (Run button).
+  // Eval runs when autoRun is on, OR when the source matches this — i.e. user
+  // clicked Run for the current source. Editing diverges debouncedSource from
+  // runForSource, so eval falls back to off automatically.
+  const [runForSource, setRunForSource] = useState<string | null>(null);
+  const runEval = config.autoRun || debouncedSource === runForSource;
   const programResult = useMemo(() => {
     const t0 = performance.now();
-    const r  = parseProgram(debouncedSource, config, includeResolver);
+    const r  = parseProgram(debouncedSource, { ...config, runEval }, includeResolver);
     traceSummary("program total", performance.now() - t0);
     return r;
-  }, [debouncedSource, config, includeResolver]);
+  }, [debouncedSource, config, runEval, includeResolver]);
   const programResultRef = useRef(programResult);
   programResultRef.current = programResult;
 
@@ -1183,6 +1204,10 @@ export default function App() {
             printDesc={printDesc} onTogglePrintDesc={() => setPrintDesc(d => { const n = !d; localStorage.setItem(KEY_PRINT_DESC, n ? "1" : "0"); return n; })}
             programResult={programResult} showPassingEquiv={config.showPassingEquiv}
             onJumpTo={jumpTo}
+            autoRun={config.autoRun}
+            onToggleAutoRun={() => updateConfig({ autoRun: !config.autoRun })}
+            onRun={() => setRunForSource(debouncedSource)}
+            runStale={!runEval}
           />
         </div>
       </main>

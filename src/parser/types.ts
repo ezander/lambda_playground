@@ -81,6 +81,7 @@ export type EquivInfo = {
   negated:    boolean;
   offset:     number;
   line:       number;
+  notRun?:    boolean;  // auto-run was off when this statement was parsed
 };
 
 export type ComprehensionBinding = { name: string; values: string[] };
@@ -100,6 +101,7 @@ export type PrintComprehensionInfo = {
   rows:     PrintComprehensionRow[];
   offset:   number;
   line:     number;
+  notRun?:  boolean;
 };
 
 export type EquivComprehensionRow = {
@@ -120,6 +122,7 @@ export type EquivComprehensionInfo = {
   negated:   boolean;
   offset:    number;
   line:      number;
+  notRun?:   boolean;
 };
 
 export type ProgramResult = {
@@ -130,7 +133,7 @@ export type ProgramResult = {
   rawExpr:     Term | null;
   defInfos:    DefInfo[];
   exprInfos:   { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[]; offset: number }[];
-  printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number }[];
+  printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number; notRun?: boolean }[];
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];
@@ -142,6 +145,7 @@ export type ProgramRunConfig = {
   maxStepsIdent?: number;
   maxSize?:       number;
   allowEta?:      boolean;
+  runEval?:       boolean;  // when false, skip all normalize calls (auto-run off)
 };
 
 export type IncludeResolver = (path: string) => string | null;

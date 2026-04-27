@@ -427,9 +427,10 @@ export function parseProgram(
 
         // Normalize once at def time; canonicalize only if NF was reached.
         // canon stays undefined for non-normalizing defs — they will not
-        // participate in match-finding at print/equiv time.
+        // participate in match-finding at print/equiv time. Skipped entirely
+        // when runEval is false (auto-run off).
         let canon: string | undefined;
-        if (pragmaConfig.normalizeDefs ?? true) {
+        if ((merged.runEval ?? true) && (pragmaConfig.normalizeDefs ?? true)) {
           const { term: normalized, kind } = timedNorm(`def ${name}`, body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           if (kind === "stepLimit")
             errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset, kind: "warning" });
@@ -467,6 +468,26 @@ export function parseProgram(
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
         const infx = getInfixNames(defEntries);
+        const runEval = merged.runEval ?? true;
+
+        if (!runEval) {
+          if (stmt.bindings) {
+            const baseSrc = prettyPrint(stmt.term);
+            const compBindings: ComprehensionBinding[] = stmt.bindings.map(b => ({
+              name: b.name, values: b.termValues.map(v => prettyPrint(v)),
+            }));
+            printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows: [], offset: stmt.offset, line: currentLine, notRun: true });
+            exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+            for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
+          } else {
+            printInfos.push({
+              src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
+              offset: stmt.offset, line: currentLine, notRun: true,
+            });
+            exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+          }
+          break;
+        }
 
         if (stmt.bindings) {
           const bindingNames = new Set(stmt.bindings.map(b => b.name));
@@ -533,6 +554,28 @@ export function parseProgram(
         const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
         const infx = getInfixNames(defEntries);
+        const runEval = merged.runEval ?? true;
+
+        if (!runEval) {
+          const src1 = prettyPrint(stmt.atom1);
+          const src2 = prettyPrint(stmt.atom2);
+          if (stmt.bindings) {
+            const compBindings: ComprehensionBinding[] = stmt.bindings.map(b => ({
+              name: b.name, values: b.termValues.map(v => prettyPrint(v)),
+            }));
+            equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows: [], allPassed: true, negated: stmt.negated, offset: stmt.offset, line: currentLine, notRun: true });
+            exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+            for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
+          } else {
+            equivInfos.push({
+              src1, src2, norm1: "", norm2: "",
+              equivalent: false, terminated: false, negated: stmt.negated,
+              offset: stmt.offset, line: currentLine, notRun: true,
+            });
+            exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, offset: stmt.offset });
+          }
+          break;
+        }
 
         if (stmt.bindings) {
           const bindingNames = new Set(stmt.bindings.map(b => b.name));

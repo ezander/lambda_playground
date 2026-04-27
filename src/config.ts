@@ -12,6 +12,7 @@ export type Config = {
   showPassingEquiv: boolean;
   wrapWidth:       number;
   autoSave:        boolean;
+  autoRun:         boolean;
   traceLevel:      TraceLevel;
 };
 
@@ -24,5 +25,6 @@ export const DEFAULT_CONFIG: Config = {
   showPassingEquiv: false,
   wrapWidth:       80,
   autoSave:        false,
+  autoRun:         true,
   traceLevel:      "off",
 };

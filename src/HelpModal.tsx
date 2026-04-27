@@ -122,6 +122,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>η-step</strong></td><td>one eta step (λx. f x → f when x ∉ fv(f))</td></tr>
             <tr><td><strong>continue</strong></td><td>reduce up to step limit from current position</td></tr>
             <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta; auto-reloads</td></tr>
+            <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when off: π/≡ are not evaluated on edit, only parsed; click <strong>run</strong> to evaluate once for current source</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
             <tr><td><code>Ctrl-S</code></td><td>save current named buffer (no-op on scratch)</td></tr>

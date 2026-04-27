@@ -21,6 +21,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
   const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
   const [autoSave,          setAutoSave]          = useState(config.autoSave);
+  const [autoRun,           setAutoRun]           = useState(config.autoRun);
   const [traceLevel,        setTraceLevelState]   = useState<TraceLevel>(config.traceLevel);
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
     showPassingEquiv,
     wrapWidth:        parsePositiveInt(wrapWidth,     config.wrapWidth),
     autoSave,
+    autoRun,
     traceLevel,
   });
 
@@ -122,6 +124,14 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setAutoSave(e.target.checked)} />
               </td>
               <td className="settings-hint">save named buffers automatically on every edit</td>
+            </tr>
+            <tr>
+              <td>auto-run</td>
+              <td>
+                <input type="checkbox" checked={autoRun}
+                  onChange={e => setAutoRun(e.target.checked)} />
+              </td>
+              <td className="settings-hint">re-evaluate π/≡ on every edit (off: parse only; click "run" in output panel to evaluate)</td>
             </tr>
             <tr>
               <td>trace</td>
