@@ -61,22 +61,22 @@
 
 # I I normalizes to I
 I := λx . x 
-≡ (I I) I
+:assert I I ≡ I
 
 # Ω has no normal form
 ω := λx . x x
-≢ (ω ω) (ω ω)
+:assert ω ω ≢ ω ω
 :set no-normalize-defs
 Ω := ω ω
 :set normalize-defs
 
 # λ x . z x is only η-equivalent to z
-≢ (λ x . z x) z
+:assert λ x . z x ≢ z
 :set allow-eta
-≡ (λ x . z x) z
+:assert λ x . z x ≡ z
 :set no-allow-eta
 
 # K I Ω has a weak normal form, that can be found via leftmost-outermost 
 # reductions, though Ω itself has no normal form
 K y := λ x . y
-≡ I (K I Ω)
+:assert I ≡ K I Ω

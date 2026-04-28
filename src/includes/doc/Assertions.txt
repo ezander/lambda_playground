@@ -8,12 +8,12 @@
   can use the assertions operators `≡` and `≢` (type '\equiv' and '\nequiv' or
   Alt-e/Alt-n). 
 
-    ≡ <lambda-expr1> <lambda-expr2>
+    :assert <lambda-expr1> ≡ <lambda-expr2>
 
   asserts that both expressions are (more or less, see later paragraph)
   αβ-equivalent, while 
 
-    ≢ <lambda-expr1> <lambda-expr2>
+    :assert <lambda-expr1> ≢ <lambda-expr2>
 
   asserts that they are not. If such an assertion fails program evaluation 
   stops after this line. 
@@ -41,11 +41,11 @@
   overcome this, you can "bind" those free variables in the assertion in order 
   to allow only certain values for p and q. E.g. instead of writing 
   
-    ≡ (not (and p q)) (or (not p) (not q))
+    :assert not (and p q) ≡ or (not p) (not q)
 
   which would fail, you can write
 
-    ≡[p:={true,false},q:={true,false}] (not (and p q)) (or (not p) (not q))
+    :assert[p:={true,false},q:={true,false}] not (and p q) ≡ or (not p) (not q)
 
   so that the assertions is evaluated for all combinations of true and false for
   p and q.
@@ -55,30 +55,30 @@
 
 # Assertions with non-normalizable forms never succeed
 ω := λx . x x
-≢ (ω ω) (ω ω)
+:assert ω ω ≢ ω ω
 
 :import "std/Church Booleans"
 
 # Assertions that work without comprehensions
-≡ true (not false)
+:assert true ≡ not false
 
 # even with free variables `then` and `else`
-≡ (if true then else) then
-≡ (if false then else) else
+:assert if true then else ≡ then
+:assert if false then else ≡ else
 
 # Assertions with (free) variables that need comprehensions to work, because 
 # they would not hold for arbitrary lambda expressions
 
 # Double negation: test that ¬¬p = p 
-≢ (not (not p)) p
-≡[p:={true,false}] (not (not p)) p
+:assert not (not p) ≢ p
+:assert[p:={true,false}] not (not p) ≡ p
 
 # Implication definition: test that (p→q) = ¬p ∨ q
-≢ (or (not p) q) (implies p q)
-≡[p:={true,false},q:={true,false}] (or (not p) q) (implies p q)
+:assert or (not p) q ≢ implies p q
+:assert[p:={true,false},q:={true,false}] or (not p) q ≡ implies p q
 
 # Biconditional (logical equivalence, iff) definition: 
 #    test that (p↔q) = (p→q) ∨ (q→p)
-≢ (and (implies p q) (implies q p)) (iff p q)
-≡[p:={true,false},q:={true,false}] (and (implies p q) (implies q p)) (iff p q)
+:assert and (implies p q) (implies q p) ≢ iff p q
+:assert[p:={true,false},q:={true,false}] and (implies p q) (implies q p) ≡ iff p q
 

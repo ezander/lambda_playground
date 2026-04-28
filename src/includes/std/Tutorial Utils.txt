@@ -6,7 +6,7 @@
 #*
   The following definition let's you write in a tutorial
   
-    ≡ `Continue ?` no
+    :assert `Continue ?` ≡ no
     
   and the last evaluated expression is the one just before that line. Since the
   assertion fails, the script evaluation will not continue. When the user

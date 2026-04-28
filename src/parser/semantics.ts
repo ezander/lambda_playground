@@ -390,7 +390,7 @@ export function parseProgram(
         for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         break;
       case "equiv":
-        exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+        exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
         for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         break;
       case "eval":
@@ -557,14 +557,14 @@ export function parseProgram(
         const runEval = merged.runEval ?? true;
 
         if (!runEval) {
-          const src1 = prettyPrint(stmt.atom1);
-          const src2 = prettyPrint(stmt.atom2);
+          const src1 = prettyPrint(stmt.lhs);
+          const src2 = prettyPrint(stmt.rhs);
           if (stmt.bindings) {
             const compBindings: ComprehensionBinding[] = stmt.bindings.map(b => ({
               name: b.name, values: b.termValues.map(v => prettyPrint(v)),
             }));
             equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows: [], allPassed: true, negated: stmt.negated, offset: stmt.offset, line: currentLine, notRun: true });
-            exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+            exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
             for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           } else {
             equivInfos.push({
@@ -572,7 +572,7 @@ export function parseProgram(
               equivalent: false, terminated: false, negated: stmt.negated,
               offset: stmt.offset, line: currentLine, notRun: true,
             });
-            exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, offset: stmt.offset });
+            exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, offset: stmt.offset });
           }
           break;
         }
@@ -580,10 +580,10 @@ export function parseProgram(
         if (stmt.bindings) {
           const bindingNames = new Set(stmt.bindings.map(b => b.name));
           const defsFiltered = new Map([...defs].filter(([k]) => !bindingNames.has(k)));
-          const baseT1 = expandDefs(swapInfix(stmt.atom1, infx), defsFiltered);
-          const baseT2 = expandDefs(swapInfix(stmt.atom2, infx), defsFiltered);
-          const src1 = prettyPrint(stmt.atom1);
-          const src2 = prettyPrint(stmt.atom2);
+          const baseT1 = expandDefs(swapInfix(stmt.lhs, infx), defsFiltered);
+          const baseT2 = expandDefs(swapInfix(stmt.rhs, infx), defsFiltered);
+          const src1 = prettyPrint(stmt.lhs);
+          const src2 = prettyPrint(stmt.rhs);
 
           const expandedBindings = stmt.bindings.map(b => ({
             name: b.name,
@@ -629,20 +629,20 @@ export function parseProgram(
             const sym = stmt.negated ? "≢" : "≡";
             errors.push({ message: `${sym} assertion failed (some cases failed)`, offset: stmt.offset, kind: "assert-fail" });
           }
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
+          exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
-          const t1 = expandDefs(swapInfix(stmt.atom1, infx), defs);
-          const t2 = expandDefs(swapInfix(stmt.atom2, infx), defs);
+          const t1 = expandDefs(swapInfix(stmt.lhs, infx), defs);
+          const t2 = expandDefs(swapInfix(stmt.rhs, infx), defs);
           const sym = stmt.negated ? "≢" : "≡";
-          const r1 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.atom1))} (lhs)`, t1, cfg);
-          const r2 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.atom2))} (rhs)`, t2, cfg);
+          const r1 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.lhs))} (lhs)`, t1, cfg);
+          const r2 = timedNorm(`${sym} ${shortSrc(prettyPrint(stmt.rhs))} (rhs)`, t2, cfg);
           const terminated = r1.kind === "normalForm" && r2.kind === "normalForm";
           const equivalent = terminated && alphaEq(r1.term, r2.term);
           const passed = stmt.negated ? !equivalent : equivalent;
           equivInfos.push({
-            src1: prettyPrint(stmt.atom1),
-            src2: prettyPrint(stmt.atom2),
+            src1: prettyPrint(stmt.lhs),
+            src2: prettyPrint(stmt.rhs),
             norm1: prettyPrint(r1.term),
             norm2: prettyPrint(r2.term),
             equivalent,
@@ -657,7 +657,7 @@ export function parseProgram(
               : `${prettyPrint(r1.term)} ${stmt.negated ? "=" : "≠"} ${prettyPrint(r2.term)}`;
             errors.push({ message: `${sym} assertion failed: ${detail}`, offset: stmt.offset, kind: "assert-fail" });
           }
-          exprInfos.push({ term: App(stmt.atom1, stmt.atom2), positions: globalPositions, offset: stmt.offset });
+          exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, offset: stmt.offset });
         }
         break;
       }

@@ -11,10 +11,10 @@ seven := succ six; eight := succ seven; nine := succ eight
 ten := succ nine
 
 # Test powers of two
-≡ one (λ s z . s z)
-≡ two (λ s z . s (s z))
-≡ four (λ s z . two (λ z . s (s z)) z)
-≡ eight (λ s z . four (λ z . s (s z)) z)
+:assert one ≡ λ s z . s z
+:assert two ≡ λ s z . s (s z)
+:assert four ≡ λ s z . two (λ z . s (s z)) z
+:assert eight ≡ λ s z . four (λ z . s (s z)) z
 
 # Define basic operators
 
@@ -31,9 +31,9 @@ ten := succ nine
 plus n m := λ s z . n s (m s z)
 
 # Test for some numbers
-≡ zero (plus zero zero)
-≡ two (plus one one)
-≡ ten (plus four six)
+:assert zero ≡ plus zero zero
+:assert two ≡ plus one one
+:assert ten ≡ plus four six
 
 #*
   Define times. We have (at least) two alternatives:
@@ -47,8 +47,8 @@ plus n m := λ s z . n s (m s z)
 times n m := λ s . n (m s)
 
 # Test with some numbers
-≡ (times two four) eight
-≡ (times zero one) zero
+:assert times two four ≡ eight
+:assert times zero one ≡ zero
 
 #*
   Define power (n^m, note the order of operands here):
@@ -66,13 +66,13 @@ times n m := λ s . n (m s)
 pow n m := λ s z. m n s z
 
 # Test power on some numbers
-≡ (pow two three) eight
-≡ (pow three two) nine
-≡ (pow three one) three
-≡ (pow three zero) one
-≡ (pow zero zero) one
-≡ (pow two five) (times four eight)
-≡ (pow five two) (plus (times four six) one)
+:assert pow two three ≡ eight
+:assert pow three two ≡ nine
+:assert pow three one ≡ three
+:assert pow three zero ≡ one
+:assert pow zero zero ≡ one
+:assert pow two five ≡ times four eight
+:assert pow five two ≡ plus (times four six) one
 
 #*
     Define predecessor (easier to understand by pairs, but this one is faster).
@@ -80,10 +80,10 @@ pow n m := λ s z. m n s z
 *#
 
 pred n := λ s z . n (λ r i . i (r s)) (λ_.z) (λx.x)
-≡ (pred zero) zero
-≡ (pred one) zero
-≡ (pred two) one
-≡ (pred three) two
+:assert pred zero ≡ zero
+:assert pred one ≡ zero
+:assert pred two ≡ one
+:assert pred three ≡ two
 
 #*
     Define minus
@@ -96,46 +96,46 @@ _Y := λf. (λx. f (x x)) (λx. f (x x))
 minus := λ m n f x . m (λ r q.q r)(λ q.x) (n (λq r.r q) (_Y (λq r. f (r q))))
 :set normalize-defs
 
-≡ (minus zero zero) zero
-≡ (minus three zero) three
-≡ (minus three two) one
-≡ (minus three four) zero
-≡ (minus three three) zero
+:assert minus zero zero ≡ zero
+:assert minus three zero ≡ three
+:assert minus three two ≡ one
+:assert minus three four ≡ zero
+:assert minus three three ≡ zero
 
 # Halving a value
 half n := λ s z . n (λ r a b . a (r b a)) (λa b.z) (λx.x) s
-≡ (half zero) zero
-≡ (half one) zero
-≡ (half two) one
-≡ (half three) one
-≡ (half four) two
+:assert half zero ≡ zero
+:assert half one ≡ zero
+:assert half two ≡ one
+:assert half three ≡ one
+:assert half four ≡ two
 
 # Factorial
 fact n := λ s z . n (λ r a . a (r (succ a))) (λa.s) one z
-≡ (fact zero) one
-≡ (fact one) one
-≡ (fact two) two
-≡ (fact three) six
-≡ (fact four) (times four six)
+:assert fact zero ≡ one
+:assert fact one ≡ one
+:assert fact two ≡ two
+:assert fact three ≡ six
+:assert fact four ≡ times four six
 
 # Tests
 :import "std/Church Booleans"
 # (would be nicer maybe, if we had the following
 # as a mixin dependent on the boolean type)
 isZero n := n (λ _ . false) true
-≡ (isZero zero) true
-≡ (isZero one) false
-≡ (isZero two) false
+:assert isZero zero ≡ true
+:assert isZero one ≡ false
+:assert isZero two ≡ false
 
 isEven n := n not true
-≡ (isEven zero) true
-≡ (isEven one) false
-≡ (isEven two) true
+:assert isEven zero ≡ true
+:assert isEven one ≡ false
+:assert isEven two ≡ true
 
 isOdd n := n not false
-≡ (isOdd zero) false
-≡ (isOdd one) true
-≡ (isOdd two) false
+:assert isOdd zero ≡ false
+:assert isOdd one ≡ true
+:assert isOdd two ≡ false
 
 :set no-normalize-defs
 lessEq a b := isZero (minus a b)

@@ -76,9 +76,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>f x y := expr</code></td><td>shorthand for <code>f := \x y. expr</code></td></tr>
             <tr><td><code>π expr</code></td><td>evaluate to normal form, show in output panel</td></tr>
             <tr><td><code>π[a:=&#123;T,F&#125;] expr</code></td><td>comprehension: evaluate for each combination of substitutions</td></tr>
-            <tr><td><code>≡ atom1 atom2</code></td><td>assert alpha-beta equivalence; halts script on failure</td></tr>
-            <tr><td><code>≢ atom1 atom2</code></td><td>assert non-equivalence; halts script on failure</td></tr>
-            <tr><td><code>≡[a:=&#123;T,F&#125;] atom1 atom2</code></td><td>equivalence comprehension over substitution combinations</td></tr>
+            <tr><td><code>:assert lhs ≡ rhs</code></td><td>assert alpha-beta equivalence; halts script on failure</td></tr>
+            <tr><td><code>:assert lhs ≢ rhs</code></td><td>assert non-equivalence; halts script on failure</td></tr>
+            <tr><td><code>:assert[a:=&#123;T,F&#125;] lhs ≡ rhs</code></td><td>assertion comprehension over substitution combinations</td></tr>
           </tbody></table>
 
           <h3>directives</h3>
@@ -88,8 +88,6 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending)</td></tr>
             <tr><td><code>:mixin "…" quiet</code></td><td>like mixin, with names hidden from match list and autocomplete</td></tr>
             <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>
-            <tr><td><code>:assert atom1 atom2</code></td><td>alternative to <code>≡</code></td></tr>
-            <tr><td><code>:assert-not atom1 atom2</code></td><td>alternative to <code>≢</code></td></tr>
             <tr><td><code>:eval expr</code></td><td>load expression into eval panel (last one wins; overrides bare expressions)</td></tr>
             <tr><td><code>:infix name1 name2 …</code></td><td>mark definitions as infix operators; <code>a + b</code> is read as <code>+ a b</code></td></tr>
           </tbody></table>
@@ -142,8 +140,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-B</code></td><td>insert β at cursor (for eager binders, e.g. <code>λβx. body</code>)</td></tr>
             <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
-            <tr><td><code>Alt-E</code></td><td>insert ≡ at start of line</td></tr>
-            <tr><td><code>Alt-N</code></td><td>insert ≢ at start of line</td></tr>
+            <tr><td><code>Alt-E</code></td><td>insert ≡ at cursor</td></tr>
+            <tr><td><code>Alt-N</code></td><td>insert ≢ at cursor</td></tr>
             <tr><td><code>\name</code> + <kbd>space</kbd></td><td>insert symbol (e.g. <code>\omega</code> → ω)</td></tr>
           </tbody></table>
 

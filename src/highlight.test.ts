@@ -163,7 +163,7 @@ describe("computeHighlightRanges", () => {
 
     it("failed ≡ assertion gets er squiggle, code after is not dimmed", () => {
       // tru ≠ fls, so ≡ fails; the line after should still be fully coloured
-      const src = "tru := λx. λy. x\nfls := λx. λy. y\n≡ tru fls\nfls\n";
+      const src = "tru := λx. λy. x\nfls := λx. λy. y\n:assert tru ≡ fls\nfls\n";
       const out = tagged(src);
       expect(out).toContain("<er>");          // assert-fail squiggle on ≡ line
       expect(out).not.toContain("<un>");      // nothing dimmed after
@@ -171,7 +171,7 @@ describe("computeHighlightRanges", () => {
     });
 
     it("failed ≡ tooltip message is available in parsed errors", () => {
-      const src = "tru := λx. λy. x\nfls := λx. λy. y\n≡ tru fls\n";
+      const src = "tru := λx. λy. x\nfls := λx. λy. y\n:assert tru ≡ fls\n";
       const parsed = parse(src);
       const fail = parsed.errors.find(e => e.kind === "assert-fail");
       expect(fail).toBeDefined();
@@ -179,18 +179,18 @@ describe("computeHighlightRanges", () => {
     });
 
     it("passing ≡ assertion has no error squiggle", () => {
-      const out = tagged("≡ (λx. x) (λy. y)\n");
+      const out = tagged(":assert (λx. x) ≡ (λy. y)\n");
       expect(out).not.toContain("<er>");
     });
 
     it("passing ≢ assertion has no error squiggle", () => {
-      const out = tagged("t := λx y. x\nf := λx y. y\n≢ t f\n");
+      const out = tagged("t := λx y. x\nf := λx y. y\n:assert t ≢ f\n");
       expect(out).not.toContain("<er>");
     });
 
     it("failing ≢ assertion (terms are equivalent) gets er squiggle", () => {
-      // ≢ (λx. x) (λy. y) fails because they ARE equivalent
-      const out = tagged("≢ (λx. x) (λy. y)\n");
+      // :assert (λx. x) ≢ (λy. y) fails because they ARE equivalent
+      const out = tagged(":assert (λx. x) ≢ (λy. y)\n");
       expect(out).toContain("<er>");
     });
   });
@@ -250,8 +250,8 @@ describe("computeHighlightRanges", () => {
       "strange := λx. z",
       "# print and equiv",
       "π tru",
-      "≡ tru tru",
-      "≢ tru fls",
+      ":assert tru ≡ tru",
+      ":assert tru ≢ fls",
     ].join("\n") + "\n";
 
     it("full coloring matches snapshot", async () => {
@@ -284,11 +284,11 @@ describe("computeHighlightRanges", () => {
         ":import \"bool\"",
         "π true one two",
         "true one two",
-        "≢ (true one two) xyz",
+        ":assert (true one two) ≢ xyz",
         ":import \"num\"",
         "π true one two",
         "true one two",
-        "≢ (true one two) xyz",
+        ":assert (true one two) ≢ xyz",
       ].join("\n") + "\n";
 
       const parsed = parseProgram(src, {}, res);
@@ -298,14 +298,14 @@ describe("computeHighlightRanges", () => {
       // Before any includes — all free variables (π, bare expr)
       expect(tags).toMatch(/<kw>π<\/kw> <fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n/);
       expect(tags).toMatch(/\n<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<pg>/);
-      // After bool include — true is def-use, one/two still free (π, bare expr, ≢)
+      // After bool include — true is def-use, one/two still free (π, bare expr, :assert)
       expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n/);
-      expect(tags).toMatch(/\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>≢<\/kw>/);
-      expect(tags).toMatch(/<kw>≢<\/kw>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<fv>xyz<\/fv>\n<pg>/);
-      // After both includes — all def-use (π, bare expr, ≢); xyz always free
+      expect(tags).toMatch(/\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>:assert<\/kw>/);
+      expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n<pg>/);
+      // After both includes — all def-use (π, bare expr, :assert); xyz always free
       expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n/);
-      expect(tags).toMatch(/\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>≢<\/kw>/);
-      expect(tags).toMatch(/<kw>≢<\/kw>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<fv>xyz<\/fv>\n$/m);
+      expect(tags).toMatch(/\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>:assert<\/kw>/);
+      expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n$/m);
     });
   });
 });

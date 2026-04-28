@@ -9,9 +9,9 @@ An interactive browser-based environment for the untyped lambda calculus with st
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
 - Named definitions with eager expansion; shorthand `f x y := e` desugars to `f := λx y. e`
 - `π expr` / `:print expr` — evaluate to normal form and show in output panel
-- `≡ expr1 expr2` / `:assert` — equivalence assertion (alpha-beta equivalence)
-- `≢ expr1 expr2` / `:assert-not` — non-equivalence assertion
-- Comprehension bindings: `≡[p:={true,false}] (not (not p)) p`
+- `:assert lhs ≡ rhs` — equivalence assertion (alpha-beta equivalence)
+- `:assert lhs ≢ rhs` — non-equivalence assertion
+- Comprehension bindings: `:assert[p:={true,false}] (not (not p)) ≡ p`
 - Normal-order (leftmost-outermost) beta reduction with capture-avoiding substitution
 - Step-by-step or batch evaluation; optional substitution display; eta reduction
 - Import system: `:import "std/Church Booleans"`, `:mixin`, quiet imports
@@ -62,8 +62,8 @@ Lines starting with `:` are directives:
 :import "std/Pairs" quiet       # import without polluting autocomplete/match list
 :mixin "std/Boolean Tests"      # import that can see existing defs
 :print expr                     # alternative to π
-:assert atom1 atom2             # alternative to ≡
-:assert-not atom1 atom2         # alternative to ≢
+:assert lhs ≡ rhs               # equivalence assertion
+:assert lhs ≢ rhs               # non-equivalence assertion
 :set max-steps 500              # set both max-steps-print and max-steps-ident
 :set max-steps-print 500        # beta step limit for π statements
 :set max-steps-ident 500        # beta step limit for definition matching
@@ -82,13 +82,13 @@ true  := λx y. x          # define a name
 false := λx y. y
 and p q := p q false       # shorthand: f x y := e  means  f := λx y. e
 
-π and true false           # print to output panel (normalized)
-≡ (and true false) false   # assert equivalence
-≢ true false               # assert non-equivalence
-and true false             # last expression is loaded into the eval panel
+π and true false                   # print to output panel (normalized)
+:assert (and true false) ≡ false   # assert equivalence
+:assert true ≢ false               # assert non-equivalence
+and true false                     # last expression is loaded into the eval panel
 ```
 
-Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning when the normal form changes. `π`, `≡`, and `≢` results appear in the output panel; a failing assertion halts further evaluation.
+Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning when the normal form changes. `π` and `:assert` results appear in the output panel; a failing assertion halts further evaluation.
 
 ## Controls
 
@@ -111,8 +111,8 @@ Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning
 | `#*` | Auto-insert closing `*#` |
 | `Alt-L` | Insert λ at cursor |
 | `Alt-P` | Insert π at start of line |
-| `Alt-E` | Insert ≡ at start of line |
-| `Alt-N` | Insert ≢ at start of line |
+| `Alt-E` | Insert ≡ at cursor |
+| `Alt-N` | Insert ≢ at cursor |
 | `Alt-Space` | Autocomplete (def names, directives, import paths) |
 | `\name` + `Space` | Insert symbol (e.g. `\omega` → ω, `\and` → ∧) |
 

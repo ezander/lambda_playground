@@ -10,7 +10,6 @@ const TOKEN_LABELS: Record<string, string> = {
   Directive:     "':…'",
   CmdPrint:      "':print'",
   CmdAssert:     "':assert'",
-  CmdAssertNot:  "':assert-not'",
   CmdEval:       "':eval'",
   NewLine:       "'\\n'",
   Semi:          "';'",

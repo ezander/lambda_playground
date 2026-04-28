@@ -5,7 +5,6 @@ import {
   Directive,
   CmdPrint,
   CmdAssert,
-  CmdAssertNot,
   CmdEval,
   Lambda,
   Pi,
@@ -95,8 +94,7 @@ class LambdaParser extends CstParser {
   statement = this.RULE("statement", () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.printStmt) },
-      { ALT: () => this.SUBRULE(this.equivStmt) },
-      { ALT: () => this.SUBRULE(this.nequivStmt) },
+      { ALT: () => this.SUBRULE(this.assertStmt) },
       { ALT: () => this.SUBRULE(this.evalStmt) },
       // Gate via BACKTRACK: try parsing `definition` non-committed; if it
       // succeeds, take this alt. Cheaper than it looks (Chevrotain snapshots
@@ -121,24 +119,20 @@ class LambdaParser extends CstParser {
     this.SUBRULE(this.term);
   });
 
-  equivStmt = this.RULE("equivStmt", () => {
+  // Assertion: ":assert" comp? term ("≡" | "≢") term
+  // The relation token (≡ or ≢) splits LHS and RHS. Both sides are full terms
+  // (so `:assert λx. x ≡ I` parses) — application stops at ≡/≢ since neither
+  // is an atom-starter. Comprehension prefix [x:={a,b}] applies to the whole
+  // assertion.
+  assertStmt = this.RULE("assertStmt", () => {
+    this.CONSUME(CmdAssert);
+    this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
+    this.SUBRULE(this.term);
     this.OR([
       { ALT: () => this.CONSUME(Equiv) },
-      { ALT: () => this.CONSUME(CmdAssert) },
-    ]);
-    this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
-    this.SUBRULE(this.atom);
-    this.SUBRULE2(this.atom);
-  });
-
-  nequivStmt = this.RULE("nequivStmt", () => {
-    this.OR([
       { ALT: () => this.CONSUME(NEquiv) },
-      { ALT: () => this.CONSUME(CmdAssertNot) },
     ]);
-    this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
-    this.SUBRULE(this.atom);
-    this.SUBRULE2(this.atom);
+    this.SUBRULE2(this.term);
   });
 
   evalStmt = this.RULE("evalStmt", () => {
@@ -247,7 +241,7 @@ export type RawEmpty   = { kind: "empty" };
 export type RawPragma  = { kind: "pragma"; text: string; offset: number };
 export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
 export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number };
-export type RawEquiv   = { kind: "equiv"; atom1: Term; atom2: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
+export type RawEquiv   = { kind: "equiv"; lhs: Term; rhs: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
 export type RawExpr    = { kind: "expr"; term: Term; offset: number };
 export type RawEval    = { kind: "eval"; term: Term; offset: number };
 export type RawStmt    = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
@@ -304,8 +298,7 @@ export class AstBuilder extends BaseCstVisitor {
 
   statement(ctx: any): RawStmt {
     if (ctx.printStmt)  return this.visit(ctx.printStmt[0])  as RawStmt;
-    if (ctx.equivStmt)  return this.visit(ctx.equivStmt[0])  as RawStmt;
-    if (ctx.nequivStmt) return this.visit(ctx.nequivStmt[0]) as RawStmt;
+    if (ctx.assertStmt) return this.visit(ctx.assertStmt[0]) as RawStmt;
     if (ctx.evalStmt)   return this.visit(ctx.evalStmt[0])   as RawStmt;
     if (ctx.definition) return this.visit(ctx.definition[0]) as RawStmt;
     if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: this.termStart(term) }; }
@@ -326,22 +319,14 @@ export class AstBuilder extends BaseCstVisitor {
     return { kind: "print", term, bindings, offset: kwTok.startOffset };
   }
 
-  equivStmt(ctx: any): RawEquiv | RawEmpty {
-    const kwTok = (ctx.Equiv?.[0] ?? ctx.CmdAssert?.[0]) as IToken | undefined;
-    if (!kwTok || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
-    const atom1 = this.visit(ctx.atom[0]) as Term;
-    const atom2 = this.visit(ctx.atom[1]) as Term;
+  assertStmt(ctx: any): RawEquiv | RawEmpty {
+    const kwTok = ctx.CmdAssert?.[0] as IToken | undefined;
+    if (!kwTok || !ctx.term || ctx.term.length < 2) return { kind: "empty" };
+    const lhs = this.visit(ctx.term[0]) as Term;
+    const rhs = this.visit(ctx.term[1]) as Term;
+    const negated = !!ctx.NEquiv;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "equiv", atom1, atom2, bindings, negated: false, offset: kwTok.startOffset };
-  }
-
-  nequivStmt(ctx: any): RawEquiv | RawEmpty {
-    const kwTok = (ctx.NEquiv?.[0] ?? ctx.CmdAssertNot?.[0]) as IToken | undefined;
-    if (!kwTok || !ctx.atom || ctx.atom.length < 2) return { kind: "empty" };
-    const atom1 = this.visit(ctx.atom[0]) as Term;
-    const atom2 = this.visit(ctx.atom[1]) as Term;
-    const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;
-    return { kind: "equiv", atom1, atom2, bindings, negated: true, offset: kwTok.startOffset };
+    return { kind: "equiv", lhs, rhs, bindings, negated, offset: kwTok.startOffset };
   }
 
   evalStmt(ctx: any): RawEval | RawEmpty {

@@ -487,7 +487,7 @@ describe("parseProgram", () => {
   });
 
   it("≡ with identical normal forms sets equivalent=true", () => {
-    const r = parseProgram("≡ (λx. x) (λy. y)");
+    const r = parseProgram(":assert (λx. x) ≡ (λy. y)");
     expect(r.ok).toBe(true);
     expect(r.equivInfos).toHaveLength(1);
     expect(r.equivInfos[0].equivalent).toBe(true);
@@ -502,7 +502,7 @@ describe("parseProgram", () => {
   });
 
   it("eager and lazy abstractions are ≡-equivalent at NF", () => {
-    const r = parseProgram("≡ (λβx. x) (λx. x)\n");
+    const r = parseProgram(":assert (λβx. x) ≡ (λx. x)\n");
     expect(r.ok).toBe(true);
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
@@ -595,8 +595,8 @@ describe("line continuation", () => {
     expect(r.printInfos).toHaveLength(1);
   });
 
-  it("continuation works for ≡ statements", () => {
-    const r = parseProgram("≡\n  (λx. x)\n  (λy. y)\n");
+  it("continuation works for :assert statements", () => {
+    const r = parseProgram(":assert\n  (λx. x)\n  ≡\n  (λy. y)\n");
     expect(r.ok).toBe(true);
     expect(r.equivInfos).toHaveLength(1);
     expect(r.equivInfos[0].equivalent).toBe(true);
@@ -673,7 +673,7 @@ describe("error offsets", () => {
     ["bad definition body",                "f := ("],
     ["lex error",                          "@"],
     ["bad π body (unmatched paren)",       "π (x"],
-    ["bad ≡ body (unmatched paren)",       "≡ (x (y"],
+    ["bad :assert body (unmatched paren)",  ":assert (x (y"],
     ["stray token on second line",         "a\n)"],
     ["definition with paren on LHS",       "(x) := y"],
     ["incomplete lambda in definition",    "f := λx"],
@@ -753,7 +753,7 @@ describe("include system", () => {
   });
 
   it("bubbles up equiv failure from included file as an error", () => {
-    const bad = "true := λx y. x\nfalse := λx y. y\n≡ true false\n";
+    const bad = "true := λx y. x\nfalse := λx y. y\n:assert true ≡ false\n";
     const res = (path: string) => path === "std/Bad" ? bad : null;
     const r = parseProgram(":import \"std/Bad\"\n", {}, res);
     expect(r.ok).toBe(false);
@@ -950,7 +950,7 @@ describe("comprehension", () => {
 
   it("≡ comprehension passes when all equivalent", () => {
     // not (not x) ≡ x for both true and false
-    const prog = `${boolDefs}\nnot := λb. b false true\n≡[a:={true,false}] (not (not a)) a`;
+    const prog = `${boolDefs}\nnot := λb. b false true\n:assert[a:={true,false}] (not (not a)) ≡ a`;
     const r = parseProgram(prog);
     expect(r.equivComprehensionInfos).toHaveLength(1);
     const info = r.equivComprehensionInfos[0];
@@ -961,7 +961,7 @@ describe("comprehension", () => {
 
   it("≡ comprehension fails and sets equivFailed when not all pass", () => {
     // a ≡ (not a) — clearly false for both true and false
-    const prog = `${boolDefs}\nnot := λb. b false true\n≡[a:={true,false}] a (not a)`;
+    const prog = `${boolDefs}\nnot := λb. b false true\n:assert[a:={true,false}] a ≡ (not a)`;
     const r = parseProgram(prog);
     expect(r.equivComprehensionInfos).toHaveLength(1);
     expect(r.equivComprehensionInfos[0].allPassed).toBe(false);
@@ -969,7 +969,7 @@ describe("comprehension", () => {
   });
 
   it("≡ comprehension row substExprs are formatted correctly", () => {
-    const prog = `${boolDefs}\n≡[a:={true,false}] (and a a) a`;
+    const prog = `${boolDefs}\n:assert[a:={true,false}] (and a a) ≡ a`;
     const r = parseProgram(prog);
     const rows = r.equivComprehensionInfos[0].rows;
     expect(rows[0].substExpr1).toBe("(and a a)[a:=true]");
@@ -977,7 +977,7 @@ describe("comprehension", () => {
   });
 
   it("≢ passes when terms are not equivalent", () => {
-    const prog = `${boolDefs}\n≢ true false`;
+    const prog = `${boolDefs}\n:assert true ≢ false`;
     const r = parseProgram(prog);
     expect(r.ok).toBe(true);
     expect(r.equivInfos).toHaveLength(1);
@@ -986,7 +986,7 @@ describe("comprehension", () => {
   });
 
   it("≢ fails (halts) when terms are equivalent", () => {
-    const prog = `${boolDefs}\n≢ true true`;
+    const prog = `${boolDefs}\n:assert true ≢ true`;
     const r = parseProgram(prog);
     expect(r.ok).toBe(false);
     expect(r.equivInfos[0].equivalent).toBe(true);
@@ -995,10 +995,41 @@ describe("comprehension", () => {
 
   it("≢ comprehension passes when all rows are non-equivalent", () => {
     const notDefs = `${boolDefs}\nnot := λb. b false true`;
-    const r = parseProgram(`${notDefs}\n≢[a:={true,false}] a (not a)`);
+    const r = parseProgram(`${notDefs}\n:assert[a:={true,false}] a ≢ (not a)`);
     expect(r.ok).toBe(true);
     expect(r.equivComprehensionInfos[0].allPassed).toBe(true);
     expect(r.equivComprehensionInfos[0].negated).toBe(true);
+  });
+});
+
+// ── :assert grammar errors ──────────────────────────────────────────────────────
+// Errors specific to the new infix `:assert <a> ≡ <b>` form: bare ≡/≢ at line
+// start, missing relation, chained relations, and the legacy `:assert-not` keyword.
+
+describe(":assert grammar errors", () => {
+  it("bare ≡ at line start is a parse error (must be inside :assert)", () => {
+    const r = parseProgram("≡ (λx. x) (λy. y)\n");
+    expect(r.errors.some(e => e.kind !== "warning")).toBe(true);
+  });
+
+  it("bare ≢ at line start is a parse error", () => {
+    const r = parseProgram("≢ x y\n");
+    expect(r.errors.some(e => e.kind !== "warning")).toBe(true);
+  });
+
+  it(":assert without a relation is a parse error", () => {
+    const r = parseProgram(":assert (λx. x) (λy. y)\n");
+    expect(r.errors.some(e => e.kind !== "warning")).toBe(true);
+  });
+
+  it(":assert with only LHS (no ≡/≢ and no RHS) is a parse error", () => {
+    const r = parseProgram(":assert foo\n");
+    expect(r.errors.some(e => e.kind !== "warning")).toBe(true);
+  });
+
+  it("legacy :assert-not is no longer recognized", () => {
+    const r = parseProgram(":assert-not x y\n");
+    expect(r.errors.some(e => e.kind !== "warning")).toBe(true);
   });
 });
 
@@ -1019,8 +1050,8 @@ describe("allow-eta pragma", () => {
 
   it("allow-eta affects ≡ evaluation", () => {
     // Without eta: λx. g x ≢ g. With eta: they are equivalent.
-    const withEta    = parseProgram(":set allow-eta\n≡ (λx. g x) g");
-    const withoutEta = parseProgram("≡ (λx. g x) g");
+    const withEta    = parseProgram(":set allow-eta\n:assert (λx. g x) ≡ g");
+    const withoutEta = parseProgram(":assert (λx. g x) ≡ g");
     expect(withEta.ok).toBe(true);
     expect(withoutEta.ok).toBe(false);
   });
@@ -1109,13 +1140,13 @@ describe("redef (::=)", () => {
   });
 
   it("::= without prior def still sets the definition", () => {
-    const r = parseProgram("I ::= λx. x\n≡ I (λx. x)");
+    const r = parseProgram("I ::= λx. x\n:assert I ≡ (λx. x)");
     expect(r.ok).toBe(true);
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
 
   it("::= updates the definition and it takes effect afterward", () => {
-    const r = parseProgram("T := λx y. x\nT ::= λx y. y\n≡ T (λx y. y)");
+    const r = parseProgram("T := λx y. x\nT ::= λx y. y\n:assert T ≡ (λx y. y)");
     expect(r.ok).toBe(true);
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
@@ -1131,7 +1162,7 @@ describe("runEval flag", () => {
   });
 
   it("runEval=false marks ≡ assertions as notRun, no equivFailed", () => {
-    const r = parseProgram("≡ I (λx. x)\n≡ K (λx. x)", { runEval: false });
+    const r = parseProgram(":assert I ≡ (λx. x)\n:assert K ≡ (λx. x)", { runEval: false });
     expect(r.equivInfos).toHaveLength(2);
     expect(r.equivInfos.every(e => e.notRun === true)).toBe(true);
     expect(r.ok).toBe(true);  // assertion failures don't propagate when not run

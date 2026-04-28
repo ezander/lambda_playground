@@ -4,5 +4,5 @@ first p := p (λa b. a)
 second p := p (λa b. b)
 
 # Test implementation of pair, first, and second
-≡ (first (pair x y)) x
-≡ (second (pair x y)) y
+:assert first (pair x y) ≡ x
+:assert second (pair x y) ≡ y

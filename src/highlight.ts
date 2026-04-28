@@ -9,7 +9,6 @@ import {
   Directive,
   CmdPrint,
   CmdAssert,
-  CmdAssertNot,
   CmdEval,
   LineComment,
   BlockComment,
@@ -70,7 +69,7 @@ function applyTokenRanges(
       out.push({ from, to, cls: "cml-lambda" });
     else if (tok.tokenType === Pi || tok.tokenType === Equiv || tok.tokenType === NEquiv)
       out.push({ from, to, cls: "cml-pi" });
-    else if (tok.tokenType === CmdPrint || tok.tokenType === CmdAssert || tok.tokenType === CmdAssertNot || tok.tokenType === CmdEval)
+    else if (tok.tokenType === CmdPrint || tok.tokenType === CmdAssert || tok.tokenType === CmdEval)
       out.push({ from, to, cls: "cml-pi" });
   }
 }

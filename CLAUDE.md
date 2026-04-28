@@ -52,7 +52,7 @@ Top-level surface forms:
 - **Application**: juxtaposition, left-associative (`f x y` = `(f x) y`).
 - **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Eager variant: `e[βx:=a]`.
 - **Definitions**: `name params := body` (`::=` for redefinition). The name slot rejects β; param slots accept it.
-- **Statements**: `π expr` / `:print` (evaluate and show), `≡ a b` / `:assert`, `≢ a b` / `:assert-not`, `:eval expr`. Each accepts a comprehension prefix `[x := {a,b,c}]`.
+- **Statements**: `π expr` / `:print` (evaluate and show), `:assert lhs ≡ rhs` and `:assert lhs ≢ rhs` (alpha-beta equivalence assertions), `:eval expr`. `:print` and `:assert` each accept a comprehension prefix `[x := {a,b,c}]`.
 - **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`. Pragmas `#! key value` inside line comments overlap with `:set`.
 - **Reserved letters**: λ, π, α, β, η, ∀, ∃, ⊢ — never absorbed into identifiers regardless of position.
 

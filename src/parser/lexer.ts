@@ -19,7 +19,7 @@ export const UnterminatedBlockComment = createToken({
   group: "comment",
 });
 
-// ── Colon-commands (:import, :mixin, :set, :print, :assert, :assert-not) ─────
+// ── Colon-commands (:import, :mixin, :set, :print, :assert, :eval) ──────────
 // Custom matchers ensure these only match at the start of a line (offset 0 or
 // preceded by \n), preventing false matches mid-line.
 
@@ -53,11 +53,11 @@ export function findDirectiveCommentStart(text: string): number {
   return -1;
 }
 
-// Command keywords — alternatives to π / ≡ / ≢ symbols.
-export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),      start_chars_hint: [":"] });
-export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert(?!-)\b/y), start_chars_hint: [":"] });
-export const CmdAssertNot = createToken({ name: "CmdAssertNot", pattern: colonCmd(/:assert-not\b/y),  start_chars_hint: [":"] });
-export const CmdEval      = createToken({ name: "CmdEval",      pattern: colonCmd(/:eval\b/y),        start_chars_hint: [":"] });
+// Command keywords — alternatives to π symbol. Assertions use `:assert <a> ≡ <b>`
+// (or ≢) — no separate :assert-not keyword.
+export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),  line_breaks: false, start_chars_hint: [":"] });
+export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert\b/y), line_breaks: false, start_chars_hint: [":"] });
+export const CmdEval      = createToken({ name: "CmdEval",      pattern: colonCmd(/:eval\b/y),   line_breaks: false, start_chars_hint: [":"] });
 
 // Line comment: # until end of line.
 // group: "comment" keeps comments accessible for syntax highlighting but out of the parser stream.
@@ -181,7 +181,6 @@ export const allTokens = [
   BlockComment,             // before Directive, LineComment (so #* wins over #)
   UnterminatedBlockComment, // before LineComment (so unterminated #* wins over #)
   Directive,                // before RedefAssign/DefAssign (: at line start wins over :=)
-  CmdAssertNot,             // before CmdAssert (longer match wins)
   CmdAssert,                // before RedefAssign/DefAssign
   CmdPrint,                 // before RedefAssign/DefAssign
   CmdEval,                  // before RedefAssign/DefAssign

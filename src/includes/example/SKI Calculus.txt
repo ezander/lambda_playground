@@ -12,15 +12,15 @@ K := λx y. x
 # Define I by only S and K
 I := S K K
 # and indeed it's the identity
-≡ I (λx. x)
+:assert I ≡ λx. x
 
 
 # Then we can "prove" also the following identities
 # (see e.g. [https://en.wikipedia.org/wiki/SKI_combinator_calculus])
 
-≡ ((S K I)(K I S)) I
-≡ (K S(I(S K S I))) S
-≡ (S K I K) K
+:assert (S K I)(K I S) ≡ I
+:assert K S(I(S K S I)) ≡ S
+:assert S K I K ≡ K
 
 # Or we can define booleans in terms of just S and K
 # Define true (T) and false (F)
@@ -30,8 +30,8 @@ F := S K
 # The definition of `not` is similar to the Church booleans (which is
 # of course, because T and F reduce to the exact same normal form...)
 not b := b F T
-≡ (not T) F
-≡ (not F) T
+:assert not T ≡ F
+:assert not F ≡ T
 
 # And then `and` or `or` are of cause also the same as for Church booleans
 or a b := a T b

@@ -8,15 +8,15 @@
 *#
 
 # Outer parenthesis may be omitted
-≡ (λx . (M)) (λx . M)
+:assert λx . (M) ≡ λx . M
 
 # Application is left-associative
-≡ ((M N) L) (M N L)
-≢ (M (N L)) (M N L)
+:assert (M N) L ≡ M N L
+:assert M (N L) ≢ M N L
 
 # Abstraction is right associative
-≡ (λx . (λy . M)) (λx . λy . M)
+:assert λx . (λy . M) ≡ λx . λy . M
 
 # Application takes precedence over abstraction
-≡ (λx . (M N)) (λx . M N)
-≢ ((λx . M) N) (λx . M N)
+:assert λx . (M N) ≡ λx . M N
+:assert (λx . M) N ≢ λx . M N

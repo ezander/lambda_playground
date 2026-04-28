@@ -34,9 +34,9 @@ third/3 t := t (λa b c. c)
 # you see, are just free variable with the names `12`, `3` and `6` without
 # further meaning.)
 3d_coords := triple 12 3 6
-≡ (first/3 3d_coords) 12
-≡ (second/3 3d_coords) 3
-≡ (third/3 3d_coords) 6
+:assert first/3 3d_coords ≡ 12
+:assert second/3 3d_coords ≡ 3
+:assert third/3 3d_coords ≡ 6
 
 # If you use pairs and triples often that may feel clumsy. Now, you can just
 # import lists for that, or we can brew our own here, and define any kind of
@@ -53,11 +53,11 @@ third t := first (rest (rest t))
 
 # Now our definitions work for 3d
 3d_coords ::= triple 12 3 6
-≡ (first 3d_coords) 12
-≡ (second 3d_coords) 3
-≡ (third 3d_coords) 6
+:assert first 3d_coords ≡ 12
+:assert second 3d_coords ≡ 3
+:assert third 3d_coords ≡ 6
 
 # and for 2d
 2d_coords := pair 4 5
-≡ (first 2d_coords) 4
-≡ (second 2d_coords) 5
+:assert first 2d_coords ≡ 4
+:assert second 2d_coords ≡ 5

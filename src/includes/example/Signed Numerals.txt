@@ -46,8 +46,8 @@ Neg n := pair 0 n
 # a case distinction here
 :set no-normalize-defs
 normalize s := pair (s (λ a b . (a - b))) (s (λa b . (b - a)))
-≡ (normalize (pair 1 3)) (pair 0 2)
-≡ (normalize (pair 5 2)) (pair 3 0)
+:assert normalize (pair 1 3) ≡ pair 0 2
+:assert normalize (pair 5 2) ≡ pair 3 0
 
 # # Now we define add (+') and note that (a,b)+(c,d) is equal to
 # # (a+c,b+d)

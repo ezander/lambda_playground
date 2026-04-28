@@ -7,7 +7,7 @@
   same form except for different binder names) via a couple of β-substitutions.
 
   Now, you might want to check
-    ≡ (Y F) (F (Y F))
+    :assert Y F ≡ F (Y F)
   - the defining relation for the Y-combinator - and be somewhat annoyed that
   this λ playground does not tell you that it's true. The problem is, however,
   that for two λ terms, it is not possible in general to say whether they are
@@ -61,11 +61,11 @@
 isTriple a b c n :=
   (a ^^ n) + (b ^^ n) == (c ^^ n)
 
-≡ (isTriple 3 4 5 2) true # the prototypical Pythagorean triple
+:assert isTriple 3 4 5 2 ≡ true # the prototypical Pythagorean triple
 
-# The next triple if you want to wait a bit...
+# The next triple if you want to wait a little bit...
 # :set max-steps 2000
-# ≡ (isTriple 5 12 13 2) true # the prototypical Pythagorean triple
+# :assert (isTriple 5 12 13 2) ≡ true
 
 
 # Now, we define a function that determines whether a certain predicate (pred) holds
@@ -77,9 +77,9 @@ _anyNat anyNat βn pred :=
 anyNat := Y _anyNat
 
 # Do some tests with this function
-≡ (anyNat 2 (5 ==)) true
-≡ (anyNat 3 even?) true
-≢ (anyNat 7 (5 ==)) true  # The predicate is never true for n >= 7, but anyNat can't see that, and the LHS has no normal form.
+:assert anyNat 2 (5 ==) ≡ true
+:assert anyNat 3 even? ≡ true
+:assert anyNat 7 (5 ==) ≢ true  # The predicate is never true for n >= 7, but anyNat can't see that, and the LHS has no normal form.
 
 # We also need a function that does the same but for a limited range of natural
 # numbers. That one always halts with true or false.
@@ -89,10 +89,10 @@ _any steps βn0 pred := steps
 any βn0 βn1 pred := first (_any (n1 - n0 + 1) n0 pred)
 
 # Test it with some simple cases
-≡ (any 2 5 (2 >=)) true
-≡ (any 2 5 (1 >=)) false
-≡ (any 2 5 (5 <=)) true
-≡ (any 2 5 (6 <=)) false
+:assert any 2 5 (2 >=) ≡ true
+:assert any 2 5 (1 >=) ≡ false
+:assert any 2 5 (5 <=) ≡ true
+:assert any 2 5 (6 <=) ≡ false
 
 # Now comes a function that tests whether there is any valid triple a, b, c with
 # 3 <= a < b < c <= max and exponent n, such that a^n+b^n=c^n.
@@ -104,7 +104,7 @@ anyTriple βmax n :=
 # Now the following is true, since it will find the 3, 4, 5 triple
 :set max-size 20000
 :set max-steps 10000
-≡ (anyTriple 5 2) true
+:assert anyTriple 5 2 ≡ true
 
 # Now, we define a function that for each n >= n0, finds any triple up to
 # max 2n+1. For n → ∞, if there is any such triple in the naturals, we
@@ -118,4 +118,4 @@ anyPowTriple n0 :=
 # Now, if we really could disprove the following (i.e. n0 = 3), we would have
 # shown Fermat's Last Theorem to be true (which you didn't really expect from a
 # "λ playground", did you?)
-# ≡ (anyPowTriple 3) true
+# :assert (anyPowTriple 3) ≡ true

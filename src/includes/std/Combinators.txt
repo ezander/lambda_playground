@@ -17,29 +17,29 @@ Y := λf. (λx. f (x x)) (λx. f (x x))
 :set normalize-defs
 
 # SKI basis equivalences
-≡ (S K K) I
-≡ (S K S) I
-≡ (S (K S) K) B
+:assert S K K ≡ I
+:assert S K S ≡ I
+:assert S (K S) K ≡ B
 
 # Behavioral identities
-≡ (I x) x
-≡ (K x y) x
-≡ (B f g x) (f (g x))
-≡ (C f x y) (f y x)
-≡ (S f g x) (f x (g x))
+:assert I x ≡ x
+:assert K x y ≡ x
+:assert B f g x ≡ f (g x)
+:assert C f x y ≡ f y x
+:assert S f g x ≡ f x (g x)
 
 # Derived equivalences
-≡ (S (K f) g x) (f (g x))
-≡ (S (K f) I x) (f x)
-≡ (K I x) I
+:assert S (K f) g x ≡ f (g x)
+:assert S (K f) I x ≡ f x
+:assert K I x ≡ I
 
 # Fixed-point property for Y: Y f = f (Y f)
 _F := K I
-≡ (Y _F) (_F (Y _F))
-≡ (Y _F) I
-≡ (Y (K K)) K
+:assert Y _F ≡ _F (Y _F)
+:assert Y _F ≡ I
+:assert Y (K K) ≡ K
 
 # Fixed-point property for Θ: Θ f = f (Θ f)
-≡ (Θ _F) (_F (Θ _F))
-≡ (Θ _F) I
-≡ (Θ (K K)) K
+:assert Θ _F ≡ _F (Θ _F)
+:assert Θ _F ≡ I
+:assert Θ (K K) ≡ K

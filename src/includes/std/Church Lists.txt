@@ -34,23 +34,23 @@ map f l := λ c n.l (λ h r.c (f h) r) n # ≡ λ f l c.l (c ∘ f)
 
 # Check list implementation
 
-≡ (isnil nil) true
-≡ (nonempty nil) false
-≡ (head nil) false
-≡ (safeHead nil a b) a
-≡ (map f nil) nil
+:assert isnil nil ≡ true
+:assert nonempty nil ≡ false
+:assert head nil ≡ false
+:assert safeHead nil a b ≡ a
+:assert map f nil ≡ nil
 
-≡ (singleton h) (cons h nil)
-≡ (nonempty (singleton h)) true
-≡ (append (singleton h1) (singleton h2)) (cons h1 (cons h2 nil))
+:assert singleton h ≡ cons h nil
+:assert nonempty (singleton h) ≡ true
+:assert append (singleton h1) (singleton h2) ≡ cons h1 (cons h2 nil)
 
-≡ (head (singleton h1)) h1
-≡ (tail (singleton h1)) nil
-≡ (tail (cons h1 (cons h2 nil))) (cons h2 nil)
-≡ (safeHead (singleton h1) 0 f) (f h1)
+:assert head (singleton h1) ≡ h1
+:assert tail (singleton h1) ≡ nil
+:assert tail (cons h1 (cons h2 nil)) ≡ cons h2 nil
+:assert safeHead (singleton h1) 0 f ≡ f h1
 
 _l := append (cons el3 nil) (cons el2 (cons el1 nil))
 _ll := map (λx . pair x x) _l
-≡ (head _ll) (pair el3 el3)
-≡ (head (tail _ll)) (pair el2 el2)
-≡ (head (tail (tail _ll))) (pair el1 el1)
+:assert head _ll ≡ pair el3 el3
+:assert head (tail _ll) ≡ pair el2 el2
+:assert head (tail (tail _ll)) ≡ pair el1 el1

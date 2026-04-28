@@ -271,8 +271,8 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-B", run: v => insertAt(v, "β") },
   { key: "Alt-p", run: v => insertAtLineStart(v, "π") },
   { key: "Alt-P", run: v => insertAtLineStart(v, "π") },
-  { key: "Alt-e", run: v => insertAtLineStart(v, "≡") },
-  { key: "Alt-E", run: v => insertAtLineStart(v, "≡") },
-  { key: "Alt-n", run: v => insertAtLineStart(v, "≢") },
-  { key: "Alt-N", run: v => insertAtLineStart(v, "≢") },
+  { key: "Alt-e", run: v => insertAt(v, "≡") },
+  { key: "Alt-E", run: v => insertAt(v, "≡") },
+  { key: "Alt-n", run: v => insertAt(v, "≢") },
+  { key: "Alt-N", run: v => insertAt(v, "≢") },
 ]));

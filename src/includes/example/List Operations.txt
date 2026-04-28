@@ -24,7 +24,7 @@
 L := ∅ // 3 // 5 // 2
 
 # And indeed
-≡ L (cons 3 (cons 5 (cons 2 nil)))
+:assert L ≡ cons 3 (cons 5 (cons 2 nil))
 
 #*
   We needed to use append and singleton, because cons associates to the right,
@@ -41,8 +41,8 @@ L := ∅ // 3 // 5 // 2
 # Now lets compute the sum of squares of the list entries
 # Therefore we first square the list entries
 Lsqr := map (λx . x * x) L
-≡ (head Lsqr) 9
-≡ (head (tail Lsqr)) 25
+:assert head Lsqr ≡ 9
+:assert head (tail Lsqr) ≡ 25
 
 # Then we add
 sumSquare := fold (λ n m. n + m) 0 Lsqr

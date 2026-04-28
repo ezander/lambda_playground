@@ -7,11 +7,10 @@ Do not edit by hand — change the parser in `src/parser/grammar.ts` and re-run 
 program            ::=  programItem*
 programItem        ::=  statementSep | statement statementSep | directiveLine
 statementSep       ::=  '\n' | ';'
-statement          ::=  printStmt | equivStmt | nequivStmt | evalStmt | definition | term
+statement          ::=  printStmt | assertStmt | evalStmt | definition | term
 directiveLine      ::=  ':…' '\n'
 printStmt          ::=  ('π' | ':print') comprehensionSpec? term
-equivStmt          ::=  ('≡' | ':assert') comprehensionSpec? atom atom
-nequivStmt         ::=  ('≢' | ':assert-not') comprehensionSpec? atom atom
+assertStmt         ::=  ':assert' comprehensionSpec? term ('≡' | '≢') term
 evalStmt           ::=  ':eval' term
 definition         ::=  identifier binder* (':=' | '::=') term
 comprehensionSpec  ::=  '[' compBinding (',' compBinding)* ']'

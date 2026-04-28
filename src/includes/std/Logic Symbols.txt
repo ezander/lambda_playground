@@ -12,6 +12,6 @@
 :infix ∧ ∨ → ↔ ⊕
 
 # Test using all aliases (de Morgan, biconditional, xor)
-≡[p:={⊥,⊤},q:={⊥,⊤}] (¬ (p ∧ q)) ((¬ p) ∨ (¬ q))
-≡[p:={⊥,⊤},q:={⊥,⊤}] (p ↔ q) ((→ p q) ∧ (→ q p))
-≡[p:={⊥,⊤},q:={⊥,⊤}] (¬ (p ↔ q)) (p ⊕ q)
+:assert[p:={⊥,⊤},q:={⊥,⊤}] ¬ (p ∧ q) ≡ (¬ p) ∨ (¬ q)
+:assert[p:={⊥,⊤},q:={⊥,⊤}] p ↔ q ≡ (→ p q) ∧ (→ q p)
+:assert[p:={⊥,⊤},q:={⊥,⊤}] ¬ (p ↔ q) ≡ p ⊕ q
