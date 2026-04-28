@@ -5,8 +5,8 @@
   ==============
 
   To enable building modules of lambda definitions, the λ playground features an
-  include system. In addition to the pragmas described here [doc/Pragmas] ,
-  there is also "include". E.g. 
+  include system. In addition to the directives described here [doc/Directives] ,
+  there is also "include". E.g.
 
   :import "std/Church Booleans"
 
@@ -22,9 +22,9 @@
   if normal forms differ
 
   all definitions exported except _def names
-  pragmas/options not exported
+  options not exported
 
-  include file, new namespace, does not see existing defs, or pragma/options
+  include file, new namespace, does not see existing defs, or options
 
   mixin, can see exisiting defs, useful for extending defs:
   e.g. some definition for `true`, `false`, `if` then in mixin

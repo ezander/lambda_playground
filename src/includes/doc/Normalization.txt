@@ -13,54 +13,49 @@
      (λ y . y a)
 
   given the `(λ y . y a)` as result, where nothing can be substituted any more.
-  This would be the normal form of the original expression `(λ x . x)(λ y . y)`.
-  Note that naming of bound variables does not matter: `(λ z . z a)` would 
-  count as normal form just as well (this is called α-equivalence). 
+  This would be the normal form of the original expression `(λ x . x)(λ y . y
+  a)`. Note, that naming of bound variables does not matter: `(λ z . z a)` would
+  count as normal form just as well (this is called α-equivalence).
 
   There are some things to note here:
-    a) Not all expressions have a normal form. E.g. `(λ x . x x)(λ x . x x)` 
-       (which is sometimes called the Ω combinator) does not have a normal form: 
+    a) Not all expressions have a normal form. E.g. `(λ x . x x)(λ x . x x)`
+       (which is sometimes called the Ω combinator) does not have a normal form:
        every substitution just leads back to the original expression.
-    b) Some expressions even grow indefinetely like `(λ x . x x)(λ x . x x x)`
+    b) Some expressions even grow indefinitely like `(λ x . x x)(λ x . x x x)`
        Just copy it somewhere and try to expand it β-step by β-step.
-    c) Some expressions have relatively small normal forms, but huge 
-       intermeditate representation, e.g. try to evaluate 
+    c) Some expressions have relatively small normal forms, but huge
+       intermediate representation, e.g. try to evaluate
        `/ (factorial 10) (factorial 9)` with Church numerals (or better: don't)
-    d) There is no method to determine whether a general λ expression has a 
+    d) There is no method to determine whether a general λ expression has a
        normal form at all (this was at the center of the Entscheidungsproblem
-       and the halting problem, solved back then in the 1930s by Church and 
+       and the halting problem, solved back then in the 1930s by Church and
        Turing)
-    e) Even if there is a normal form, it cannot be predetermined in how many 
+    e) Even if there is a normal form, it cannot be predetermined in how many
        steps this can be achieved and how big the intermediate expressions become.
 
   Given these complications, in a computational system like this here, we must
-  decide or terminate at some step. Therefore, there is a step limit for 
-  substitutions and also a size limit for intermediate expression, that can be 
-  controlled either via the settings or in code via pragmas [doc/Pragmas]. The
-  step limit is usually set to 1000, i.e. after 1000 some "did not terminate"
-  message will pop up in the output, or when an intermediate has more than 
-  a set limit (default: 3000) terms in it's abstract syntax tree (AST), the 
-  evaluation will also be stopped, in order to preserve memory. You can change
-  that globally via the settings, or via pragmas like `max-steps` or `max-size`.
+  decide or terminate at some step. Therefore, there is a step limit for
+  substitutions and also a size limit for intermediate expression, that can be
+  controlled either via the settings or in code via the :set directive
+  [doc/Directives] . The step limit is usually set to 1000, i.e. after 1000 some
+  "did not terminate" message will pop up in the output, or when an intermediate
+  has more than a set limit (default: 3000) terms in its abstract syntax tree
+  (AST), the evaluation will also be stopped, in order to preserve memory. You
+  can change that globally via the settings, or via options like `max-steps` or
+  `max-size`.
 
   Lambda expressions appearing alone on a line are not normalized by default.
   Definitions on the contrary are, because that usually speeds up things for
   future use. For definitions you know, won't normalize (e.g. the Ω combinator
   `(λx.x x)(λx.x x)`), or you just don't want normalization to happen you can
-  disable it via `no-normalize-defs` and re-enable via `normalize-defs`. T
-
-
-  Leftmost-outermost:
-
-  weak normalization 
-  using defs for speed optimization
+  disable it via `no-normalize-defs` and re-enable via `normalize-defs`.
 
   Here are some examples concerning normalization and equivalences:
 *#
 
 
 # I I normalizes to I
-I := λx . x 
+I := λx . x
 :assert I I ≡ I
 
 # Ω has no normal form
@@ -76,7 +71,68 @@ I := λx . x
 :assert λ x . z x ≡ z
 :set no-allow-eta
 
-# K I Ω has a weak normal form, that can be found via leftmost-outermost 
+# K I Ω has a weak normal form, that can be found via leftmost-outermost
 # reductions, though Ω itself has no normal form
-K y := λ x . y
+K x := λ y . x
 :assert I ≡ K I Ω
+
+#*
+  When applying a sequence of β-substitutions to a lambda term, in principle it
+  does not matter in which order we do that. When two sequences reach a normal
+  form it is guaranteed (by the Church-Rosser theorem) that both are the same
+  (or equivalent if you want). However, in practice it can make a huge
+  difference: take for example the expression "(λ x y . x) I Ω", we've seen
+  above, which has normal form "I". If we start with substituting from left and
+  on the outermost level we first get "(λ y . I)Ω" which is "I[y:=Ω]" which is
+  just "I". If we'd reduced from the right, or in (λy.I)Ω evaluated the argument
+  Ω first, we'd be stuck, because "Ω" has no normal form. So, the default here
+  is to use leftmost-outermost reductions (also called "lazy evaluation" since
+  arguments are only evaluated when needed), since this is guaranteed to produce
+  a normal form, when there is one.
+
+  However, in certain cases this can be suboptimal in terms of the number of
+  reductions needed, and overflow memory or runtime constraints. As a simple
+  example take
+
+    times3 n := n + n + n
+
+  and now we call "times3" with argument "pred 10". Then "pred 10" would be
+  evaluated three times, and the predecessor function is well known to be pretty
+  slow for Church numerals. A solution here, is to tag the argument "n" as
+  call-by-value (or "eager evaluation") to speed things up. The notation employed here
+  is to prefix the variable to be used with call-by-value by a β (indicating that
+  β-reduction is to be used first on this variable, before evaluating the body)
+
+    times3 βn := n + n + n
+
+  Example:
+*#
+
+:import "std/Church Numerals Symbolic"
+times3 n := n + n + n
+:print times3 (-- 10) # takes about 80 steps
+
+times3 βn := n + n + n # redefine with cbv
+:print times3 (-- 10) # takes about 30 steps
+
+# you can also wrap given functions with call-by-value
+times3 n := n + n + n
+:print times3 (-- 10) # takes about 80 steps
+:print (λβn.times3 n) (-- 10) # takes about 30 steps
+# but note, that you have to wrap the function, not the argument
+
+#*
+  This can be quite helpful, especially in recursive definitions. However, note
+  that it is only advisable if a) the argument is used more than once in the body,
+  and b) it is definitely used.
+
+  Counterexample: you could define for Church booleans
+
+    or βp βq := p p q
+
+  but that's a bad idea: a) p can be a complicated expression and is used twice
+  in the body, but you could simply replace it by "true" as second argument.
+  However, the β on p does not hurt, just adds some clutter, but b) the β on q
+  has no purpose at all - q appears only once and the β precludes short-circuiting, i.e.,
+  "or true Ω" will not normalize while for "or p q := p p q" it would.
+*#

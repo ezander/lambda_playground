@@ -16,7 +16,7 @@
     [doc/Language]
     [doc/Literature]
     [doc/Normalization]
-    [doc/Pragmas]
+    [doc/Directives]
     [doc/Printing]
     [doc/Testing]
     [doc/User Interface]
