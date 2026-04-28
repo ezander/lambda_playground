@@ -201,6 +201,27 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             {" · "}
             <a href="https://github.com/ezander/lambda_playground/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
           </p>
+
+          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
+            License — code:{" "}
+            <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a>
+            {" · "}
+            content (docs, tutorials, examples):{" "}
+            <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE-CONTENT" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+          </p>
+
+          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
+            Version — v{__APP_VERSION__}
+            {" · "}
+            <a
+              href={`https://github.com/ezander/lambda_playground/commit/${__APP_COMMIT_FULL__}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontFamily: "var(--mono, monospace)" }}
+            >{__APP_COMMIT__}</a>
+            {" · "}
+            {__APP_BUILD_DATE__}
+          </p>
         </>}
       </div>
     </div>

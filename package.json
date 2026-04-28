@@ -2,6 +2,7 @@
   "name": "lambda-playground",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@uiw/react-codemirror": "^4.25.9",
