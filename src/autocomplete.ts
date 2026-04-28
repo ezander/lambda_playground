@@ -2,15 +2,15 @@ import { autocompletion, startCompletion, moveCompletionSelection, CompletionCon
 import { keymap, ViewPlugin, EditorView } from "@codemirror/view";
 import { Prec, Extension } from "@codemirror/state";
 import { parsedField } from "./highlight";
-import { NUMERIC_PRAGMAS, BOOLEAN_PRAGMAS } from "./parser/parser";
+import { NUMERIC_OPTIONS, BOOLEAN_OPTIONS } from "./parser/parser";
 import { BUNDLED_CONTENT } from "./data/content";
 import { getUserIncludePaths } from "./storage";
 import { findCommentRanges, inComment } from "./comment";
 
 // Matches any identifier-like token (alphanumeric/Greek/operator chars)
 const IDENT_RE = /[a-zA-Z0-9_'\u0370-\u03FF+\-*/^~&|<>!?=]+/;
-// Pragma keys are lowercase with hyphens, optional no- prefix
-const PRAGMA_KEY_RE = /[a-z-]+/;
+// Option keys are lowercase with hyphens, optional no- prefix
+const OPTION_KEY_RE = /[a-z-]+/;
 // Link path inside [...]: type/name
 const LINK_PATH_RE = /[a-zA-Z0-9_/ .'-]+/;
 
@@ -25,9 +25,9 @@ const DIRECTIVE_OPTIONS = [
 ];
 
 const SET_OPTIONS = [
-  ...Object.keys(NUMERIC_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
-  ...Object.keys(BOOLEAN_PRAGMAS).map(key => ({ label: key, type: "keyword" as const })),
-  ...Object.keys(BOOLEAN_PRAGMAS).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
+  ...Object.keys(NUMERIC_OPTIONS).map(key => ({ label: key, type: "keyword" as const })),
+  ...Object.keys(BOOLEAN_OPTIONS).map(key => ({ label: key, type: "keyword" as const })),
+  ...Object.keys(BOOLEAN_OPTIONS).map(key => ({ label: `no-${key}`, type: "keyword" as const })),
 ];
 
 function getAllIncludePaths(): string[] {
@@ -58,7 +58,7 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     // Option completion for :set
     const setMatch = line.text.match(/^\s*:set\s+/);
     if (setMatch) {
-      const word = context.matchBefore(PRAGMA_KEY_RE);
+      const word = context.matchBefore(OPTION_KEY_RE);
       if (!word && !context.explicit) return null;
       return { from: word ? word.from : context.pos, options: SET_OPTIONS, filter: true };
     }

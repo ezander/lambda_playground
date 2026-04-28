@@ -138,7 +138,7 @@ Key modules in `src/`:
 | `parser/grammar.ts` | CST parser + AST visitor |
 | `parser/semantics.ts` | Statement processing: definitions, directives, print/equiv |
 | `parser/ast.ts` | `Var`, `Abs`, `App`, `Subst` node types |
-| `parser/types.ts` | Shared types: `ProgramResult`, `PragmaConfig`, `DefEntry`, etc. |
+| `parser/types.ts` | Shared types: `ProgramResult`, `OptionsConfig`, `DefEntry`, etc. |
 | `parser/pretty.ts` | AST → surface syntax serializer |
 | `evaluator/eval.ts` | Normal-order beta/eta reduction, `alphaEq`, `termSize` |
 | `highlight.ts` | CodeMirror syntax highlighting from live parse result |

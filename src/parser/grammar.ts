@@ -234,13 +234,13 @@ export const parser = new LambdaParser();
 
 export type RawBinding = { name: string; nameTok: IToken; termValues: Term[] };
 export type RawEmpty   = { kind: "empty" };
-export type RawPragma  = { kind: "pragma"; text: string; offset: number; endOffset?: number };
+export type RawDirective = { kind: "directive"; text: string; offset: number; endOffset?: number };
 export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number; endOffset?: number };
 export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number; endOffset?: number };
 export type RawEquiv   = { kind: "equiv"; lhs: Term; rhs: Term; bindings: RawBinding[] | null; negated: boolean; offset: number; endOffset?: number };
 export type RawExpr    = { kind: "expr"; term: Term; offset: number; endOffset?: number };
 export type RawEval    = { kind: "eval"; term: Term; offset: number; endOffset?: number };
-export type RawStmt    = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
+export type RawStmt    = RawEmpty | RawDirective | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
 
 // ── 3. CST → AST visitor ─────────────────────────────────────────────────────
 
@@ -307,10 +307,10 @@ export class AstBuilder extends BaseCstVisitor {
     return { kind: "empty" };
   }
 
-  directiveLine(ctx: any): RawPragma {
+  directiveLine(ctx: any): RawDirective {
     const tok = ctx.Directive[0] as IToken;
     // Strip leading ":" and trim — e.g. ":import "foo"" → "import "foo""
-    return { kind: "pragma", text: tok.image.slice(1).trim(), offset: tok.startOffset };
+    return { kind: "directive", text: tok.image.slice(1).trim(), offset: tok.startOffset };
   }
 
   printStmt(ctx: any): RawPrint | RawEmpty {

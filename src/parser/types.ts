@@ -47,7 +47,7 @@ export type DefInfo = {
   positions: PositionMap;
 };
 
-export type PragmaConfig = {
+export type OptionsConfig = {
   maxStepsPrint?: number;
   maxStepsIdent?: number;
   maxHistory?:    number;
@@ -56,11 +56,11 @@ export type PragmaConfig = {
   allowEta?:      boolean;
 };
 
-// Pragma keys are split by value type so the parser can assign without casts.
-type NumericPragmaKey = "maxStepsPrint" | "maxStepsIdent" | "maxHistory" | "maxSize";
-type BooleanPragmaKey = "normalizeDefs" | "allowEta";
+// Option keys are split by value type so the parser can assign without casts.
+type NumericOptionKey = "maxStepsPrint" | "maxStepsIdent" | "maxHistory" | "maxSize";
+type BooleanOptionKey = "normalizeDefs" | "allowEta";
 
-export const NUMERIC_PRAGMAS: Record<string, NumericPragmaKey[]> = {
+export const NUMERIC_OPTIONS: Record<string, NumericOptionKey[]> = {
   "max-steps":       ["maxStepsPrint", "maxStepsIdent"],
   "max-steps-print": ["maxStepsPrint"],
   "max-steps-ident": ["maxStepsIdent"],
@@ -68,7 +68,7 @@ export const NUMERIC_PRAGMAS: Record<string, NumericPragmaKey[]> = {
   "max-size":        ["maxSize"],
 };
 
-export const BOOLEAN_PRAGMAS: Record<string, BooleanPragmaKey[]> = {
+export const BOOLEAN_OPTIONS: Record<string, BooleanOptionKey[]> = {
   "normalize-defs":  ["normalizeDefs"],
   "allow-eta":       ["allowEta"],
 };
@@ -140,7 +140,7 @@ export type ProgramResult = {
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];
-  pragmaConfig: PragmaConfig;
+  options:      OptionsConfig;
 };
 
 export type ProgramRunConfig = {

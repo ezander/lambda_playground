@@ -7,7 +7,7 @@ import {
   PositionMap,
   DefEntry,
   DefInfo,
-  PragmaConfig, NUMERIC_PRAGMAS, BOOLEAN_PRAGMAS,
+  OptionsConfig, NUMERIC_OPTIONS, BOOLEAN_OPTIONS,
   ComprehensionBinding,
   PrintComprehensionRow, PrintComprehensionInfo,
   EquivComprehensionRow, EquivComprehensionInfo,
@@ -127,7 +127,7 @@ function formatSubstExpr(src: string, substs: { name: string; value: string }[])
   return `(${src})${substs.map(s => `[${s.name}:=${s.value}]`).join("")}`;
 }
 
-// ── Pragma processing ─────────────────────────────────────────────────────────
+// ── Directive processing ─────────────────────────────────────────────────────
 
 // Handle :import "path" [modifiers...] and :mixin "path" [modifiers...]. Both
 // resolve a path, parse the content, fold the resulting defs into the current
@@ -213,10 +213,10 @@ function stripDirectiveComment(text: string): string {
   return i === -1 ? text : text.slice(0, i).trimEnd();
 }
 
-function processPragma(
+function processDirective(
   text: string,
   offset: number,
-  pragmaConfig: PragmaConfig,
+  options: OptionsConfig,
   errors: LambdaError[],
   defaultConfig: ProgramRunConfig,
   resolver: IncludeResolver,
@@ -228,41 +228,49 @@ function processPragma(
   text = stripDirectiveComment(text);
   if (processIncludeLike(text, offset, errors, defaultConfig, resolver, defs, defEntries, includeStack, equivFailed)) return;
 
-  const infixMatch = text.match(/^infix\s+(.+)$/);
-  if (infixMatch) {
-    const names = infixMatch[1].trim().split(/\s+/);
-    for (const name of names) {
+  const kwMatch = text.match(/^([a-zA-Z][a-zA-Z0-9-]*)(?:\s+(.*))?$/);
+  if (!kwMatch) {
+    errors.push({ message: `Invalid directive: "${text}"`, offset, kind: "warning" });
+    return;
+  }
+  const [, keyword, restRaw] = kwMatch;
+  const rest = (restRaw ?? "").trim();
+
+  if (keyword === "infix") {
+    if (!rest) { errors.push({ message: `:infix requires at least one name`, offset, kind: "warning" }); return; }
+    for (const name of rest.split(/\s+/)) {
       const entry = defEntries.get(name);
-      if (!entry) {
-        errors.push({ message: `Warning: '${name}' is not defined, cannot mark as infix`, offset, kind: "warning" });
-      } else {
-        entry.infix = true;
-      }
+      if (!entry) errors.push({ message: `Warning: '${name}' is not defined, cannot mark as infix`, offset, kind: "warning" });
+      else entry.infix = true;
     }
     return;
   }
 
-  const setMatch = text.match(/^set\s+/);
-  const settingText = setMatch ? text.slice(setMatch[0].length) : text;
-  const m = settingText.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
-  if (!m) {
-    errors.push({ message: `Invalid directive: "${text}"`, offset, kind: "warning" });
+  if (keyword === "set") {
+    if (!rest) { errors.push({ message: `:set requires an option, e.g. :set max-steps 500`, offset, kind: "warning" }); return; }
+    const m = rest.match(/^(no-)?([a-z][a-z0-9-]*)(?:(?:\s*=\s*|\s+)(true|false|\d+))?\s*$/);
+    if (!m) {
+      errors.push({ message: `Invalid directive: "${text}"`, offset, kind: "warning" });
+      return;
+    }
+    const [, negate, key, val] = m;
+    const boolProps = BOOLEAN_OPTIONS[key];
+    const numProps  = NUMERIC_OPTIONS[key];
+    if (boolProps) {
+      if (val && val !== "true" && val !== "false")
+        errors.push({ message: `Option "${key}" is boolean, expected no value, true, or false`, offset, kind: "warning" });
+      else { const b = negate ? false : val !== "false"; for (const prop of boolProps) options[prop] = b; }
+    } else if (numProps) {
+      if (negate) errors.push({ message: `Option "${key}" is numeric, cannot negate`, offset, kind: "warning" });
+      else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Option "${key}" requires a numeric value`, offset, kind: "warning" });
+      else for (const prop of numProps) options[prop] = parseInt(val);
+    } else {
+      errors.push({ message: `Unknown option: "${key}"`, offset, kind: "warning" });
+    }
     return;
   }
-  const [, negate, key, val] = m;
-  const boolProps = BOOLEAN_PRAGMAS[key];
-  const numProps  = NUMERIC_PRAGMAS[key];
-  if (boolProps) {
-    if (val && val !== "true" && val !== "false")
-      errors.push({ message: `Pragma "${key}" is boolean, expected no value, true, or false`, offset, kind: "warning" });
-    else { const b = negate ? false : val !== "false"; for (const prop of boolProps) pragmaConfig[prop] = b; }
-  } else if (numProps) {
-    if (negate) errors.push({ message: `Pragma "${key}" is numeric, cannot negate`, offset, kind: "warning" });
-    else if (!val || !/^\d+$/.test(val)) errors.push({ message: `Pragma "${key}" requires a numeric value`, offset, kind: "warning" });
-    else for (const prop of numProps) pragmaConfig[prop] = parseInt(val);
-  } else {
-    errors.push({ message: `Unknown pragma option: "${key}"`, offset, kind: "warning" });
-  }
+
+  errors.push({ message: `Unknown directive: ":${keyword}"`, offset, kind: "warning" });
 }
 
 // ── Main program parser ───────────────────────────────────────────────────────
@@ -296,7 +304,7 @@ export function parseProgram(
   const equivInfos: EquivInfo[] = [];
   const printComprehensionInfos: PrintComprehensionInfo[] = [];
   const equivComprehensionInfos: EquivComprehensionInfo[] = [];
-  const pragmaConfig: PragmaConfig = {};
+  const options: OptionsConfig = {};
   const equivFailed = { value: false };
 
   // Tracing — accumulate eval time across all normalize calls.
@@ -408,14 +416,14 @@ export function parseProgram(
       case "empty":
         break;
 
-      case "pragma": {
-        processPragma(stmt.text, stmt.offset, pragmaConfig, errors, defaultConfig, resolver, defs, defEntries, _includeStack, equivFailed);
+      case "directive": {
+        processDirective(stmt.text, stmt.offset, options, errors, defaultConfig, resolver, defs, defEntries, _includeStack, equivFailed);
         break;
       }
 
       case "def": {
         const { name, nameTok, params, rawBody, bodyTerm, offset } = stmt;
-        const merged = { ...defaultConfig, ...pragmaConfig };
+        const merged = { ...defaultConfig, ...options };
 
         const innerDefs = new Map(defs);
         for (const p of params.map(tokenName)) innerDefs.delete(p);
@@ -430,7 +438,7 @@ export function parseProgram(
         // participate in match-finding at print/equiv time. Skipped entirely
         // when runEval is false (auto-run off).
         let canon: string | undefined;
-        if ((merged.runEval ?? true) && (pragmaConfig.normalizeDefs ?? true)) {
+        if ((merged.runEval ?? true) && (options.normalizeDefs ?? true)) {
           const { term: normalized, kind } = timedNorm(`def ${name}`, body, { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta });
           if (kind === "stepLimit")
             errors.push({ message: `Warning: definition '${name}' did not normalize within step limit — storing as-is`, offset, kind: "warning" });
@@ -464,7 +472,7 @@ export function parseProgram(
       }
 
       case "print": {
-        const merged = { ...defaultConfig, ...pragmaConfig };
+        const merged = { ...defaultConfig, ...options };
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
         const endOffset   = stmt.endOffset ?? stmt.offset;
@@ -552,7 +560,7 @@ export function parseProgram(
       }
 
       case "equiv": {
-        const merged = { ...defaultConfig, ...pragmaConfig };
+        const merged = { ...defaultConfig, ...options };
         const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
         const endOffset   = stmt.endOffset ?? stmt.offset;
@@ -676,7 +684,7 @@ export function parseProgram(
       }
 
       case "expr": {
-        const merged = { ...defaultConfig, ...pragmaConfig };
+        const merged = { ...defaultConfig, ...options };
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
         const endOffset   = stmt.endOffset ?? stmt.offset;
@@ -733,6 +741,6 @@ export function parseProgram(
     equivInfos,
     printComprehensionInfos,
     equivComprehensionInfos,
-    pragmaConfig,
+    options,
   };
 }

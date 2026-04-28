@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, PragmaConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
+import { parseProgram, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
@@ -721,14 +721,14 @@ export default function App() {
     editorViewRef.current?.dispatch({ effects: wrapCompartment.reconfigure(makeWrapExtensions(config.wrapWidth)) });
   }, [config.wrapWidth]);
 
-  const mergeConfig = useCallback((pragma: PragmaConfig): Config =>
-    ({ ...config, ...pragma }), [config]);
+  const mergeConfig = useCallback((options: OptionsConfig): Config =>
+    ({ ...config, ...options }), [config]);
 
   const handleLoad = useCallback(() => {
     if (!programResult.expr) return;
     const term = programResult.expr;
     const nd = new Map([...programResult.defs].filter(([, e]) => !e.quiet));
-    const effectiveConfig = mergeConfig(programResult.pragmaConfig);
+    const effectiveConfig = mergeConfig(programResult.options);
     setNormDefs(nd);
     const done = step(term) === null;
     setEvalSession({ term, done, stepNum: 0, effectiveConfig });
@@ -992,7 +992,7 @@ export default function App() {
     if (!programResult.expr) return;
     const term = programResult.expr;
     const nd = new Map([...programResult.defs].filter(([, e]) => !e.quiet));
-    const effectiveConfig = mergeConfig(programResult.pragmaConfig);
+    const effectiveConfig = mergeConfig(programResult.options);
     setNormDefs(nd);
     setLoadedSource(source);
     const r = runSteps(term, 0, effectiveConfig.maxStepsRun, effectiveConfig.maxSize, showSubst, nd, buildEntry(term, 0, nd));

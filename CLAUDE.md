@@ -27,7 +27,7 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 - **`src/parser/lexer.ts`** — Chevrotain tokenizer.
 - **`src/parser/grammar.ts`** — Chevrotain CST parser + AST visitor. Desugars multi-param lambdas, folds left-associative application.
 - **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates print/≡/≢ statements (bare expressions are equivalent to `:print`), handles `:import`/`:mixin` directives with caching.
-- **`src/parser/types.ts`** — Shared types: `ProgramResult`, `LambdaError`, `PragmaConfig`, `ProgramRunConfig`, `PositionMap`, etc.
+- **`src/parser/types.ts`** — Shared types: `ProgramResult`, `LambdaError`, `OptionsConfig`, `ProgramRunConfig`, `PositionMap`, etc.
 - **`src/parser/parser.ts`** — Barrel re-export; `parseProgram(source, config, resolver)` entry point.
 - **`src/parser/pretty.ts`** — Serializes AST back to surface syntax.
 - **`src/evaluator/eval.ts`** — Normal-order beta reduction. `EvalConfig = { maxSteps?, maxSize? }`. `RunResult` has kinds `normalForm | stepLimit | sizeLimit`. Also exports `termSize`, `buildNormDefs`, `findMatch` (skips `_`-prefixed names).
@@ -40,7 +40,7 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 - **`src/config.ts`** — `Config = { maxStepsPrint, maxStepsRun, maxStepsIdent, maxHistory, maxSize, showPassingEquiv, wrapWidth }`, `DEFAULT_CONFIG`.
 - **`src/comment.ts`** — `findCommentRanges`, `inComment` utilities.
 - **`src/useFocusTrap.ts`** — `useFocusTrap(ref, active)` hook: auto-focuses first element, traps Tab/Shift-Tab.
-- **`src/App.tsx`** — Main UI. `Loaded` state carries `effectiveConfig` (merged `Config` + pragma overrides). `programResult` is a `useMemo`; dispatched to CM6 via `setParsed` effect on change and immediately after `resetEditorContent` (via `programResultRef`).
+- **`src/App.tsx`** — Main UI. `Loaded` state carries `effectiveConfig` (merged `Config` + per-program option overrides). `programResult` is a `useMemo`; dispatched to CM6 via `setParsed` effect on change and immediately after `resetEditorContent` (via `programResultRef`).
 - **`src/SettingsModal.tsx`** — Settings dialog; Enter = apply, Escape = cancel, click-outside = apply.
 - **`src/HelpModal.tsx`** — Tabbed help: Language / UI & editing / Grammar / Credits.
 
@@ -53,7 +53,7 @@ Top-level surface forms:
 - **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Eager variant: `e[βx:=a]`.
 - **Definitions**: `name params := body` (`::=` for redefinition). The name slot rejects β; param slots accept it.
 - **Statements**: bare `expr` (or `:print expr`) — evaluate and show in the output panel; the last bare expression is also loaded into the eval panel. `:assert lhs ≡ rhs` and `:assert lhs ≢ rhs` (alpha-beta equivalence assertions). `:eval expr` (explicit eval-panel override). `:print` and `:assert` each accept a comprehension prefix `[x := {a,b,c}]`.
-- **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`. Pragmas `#! key value` inside line comments overlap with `:set`.
+- **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`.
 - **Reserved letters**: λ, α, β, η, ∀, ∃, ⊢ — never absorbed into identifiers regardless of position. (π is a regular identifier character.)
 
 For the full EBNF, see [`docs/grammar.md`](docs/grammar.md) (regenerate with `npm run gen:grammar`) or open the Grammar tab in the running app's Help modal — both are produced from the live Chevrotain parser via `src/parser/ebnf.ts`.

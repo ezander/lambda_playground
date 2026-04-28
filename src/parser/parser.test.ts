@@ -645,38 +645,38 @@ describe("line continuation", () => {
 describe("pragma value syntax", () => {
   it("accepts = syntax: :set max-steps = 42", () => {
     const r = parseProgram(":set max-steps = 42\n");
-    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+    expect(r.options.maxStepsPrint).toBe(42);
   });
 
   it("accepts space syntax: :set max-steps 42", () => {
     const r = parseProgram(":set max-steps 42\n");
-    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+    expect(r.options.maxStepsPrint).toBe(42);
   });
 
   it("accepts no-space =: :set max-steps=42", () => {
     const r = parseProgram(":set max-steps=42\n");
-    expect(r.pragmaConfig.maxStepsPrint).toBe(42);
+    expect(r.options.maxStepsPrint).toBe(42);
   });
 
   it("accepts boolean pragma without value", () => {
     const r = parseProgram(":set normalize-defs\n");
-    expect(r.pragmaConfig.normalizeDefs).toBe(true);
+    expect(r.options.normalizeDefs).toBe(true);
   });
 
   it("accepts boolean pragma with space value: :set normalize-defs true", () => {
     const r = parseProgram(":set normalize-defs true\n");
-    expect(r.pragmaConfig.normalizeDefs).toBe(true);
+    expect(r.options.normalizeDefs).toBe(true);
   });
 
   it("accepts max-size pragma", () => {
     const r = parseProgram(":set max-size = 5000\n");
-    expect(r.pragmaConfig.maxSize).toBe(5000);
+    expect(r.options.maxSize).toBe(5000);
   });
 
   it("max-steps-print and max-steps-ident can be set independently", () => {
     const r = parseProgram(":set max-steps-print = 100\n:set max-steps-ident = 200\n");
-    expect(r.pragmaConfig.maxStepsPrint).toBe(100);
-    expect(r.pragmaConfig.maxStepsIdent).toBe(200);
+    expect(r.options.maxStepsPrint).toBe(100);
+    expect(r.options.maxStepsIdent).toBe(200);
   });
 
   it("unknown pragma key produces a warning", () => {
@@ -887,7 +887,7 @@ describe("include system", () => {
 
     // Comment on a :set line: pragma applies, comment ignored, no junk warning.
     const r3 = parseProgram(":set max-size 1234 # bump for big terms\n", {}, res);
-    expect(r3.pragmaConfig.maxSize).toBe(1234);
+    expect(r3.options.maxSize).toBe(1234);
     expect(r3.errors).toEqual([]);
 
     // # inside the quoted path is part of the path, not a comment.

@@ -31,10 +31,12 @@ function colonCmd(re: RegExp): (text: string, startOffset: number) => RegExpExec
   };
 }
 
-// Directive — captures the entire line content for :import, :mixin, :set, :infix.
+// Directive — captures any `:<word> …` line at start-of-line, except the
+// statement commands :print / :assert / :eval (which lex as separate tokens).
+// Unknown directives are reported by the semantic layer (processDirective).
 export const Directive = createToken({
   name: "Directive",
-  pattern: colonCmd(/:(?:import|mixin|set|infix)\b[^\n]*/y),
+  pattern: colonCmd(/:(?!print\b|assert\b|eval\b)[a-zA-Z][a-zA-Z0-9-]*\b[^\n]*/y),
   line_breaks: false,
   start_chars_hint: [":"],
 });
