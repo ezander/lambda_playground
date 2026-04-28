@@ -10,11 +10,10 @@
 
   This is a "bare expression" — equivalent to writing ":print not (not
   true)". The expression is normalized and the result appears in the
-  output panel alongside its source, the number of β-steps taken, and a
-  status line ("normal form", "did not terminate in N steps", or
-  "exceeded N nodes after M steps"). The match list (see
-  [doc/Identification]) shows any defs whose canonical form equals the
-  result.
+  output panel alongside its source and a status ("normal form in N
+  steps", "did not terminate in N steps", or "exceeded N nodes after M
+  steps"). The match list (see [doc/Identification]) shows any defs
+  whose canonical form equals the result.
 
   In addition, the *last* bare expression on the page is automatically
   loaded into the eval panel, so you can step through its β-reductions

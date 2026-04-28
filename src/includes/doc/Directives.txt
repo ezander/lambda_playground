@@ -8,7 +8,8 @@
   statements by their leading colon. The λ playground recognizes four:
 
     :import "path"   include definitions from a module       [doc/Import]
-    :mixin  "path"   like :import but sees existing defs     [doc/Import]
+    :mixin  "path"   like :import, but the included file     [doc/Import]
+                     can see the importer's existing defs
     :set    key val  set an option (max-steps, allow-eta, …)
     :infix  name…    mark named defs as infix operators
 
@@ -47,7 +48,7 @@
 
   :infix takes one or more def names and marks them as infix operators:
 
-    + a b := a S b   # uses Church-numeral S; just here as syntax demo
+    + a b := a succ b   # plus on Church numerals
     :infix +
     # "a + b" now parses as "+ a b"
 

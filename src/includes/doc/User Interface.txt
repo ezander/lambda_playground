@@ -14,11 +14,23 @@
   highlighting, autocomplete, and click-to-jump on errors and links. See
   [doc/Editor] for the full list of keys and behaviors.
 
-  Above the editor is a toolbar group covering buffer management
-  (load / save / save as / new / delete), download/upload as zip, a
-  share-link button (copies a URL containing the current buffer's
-  content), the symbol picker (Ω ▾), the settings and help buttons, and
-  fullscreen / theater-mode toggles.
+  Above the editor sit three toolbar strips:
+
+    * Buffer toolbar: shows the current buffer name (or "*scratch*"), a
+      save button (or an "auto" indicator if auto-save is on), a
+      name-input + slot-picker dropdown for switching buffers, and
+      "save as" / "new" / "delete" buttons. To its right: "download"
+      saves the current buffer as a .txt file; "export" packages all
+      named buffers into a zip; "import" loads buffers from a zip.
+
+    * Content toolbar: pickers for docs, tutorials, and example
+      programs, plus the symbol picker (Ω ▾) for inserting Greek and
+      math symbols.
+
+    * Editor header strip: cursor position, undo/redo, find, a
+      share-link button (copies a URL containing the current buffer's
+      content to the clipboard), the settings and help buttons, and
+      theater-mode / fullscreen toggles.
 
   ── Eval panel ──────────────────────────────────────────────────────────
 
