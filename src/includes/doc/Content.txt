@@ -11,7 +11,7 @@
     [doc/Editor]
     [doc/Identification]
     [doc/Identifier]
-    [doc/Includes]
+    [doc/Import]
     [doc/Language]
     [doc/Literature]
     [doc/Normalization]

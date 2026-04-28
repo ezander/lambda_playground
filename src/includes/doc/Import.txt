@@ -1,0 +1,64 @@
+#*
+
+  Include system
+  ==============
+
+  To enable building modules of lambda definitions, the λ playground features an
+  include system, exposed through two directives [doc/Directives]: ":import"
+  and ":mixin". E.g.
+
+    :import "std/Church Booleans"
+
+  will include all definitions from the system include "Church Booleans". If the
+  included buffer contains assertions, they will also be checked (if they fail
+  you'll see the error in the error pane), but no print or eval statements are
+  executed. If you want to see, what's in the included buffer, right-clicking on
+  the name takes you there.
+
+  If definitions in the include buffer already exist in your (or the
+  surrounding) buffer, they are merged with the already existing definitions,
+  according to the rules in [doc/Definitions], i.e. existing ones are
+  overwritten, but a warning is issued if normal forms differ. Note that the
+  imported buffer cannot see existing definitions. If you need that — for
+  instance, when existing definitions are to be extended — use a mixin (see
+  below).
+
+  If you write an include file and need e.g. some temporary definitions that
+  should not be exported, you can prefix them with an underscore. Names like
+  e.g. "_S" or "_+" are not exported to the importing file. What's also not
+  exported are option values. If you set e.g. "max-steps" inside an imported
+  buffer, the importing buffer does not see the changed value but still uses its
+  own value.
+
+  As already said, an imported file cannot see the outer definitions. However,
+  sometimes that isolation isn't what you want. E.g. you could have your own
+  definition of boolean values, defining only "true", "false", and "if", then
+  include a file that defines the logical operators on top of that, and on top
+  of that the logic symbols. In order to do that you can use a "mixin", i.e.
+  instead of ":import" you can use ":mixin", e.g. ':mixin "std/Logic Symbols"'
+  defines (among others) simply "∧ := and", and the "∧" definition sees the
+  already existing definition for "and".
+
+  Sometimes, you want to include symbols, but don't want to directly see them
+  in dropdowns for code completion. In that case you can postfix the import
+  or mixin with "quiet", which hides the imported names from autocomplete and
+  the ≡ match list. The definitions are still there and active — they just
+  don't clutter the UI.
+
+  One final note: of course, you can also define your own definitions files and
+  import them into other buffers. Say you've written a buffer that you have
+  saved under "My Defs", then you can include it in the scratch buffer or
+  another named buffer via ':import "user/My Defs"'.
+*#
+
+# Example: define "tagged" booleans — "Bool" is just a free variable acting
+# as a visible marker (never reduced because it's not bound anywhere)
+true := λ x y . x Bool
+false := λ x y . y Bool
+if p t e := p (λ y . t) (λ y . e)
+# Embellish with logic operators in textual and symbolic form
+:mixin "std/Boolean Operators" quiet
+:mixin "std/Logic Symbols"
+:print true ∧ false
+:print false → true
+# Note how you now see your tagged booleans also in the output panel

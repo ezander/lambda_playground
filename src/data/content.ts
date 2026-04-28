@@ -46,7 +46,7 @@ export const DOCS: { label: string; src: string }[] = ordered(docMap, "doc", [
   "Printing",
   "Assertions",
   "Identification",
-  "Includes",
+  "Import",
   "Directives",
   "Editor",
   "Buffers",
