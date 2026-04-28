@@ -1,11 +1,20 @@
-# This is a mixin for boolean implementations. On itself it will fail
-# since boolean values and operators are not defined in this file. Include
-# as mixin after some bool implementation.
+# This is a mixin for boolean implementations. On its own it will fail
+# since boolean values and basic "if" are not defined in this file. Include
+# as mixin after some bool implementation having at least "true", "false" and "if" defined.
 
 # Check basic assertions on true, false, if
 :assert if true a b ≡ a
 :assert if false a b ≡ b
 
+# Define Boolean operators/junctors (can be defined generally)
+not p := if p false true
+and p q := if p q false
+or p q := if p true q
+implies p q := if p q true
+iff p q := if p q (not q)
+nand p q := not (and p q)
+nor p q := not (or p q)
+xor p q := not (iff p q)
 
 # Test some basic relations (double negation, de Morgan, ...)
 :assert[p:={true,false}] not(not p) ≡ p
