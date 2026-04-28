@@ -1,9 +1,75 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
-#* 
+# Note: this doc was written by Claude Code because Elmar had no time
+# anymore — may need polish or correction.
+#*
   Printing
-  ==========
+  ========
 
-  
-  
+  To see the result of a λ expression, just write it on its own line:
+
+    not (not true)
+
+  This is a "bare expression" — equivalent to writing ":print not (not
+  true)". The expression is normalized and the result appears in the
+  output panel alongside its source, the number of β-steps taken, and a
+  status line ("normal form", "did not terminate in N steps", or
+  "exceeded N nodes after M steps"). The match list (see
+  [doc/Identification]) shows any defs whose canonical form equals the
+  result.
+
+  In addition, the *last* bare expression on the page is automatically
+  loaded into the eval panel, so you can step through its β-reductions
+  one β-step at a time using the toolbar buttons or F-keys. Use
+  ":eval expr" to override which expression is loaded into the eval
+  panel without printing it (the last :eval wins, and it overrides the
+  last bare expression).
+
+  ── Comprehensions ──────────────────────────────────────────────────────
+
+  You can print over a binding sweep with the comprehension form:
+
+    :print[p:={true,false}] not (not p)
+
+  This evaluates the body once per binding combination and lists the
+  results in the output panel as a small table. Multiple bindings are
+  comma-separated and produce the cartesian product of values:
+
+    :print[p:={true,false},q:={true,false}] and p q
+
+  A binding's value list can be any comma-separated terms, not just
+  named defs.
+
+  ── Limits ──────────────────────────────────────────────────────────────
+
+  Print evaluation is bounded by two options:
+
+    max-steps-print  β-step count
+    max-size         AST-node ceiling (prevents memory blowup on terms
+                     that grow exponentially before normalizing)
+
+  When either is exceeded, the output panel shows a red status line with
+  the count reached. Raise them with ":set max-steps 5000" / ":set
+  max-size 50000", or via the settings modal. See [doc/Normalization] and
+  [doc/Directives].
+
+  ── Output panel ────────────────────────────────────────────────────────
+
+  Each print entry shows the source, the result, the match list, and a
+  status. Clicking an entry jumps the cursor to the corresponding source
+  line. Conversely, as the cursor moves through the editor, the matching
+  output cell is highlighted and scrolled into view — works across line
+  continuations and disambiguates ;-separated statements on one line.
+
+  The "auto-run" toggle re-runs prints/asserts on every edit. With
+  auto-run off, a "run" button appears whenever the source has changed
+  since the last evaluation. The "sort" button toggles between source
+  order and reverse-source-order display.
 *#
 
+# Examples
+:import "std/Church Booleans" quiet
+
+not (not true)                          # bare expression
+:print and true false                   # explicit :print, same effect
+:print[p:={true,false}] not (not p)     # comprehension over one binding
+:print[p:={true,false},q:={true,false}] or (not p) q
+:eval and (or true false) (not false)   # load into eval panel without printing

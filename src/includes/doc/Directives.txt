@@ -1,9 +1,70 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
-#* 
+# Note: this doc was written by Claude Code because Elmar had no time
+# anymore — may need polish or correction.
+#*
   Directives
   ==========
-    :set ...
-    
-  
+
+  Directives are line-leading instructions distinguished from regular
+  statements by their leading colon. The λ playground recognizes four:
+
+    :import "path"   include definitions from a module       [doc/Import]
+    :mixin  "path"   like :import but sees existing defs     [doc/Import]
+    :set    key val  set an option (max-steps, allow-eta, …)
+    :infix  name…    mark named defs as infix operators
+
+  Note that :print, :assert, and :eval — though they look directive-shaped
+  — are statement commands, not directives. They appear in the regular
+  statement stream and take a following expression. See [doc/Printing] and
+  [doc/Assertions].
+
+  ── :set ────────────────────────────────────────────────────────────────
+
+  :set has the form
+
+    :set <key> [value]
+
+  with these option keys:
+
+    max-steps        N      β-step limit (sets both -print and -ident)
+    max-steps-print  N      β-step limit for :print / bare exprs
+    max-steps-ident  N      β-step limit for definition-body normalization
+    max-history      N      eval-panel history depth
+    max-size         N      AST-node ceiling before reduction halts
+    normalize-defs          normalize definition bodies (default on)
+    allow-eta               enable η-reduction during normalization
+
+  Boolean options accept "true", "false", or no value (= true). The "no-"
+  prefix negates them: e.g. ":set no-normalize-defs" disables def
+  normalization. Numeric options accept either ":set max-steps 500" or
+  ":set max-steps = 500". See [doc/Normalization] for what most of these
+  options actually do.
+
+  Options set via :set apply only to the current buffer; they do not leak
+  out of imported files. The settings modal exposes a UI for the same
+  options at a global level.
+
+  ── :infix ──────────────────────────────────────────────────────────────
+
+  :infix takes one or more def names and marks them as infix operators:
+
+    + a b := a S b   # uses Church-numeral S; just here as syntax demo
+    :infix +
+    # "a + b" now parses as "+ a b"
+
+  An infix-marked operator works left-associatively: "1 + 2 + 3" parses as
+  "(1 + 2) + 3". There is no precedence — "1 + 2 * 3" also goes
+  left-to-right; "* 3" applies to the result of "1 + 2". If you need
+  precedence, use parentheses.
+
+  Multiple names can be marked at once: ":infix + * ^^".
 *#
 
+# Examples
+:import "std/Church Numerals Symbolic" quiet  # already :infix-marks +, *, etc.
+:print 2 + 3
+:print (2 + 3) * 4
+
+:set max-steps 500
+:set allow-eta
+:set no-normalize-defs
+:set normalize-defs           # turn it back on

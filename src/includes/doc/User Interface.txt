@@ -1,1 +1,80 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
+# Note: this doc was written by Claude Code because Elmar had no time
+# anymore — may need polish or correction.
+#*
+  User Interface
+  ==============
+
+  The playground is divided into a few cooperating areas. Each panel can
+  be collapsed via the small triangle next to its header.
+
+  ── Editor ──────────────────────────────────────────────────────────────
+
+  The main code area, where you write definitions, expressions, and
+  directives. Built on CodeMirror 6 with custom keybindings, syntax
+  highlighting, autocomplete, and click-to-jump on errors and links. See
+  [doc/Editor] for the full list of keys and behaviors.
+
+  Above the editor is a toolbar group covering buffer management
+  (load / save / save as / new / delete), download/upload as zip, a
+  share-link button (copies a URL containing the current buffer's
+  content), the symbol picker (Ω ▾), the settings and help buttons, and
+  fullscreen / theater-mode toggles.
+
+  ── Eval panel ──────────────────────────────────────────────────────────
+
+  Shows the most recently loaded expression and lets you step through its
+  β-reductions one at a time. Toolbar:
+
+    run        load the last bare/eval expression and reduce to NF
+    reset      reset to step 0
+    β-step     one β-reduction step
+    η-step     one η-reduction step (λx. f x → f)
+    continue   batch β-reduce up to "max-steps-run" steps
+
+  Keyboard equivalents: F5 (run), F6 (reset), F9 (continue), F10
+  (β-step), F11 (η-step).
+
+  An optional "show substitution" toggle inserts an explicit "e[x:=a]"
+  view between consecutive β-steps so you can see the substitution
+  before it's performed. The eval panel keeps a bounded history (size
+  controlled by "max-history") so you can scroll back through previously
+  loaded expressions.
+
+  ── Output panel ────────────────────────────────────────────────────────
+
+  Shows the result of every :print, :assert, and bare expression in
+  source order, with normalization status, step count, and match list.
+  See [doc/Printing] and [doc/Assertions]. The cell whose source range
+  contains the cursor is highlighted and scrolled into view as you move
+  around in the editor — useful for navigating large programs.
+
+  Toolbar:
+
+    auto-run   re-evaluate prints/asserts on every edit (default on)
+    run        run all prints/asserts once (visible only when auto-run is off)
+    sort       toggle source-order vs. reverse-source-order display
+
+  ── Issues panel ────────────────────────────────────────────────────────
+
+  Lists parse errors, warnings (failed assertions, redefinition warnings,
+  unknown options or directives, etc.), and import problems. Click an
+  entry to jump the cursor to the offending source location.
+
+  ── Modals ──────────────────────────────────────────────────────────────
+
+  - Help (?): tabbed reference covering Language, UI & editing, Grammar
+    (live EBNF, generated from the parser), and Credits.
+  - Settings (gear): numeric limits (max-steps-print, max-steps-run,
+    max-steps-ident, max-history, max-size), display options
+    (show-passing-equiv, wrap-width), and a few editor preferences.
+
+  Both modals: Enter to apply, Escape to cancel, click outside to apply.
+
+  ── Buffers ─────────────────────────────────────────────────────────────
+
+  Your work is auto-saved into named buffers in browser localStorage. The
+  buffer dropdown in the toolbar lets you switch between buffers, and
+  the *scratch* buffer is always available as a default sandbox. See
+  [doc/Buffers] for export/import as zip, sharing via URL, and naming
+  conventions.
+*#
