@@ -4,22 +4,21 @@
 
   Documentation
   -------------
-    [doc/Assertions]
-    [doc/Buffers]
-    [doc/Content]
-    [doc/Definitions]
-    [doc/Editor]
-    [doc/Identification]
-    [doc/Identifier]
-    [doc/Import]
-    [doc/Language]
-    [doc/Literature]
-    [doc/Normalization]
-    [doc/Directives]
-    [doc/Printing]
-    [doc/Testing]
-    [doc/User Interface]
     [doc/Welcome]
+    [doc/Content]
+    [doc/Language]
+    [doc/Identifier]
+    [doc/Definitions]
+    [doc/Normalization]
+    [doc/Printing]
+    [doc/Assertions]
+    [doc/Identification]
+    [doc/Directives]
+    [doc/Import]
+    [doc/Editor]
+    [doc/User Interface]
+    [doc/Buffers]
+    [doc/Literature]
 
   Tutorials
   ---------

@@ -40,19 +40,18 @@ export const DOCS: { label: string; src: string }[] = ordered(docMap, "doc", [
   "Welcome",
   "Content",
   "Language",
-  "Definitions",
   "Identifier",
+  "Definitions",
   "Normalization",
   "Printing",
   "Assertions",
   "Identification",
-  "Import",
   "Directives",
+  "Import",
   "Editor",
-  "Buffers",
   "User Interface",
+  "Buffers",
   "Literature",
-  "Testing",
 ]);
 
 export const EXAMPLES: { label: string; src: string }[] = ordered(exampleMap, "example", [
