@@ -65,3 +65,13 @@ Definition names starting with `_` are private: they work locally but are not ex
 ### Quiet imports
 
 `:import "path" quiet` imports all non-private names but marks them as *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through import chains (if B quietly imports C, and A imports B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.
+
+## Defaults
+
+`DEFAULT_CONFIG.autoSave` is `true` and load-bearing — Firefox tabs crash often enough that scratch/buffer loss is a real concern. Don't flip it back to `false` for "cleaner default UX"; the dirty-indicator tradeoff is accepted.
+
+## Language design
+
+Don't silently extend the language. Adding symbols to the picker or `\name`+Space expansion is a UI change; making them valid identifier characters or reserved tokens is a language design change that needs discussion. Reserved letters (λ α β η ∀ ∃ ⊢) are deliberate; new symbols may be reserved, freely usable, or have specific syntax rules — ask before touching `src/parser/lexer.ts` or `src/parser/grammar.ts`.
+
+Definitions in `src/includes/std/` and `src/includes/example/` should match the *natural call shape* rather than the maximum nested arity. E.g. `K y := λx. y` (K is a one-argument constant-function builder) over `K x y := x` (advertises a two-arg call nobody uses); `succ n := λs z. …` because `succ 5` is a number, not a thing waiting for `s` and `z`. Counterexample: when callers really do saturate the function (`and p q := …`, `if c t f := …`), the flat form is fine.
