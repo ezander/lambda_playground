@@ -81,6 +81,7 @@ export type EquivInfo = {
   negated:    boolean;
   offset:     number;
   line:       number;
+  endOffset:  number;
   notRun?:    boolean;  // auto-run was off when this statement was parsed
 };
 
@@ -101,6 +102,7 @@ export type PrintComprehensionInfo = {
   rows:     PrintComprehensionRow[];
   offset:   number;
   line:     number;
+  endOffset: number;
   notRun?:  boolean;
 };
 
@@ -122,6 +124,7 @@ export type EquivComprehensionInfo = {
   negated:   boolean;
   offset:    number;
   line:      number;
+  endOffset: number;
   notRun?:   boolean;
 };
 
@@ -133,7 +136,7 @@ export type ProgramResult = {
   rawExpr:     Term | null;
   defInfos:    DefInfo[];
   exprInfos:   { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[]; offset: number }[];
-  printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number; notRun?: boolean }[];
+  printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number; endOffset: number; notRun?: boolean }[];
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];

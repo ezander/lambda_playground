@@ -731,6 +731,10 @@ label {
   cursor: pointer;
 }
 .print-entry:hover { border-color: var(--accent); }
+.print-entry-current {
+  border-color: var(--accent);
+  background: #221f17;
+}
 
 .print-index {
   color: var(--muted);

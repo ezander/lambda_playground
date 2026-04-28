@@ -234,12 +234,12 @@ export const parser = new LambdaParser();
 
 export type RawBinding = { name: string; nameTok: IToken; termValues: Term[] };
 export type RawEmpty   = { kind: "empty" };
-export type RawPragma  = { kind: "pragma"; text: string; offset: number };
-export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number };
-export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number };
-export type RawEquiv   = { kind: "equiv"; lhs: Term; rhs: Term; bindings: RawBinding[] | null; negated: boolean; offset: number };
-export type RawExpr    = { kind: "expr"; term: Term; offset: number };
-export type RawEval    = { kind: "eval"; term: Term; offset: number };
+export type RawPragma  = { kind: "pragma"; text: string; offset: number; endOffset?: number };
+export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number; endOffset?: number };
+export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number; endOffset?: number };
+export type RawEquiv   = { kind: "equiv"; lhs: Term; rhs: Term; bindings: RawBinding[] | null; negated: boolean; offset: number; endOffset?: number };
+export type RawExpr    = { kind: "expr"; term: Term; offset: number; endOffset?: number };
+export type RawEval    = { kind: "eval"; term: Term; offset: number; endOffset?: number };
 export type RawStmt    = RawEmpty | RawPragma | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
 
 // ── 3. CST → AST visitor ─────────────────────────────────────────────────────
@@ -270,7 +270,13 @@ export class AstBuilder extends BaseCstVisitor {
     return (ctx.programItem ?? []).flatMap((item: CstNode) => {
       try {
         const stmt = this.visit(item) as RawStmt;
-        return stmt ? [stmt] : [];
+        if (!stmt) return [];
+        if (stmt.kind === "empty") return [stmt];
+        // programItem location covers content + trailing separator; endOffset
+        // sits on the trailing newline/`;` (inclusive), which is still on the
+        // statement's last content line — perfect for endLine computation.
+        const endOffset = item.location?.endOffset ?? stmt.offset;
+        return [{ ...stmt, endOffset }];
       } catch { return []; }
     });
   }

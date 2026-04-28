@@ -121,6 +121,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>continue</strong></td><td>reduce up to step limit from current position</td></tr>
             <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta; auto-reloads</td></tr>
             <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when off: print and ≡ statements are not evaluated on edit, only parsed; click <strong>run</strong> to evaluate once for current source</td></tr>
+            <tr><td><strong>cursor on print/≡/expr</strong></td><td>matching output cell is highlighted and scrolled into view (works across continuation lines and within <code>;</code>-separated statements)</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
             <tr><td><code>Ctrl-S</code></td><td>save current named buffer (no-op on scratch)</td></tr>

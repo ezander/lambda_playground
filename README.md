@@ -19,6 +19,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 - Live syntax highlighting: defined names, lambda binders, bound/free variables, comments
 - Greek letters and logic symbols in identifiers; backtick-quoted identifiers for arbitrary names
 - Issues panel showing errors and warnings with click-to-jump
+- Cursor-tracked output panel: matching cell highlighted and scrolled into view as the cursor moves
 - Named buffers with auto-save; export/import as zip; share via URL
 - Docs, tutorials, and examples accessible from toolbar dropdowns
 - CodeMirror 6 editor with custom keybindings, autocomplete, block comment auto-close, paragraph reflow

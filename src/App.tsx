@@ -433,13 +433,18 @@ function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, 
   );
 }
 
-function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale }: {
+function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale, cursorOffset }: {
   open: boolean; onToggle: () => void;
   printDesc: boolean; onTogglePrintDesc: () => void;
   programResult: ProgramResult; showPassingEquiv: boolean;
   onJumpTo: (offset: number) => void;
   autoRun: boolean; onToggleAutoRun: () => void; onRun: () => void; runStale: boolean;
+  cursorOffset: number | null;
 }) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    sectionRef.current?.querySelector(".print-entry-current")?.scrollIntoView({ block: "nearest" });
+  }, [cursorOffset]);
   const hasContent = programResult.printInfos.length > 0 || programResult.equivInfos.length > 0
     || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0;
   type PrintItem     = { kind: "print";      data: typeof programResult.printInfos[number] };
@@ -465,9 +470,9 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
         <button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>
       </>}>
       {hasContent ? (
-        <div className="print-section">
+        <div className="print-section" ref={sectionRef}>
           {items.map((item, i) => item.kind === "print" ? (
-            <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" π "}{item.data.src}
@@ -487,7 +492,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               )}
             </div>
           ) : item.kind === "equiv" ? (
-            <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" "}{item.data.src1}
@@ -512,7 +517,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               )}
             </div>
           ) : item.kind === "print-comp" ? (
-            <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" π "}{item.data.src}
@@ -542,7 +547,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               </div>
             </div>
           ) : (
-            <div key={i} className={"print-entry equiv-comp-entry" + (item.data.notRun ? " print-not-run" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
                 {" "}{item.data.src1}
@@ -619,7 +624,7 @@ export default function App() {
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
   const [normDefs, setNormDefs]       = useState<Map<string, DefEntry>>(new Map());
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
-  const [cursorPos, setCursorPos]     = useState<{ line: number; col: number } | null>(null);
+  const [cursorPos, setCursorPos]     = useState<{ line: number; col: number; offset: number } | null>(null);
   const [canUndo, setCanUndo]         = useState(false);
   const [canRedo, setCanRedo]         = useState(false);
   const [kinoLayout, setKinoLayout]   = useState(() => localStorage.getItem(KEY_KINO) === "1");
@@ -764,7 +769,8 @@ export default function App() {
       const line = update.state.doc.lineAt(pos);
       setCursorPos(prev => {
         const col = pos - line.from + 1;
-        return prev && prev.line === line.number && prev.col === col ? prev : { line: line.number, col };
+        return prev && prev.line === line.number && prev.col === col && prev.offset === pos
+          ? prev : { line: line.number, col, offset: pos };
       });
     }
     if (update.docChanged) {
@@ -1224,6 +1230,7 @@ export default function App() {
             onToggleAutoRun={() => updateConfig({ autoRun: !config.autoRun })}
             onRun={() => setRunForSource(debouncedSource)}
             runStale={!runEval}
+            cursorOffset={cursorPos?.offset ?? null}
           />
         </div>
       </main>

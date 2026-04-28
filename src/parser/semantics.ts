@@ -467,6 +467,7 @@ export function parseProgram(
         const merged = { ...defaultConfig, ...pragmaConfig };
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const endOffset   = stmt.endOffset ?? stmt.offset;
         const infx = getInfixNames(defEntries);
         const runEval = merged.runEval ?? true;
 
@@ -476,13 +477,13 @@ export function parseProgram(
             const compBindings: ComprehensionBinding[] = stmt.bindings.map(b => ({
               name: b.name, values: b.termValues.map(v => prettyPrint(v)),
             }));
-            printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows: [], offset: stmt.offset, line: currentLine, notRun: true });
+            printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows: [], offset: stmt.offset, line: currentLine, endOffset, notRun: true });
             exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
             for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           } else {
             printInfos.push({
               src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
-              offset: stmt.offset, line: currentLine, notRun: true,
+              offset: stmt.offset, line: currentLine, endOffset, notRun: true,
             });
             exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
           }
@@ -526,7 +527,7 @@ export function parseProgram(
             name: b.name,
             values: expandedBindings[bi].valueSrcs,
           }));
-          printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows, offset: stmt.offset, line: currentLine });
+          printComprehensionInfos.push({ src: baseSrc, bindings: compBindings, rows, offset: stmt.offset, line: currentLine, endOffset});
           exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
           for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
         } else {
@@ -543,6 +544,7 @@ export function parseProgram(
             match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             offset: stmt.offset,
             line:   currentLine,
+            endOffset,
           });
           exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         }
@@ -553,6 +555,7 @@ export function parseProgram(
         const merged = { ...defaultConfig, ...pragmaConfig };
         const cfg = { maxSteps: merged.maxStepsIdent, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const endOffset   = stmt.endOffset ?? stmt.offset;
         const infx = getInfixNames(defEntries);
         const runEval = merged.runEval ?? true;
 
@@ -563,14 +566,14 @@ export function parseProgram(
             const compBindings: ComprehensionBinding[] = stmt.bindings.map(b => ({
               name: b.name, values: b.termValues.map(v => prettyPrint(v)),
             }));
-            equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows: [], allPassed: true, negated: stmt.negated, offset: stmt.offset, line: currentLine, notRun: true });
+            equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows: [], allPassed: true, negated: stmt.negated, offset: stmt.offset, line: currentLine, endOffset, notRun: true });
             exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
             for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           } else {
             equivInfos.push({
               src1, src2, norm1: "", norm2: "",
               equivalent: false, terminated: false, negated: stmt.negated,
-              offset: stmt.offset, line: currentLine, notRun: true,
+              offset: stmt.offset, line: currentLine, endOffset, notRun: true,
             });
             exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, offset: stmt.offset });
           }
@@ -623,7 +626,7 @@ export function parseProgram(
             name: b.name,
             values: expandedBindings[bi].valueSrcs,
           }));
-          equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, negated: stmt.negated, offset: stmt.offset, line: currentLine });
+          equivComprehensionInfos.push({ src1, src2, bindings: compBindings, rows, allPassed, negated: stmt.negated, offset: stmt.offset, line: currentLine, endOffset});
           if (!allPassed) {
             equivFailed.value = true;
             const sym = stmt.negated ? "≢" : "≡";
@@ -650,6 +653,7 @@ export function parseProgram(
             negated: stmt.negated,
             offset: stmt.offset,
             line: currentLine,
+            endOffset,
           });
           if (!passed) {
             equivFailed.value = true;
@@ -675,6 +679,7 @@ export function parseProgram(
         const merged = { ...defaultConfig, ...pragmaConfig };
         const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
         const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const endOffset   = stmt.endOffset ?? stmt.offset;
         const infx = getInfixNames(defEntries);
         const runEval = merged.runEval ?? true;
 
@@ -682,7 +687,7 @@ export function parseProgram(
         if (!runEval) {
           printInfos.push({
             src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
-            offset: stmt.offset, line: currentLine, notRun: true,
+            offset: stmt.offset, line: currentLine, endOffset, notRun: true,
           });
         } else {
           const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
@@ -698,6 +703,7 @@ export function parseProgram(
             match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             offset: stmt.offset,
             line:   currentLine,
+            endOffset,
           });
         }
 
