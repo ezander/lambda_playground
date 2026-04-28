@@ -1,7 +1,10 @@
 #* 
   Some notes on the language
   ==========================
- 
+
+  Just some notes on parenthesis, associativity and precedence. Should be
+  extended or incorporated in a larger doc later.
+
 *#
 
 # Outer parenthesis may be omitted
@@ -17,6 +20,3 @@
 # Application takes precedence over abstraction
 ≡ (λx . (M N)) (λx . M N)
 ≢ ((λx . M) N) (λx . M N)
-
-
-

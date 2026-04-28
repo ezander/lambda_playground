@@ -22,6 +22,21 @@
     [doc/User Interface]
     [doc/Welcome]
 
+  Tutorials
+  ---------
+    [tutorial/Start]
+    [tutorial/Church booleans]
+
+  Examples
+  --------
+    [example/Truth Tables]
+    [example/Bool Implementations]
+    [example/Signed Numerals]
+    [example/List Operations]
+    [example/Tuples]
+    [example/Recursion]
+    [example/Equivalence and the FLT]
+    [example/SKI Calculus]
 
   System includes
   ---------------
@@ -38,4 +53,3 @@
     [std/Tutorial Utils]
 
 *#
-
