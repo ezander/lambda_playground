@@ -17,6 +17,7 @@ const SHORT: Record<string, string> = {
   "cml-op":       "op",
   "cml-lambda":   "lm",
   "cml-pi":       "kw",
+  "cml-cmd":      "cmd",
   "cml-pragma":   "pg",
   "cml-error":    "er",
   "cml-warning":  "wn",
@@ -298,11 +299,11 @@ describe("computeHighlightRanges", () => {
       // Before any includes — all free variables (two bare expressions)
       expect(tags).toMatch(/<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<pg>/);
       // After bool include — true is def-use, one/two still free (two bare, then :assert)
-      expect(tags).toMatch(/<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>:assert<\/kw>/);
-      expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n<pg>/);
+      expect(tags).toMatch(/<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<cmd>:assert<\/cmd>/);
+      expect(tags).toMatch(/<cmd>:assert<\/cmd>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n<pg>/);
       // After both includes — all def-use (bare exprs and :assert); xyz always free
-      expect(tags).toMatch(/<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>:assert<\/kw>/);
-      expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n$/m);
+      expect(tags).toMatch(/<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<cmd>:assert<\/cmd>/);
+      expect(tags).toMatch(/<cmd>:assert<\/cmd>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n$/m);
     });
   });
 });

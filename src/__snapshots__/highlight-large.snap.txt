@@ -24,5 +24,5 @@
 <defi>strange</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <fv>z</fv>
 <cm># print and equiv</cm>
 <defu>tru</defu>
-<kw>:assert</kw> <defu>tru</defu> <kw>≡</kw> <defu>tru</defu>
-<kw>:assert</kw> <defu>tru</defu> <kw>≢</kw> <defu>fls</defu>
+<cmd>:assert</cmd> <defu>tru</defu> <kw>≡</kw> <defu>tru</defu>
+<cmd>:assert</cmd> <defu>tru</defu> <kw>≢</kw> <defu>fls</defu>

@@ -43,9 +43,10 @@ export const lambdaTheme: Extension = EditorView.theme({
   ".cml-error":    { textDecoration: "underline wavy #b03030", textDecorationThickness: "1px", textUnderlineOffset: "4px" },
   ".cml-warning":  { textDecoration: "underline wavy #c9a84c", textDecorationThickness: "1px", textUnderlineOffset: "4px" },
   ".cml-pragma":   { color: "#7a8fa8", fontStyle: "italic" },
+  ".cml-cmd":      { color: "#7a8fa8", fontWeight: "600" },     // :print / :assert / :eval — active directives
   ".cml-op":       { color: "#9a8860" },
   ".cml-lambda":   { color: "#e8e4dc", fontWeight: "600" },
-  ".cml-pi":       { color: "#e8e4dc", fontWeight: "600" },
+  ".cml-pi":       { color: "#e8e4dc", fontWeight: "600" },     // ≡ / ≢
   ".cml-def-name": { color: "#c9a84c", fontWeight: "600" },
   ".cml-def-use":  { color: "#c9a84c" },
   ".cml-param":    { color: "#4caf7d", fontWeight: "600", fontStyle: "italic" },  // binder (declaration site)
