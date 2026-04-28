@@ -62,12 +62,13 @@ function completionSource(context: CompletionContext): CompletionResult | null {
       if (!word && !context.explicit) return null;
       return { from: word ? word.from : context.pos, options: SET_OPTIONS, filter: true };
     }
-    // Command completion for : at line start
+    // Command completion when the cursor is on a :word at line start
     const cmdWord = context.matchBefore(/:[a-z-]*/);
     if (cmdWord) {
       return { from: cmdWord.from, options: DIRECTIVE_OPTIONS, filter: true };
     }
-    return null;
+    // Otherwise fall through to def-name completion — for expressions
+    // after :print / :assert / :eval, names after :infix, etc.
   }
 
   // ── Link context: [...] in a comment ─────────────────────────────────────────
