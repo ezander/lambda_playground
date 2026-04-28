@@ -940,6 +940,8 @@ label {
 
 .modal a { color: var(--accent); }
 
+.modal code, .modal kbd { font-size: 0.9em; }
+
 .modal pre {
   font-family: var(--mono);
   font-size: 0.8rem;
@@ -973,6 +975,8 @@ label {
 }
 .help-table td:first-child { color: var(--accent); white-space: nowrap; }
 .help-table td:last-child  { color: var(--muted); }
+
+.help-table.plain td:first-child { color: var(--muted); width: 10rem; }
 
 /* ── Help tabs ── */
 .help-tabs {

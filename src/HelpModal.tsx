@@ -175,53 +175,64 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
         {/* ── Credits tab ── */}
         {tab === "credits" && <>
-          <table className="help-table"><tbody>
-            <tr><td><a href="https://react.dev" target="_blank" rel="noopener noreferrer">React</a></td><td>UI framework</td></tr>
-            <tr><td><a href="https://chevrotain.io" target="_blank" rel="noopener noreferrer">Chevrotain</a></td><td>lexer &amp; parser</td></tr>
-            <tr><td><a href="https://codemirror.net" target="_blank" rel="noopener noreferrer">CodeMirror 6</a></td><td>editor</td></tr>
-            <tr><td><a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">Vite</a></td><td>build tool &amp; dev server</td></tr>
-            <tr><td><a href="https://vitest.dev" target="_blank" rel="noopener noreferrer">Vitest</a></td><td>unit testing</td></tr>
-            <tr><td><a href="https://www.typescriptlang.org" target="_blank" rel="noopener noreferrer">TypeScript</a></td><td>language</td></tr>
-            <tr><td><a href="https://github.com/pieroxy/lz-string" target="_blank" rel="noopener noreferrer">lz-string</a></td><td>URL compression for sharing</td></tr>
-            <tr><td><a href="https://stuk.github.io/jszip" target="_blank" rel="noopener noreferrer">JSZip</a></td><td>zip export</td></tr>
-            <tr><td><a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a></td><td>icons</td></tr>
+          <p style={{ color: "var(--muted)", fontSize: "0.85em" }}>
+            Concept, design &amp; direction:{" "}
+            <a href="https://github.com/ezander/" target="_blank" rel="noopener noreferrer">Elmar Zander</a>
+          </p>
+
+          <p style={{ marginTop: "0.25rem", color: "var(--muted)", fontSize: "0.85em" }}>
+            Built with assistance from:{" "}
+            <a href="https://claude.ai" target="_blank" rel="noopener noreferrer">Claude (Anthropic)</a>
+          </p>
+
+          <h3>project</h3>
+          <table className="help-table plain" style={{ marginLeft: "1.25rem", width: "calc(100% - 1.25rem)" }}><tbody>
+            <tr>
+              <td>source</td>
+              <td><a href="https://github.com/ezander/lambda_playground" target="_blank" rel="noopener noreferrer">github.com/ezander/lambda_playground</a></td>
+            </tr>
+            <tr>
+              <td>issues</td>
+              <td><a href="https://github.com/ezander/lambda_playground/issues" target="_blank" rel="noopener noreferrer">Report an issue</a></td>
+            </tr>
+            <tr>
+              <td>license</td>
+              <td>
+                code{" "}
+                <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a>
+                {" · "}
+                content{" "}
+                <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE-CONTENT" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+              </td>
+            </tr>
+            <tr>
+              <td>version</td>
+              <td>
+                v{__APP_VERSION__}
+                {" · "}
+                <a
+                  href={`https://github.com/ezander/lambda_playground/commit/${__APP_COMMIT_FULL__}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >{__APP_COMMIT__}</a>
+                {" · "}
+                {__APP_BUILD_DATE__}
+              </td>
+            </tr>
           </tbody></table>
 
-          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
-            Concept, design &amp; direction —{" "}
-            <a href="https://github.com/ezander/" target="_blank" rel="noopener noreferrer">Elmar Zander</a>
-</p>
-
-          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
-            Built with assistance from{" "}
-            <a href="https://claude.ai" target="_blank" rel="noopener noreferrer">Claude</a>{" "}
-            (Anthropic)
-            {" · "}
-            <a href="https://github.com/ezander/lambda_playground" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
-            {" · "}
-            <a href="https://github.com/ezander/lambda_playground/issues" target="_blank" rel="noopener noreferrer">Report an issue</a>
-          </p>
-
-          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
-            License — code:{" "}
-            <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a>
-            {" · "}
-            content (docs, tutorials, examples):{" "}
-            <a href="https://github.com/ezander/lambda_playground/blob/main/LICENSE-CONTENT" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
-          </p>
-
-          <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85em" }}>
-            Version — v{__APP_VERSION__}
-            {" · "}
-            <a
-              href={`https://github.com/ezander/lambda_playground/commit/${__APP_COMMIT_FULL__}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontFamily: "var(--mono, monospace)" }}
-            >{__APP_COMMIT__}</a>
-            {" · "}
-            {__APP_BUILD_DATE__}
-          </p>
+          <h3>dependencies</h3>
+          <table className="help-table plain" style={{ marginLeft: "1.25rem", width: "calc(100% - 1.25rem)" }}><tbody>
+            <tr><td>language</td><td><a href="https://www.typescriptlang.org" target="_blank" rel="noopener noreferrer">TypeScript</a></td></tr>
+            <tr><td>build tool</td><td><a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">Vite</a></td></tr>
+            <tr><td>testing</td><td><a href="https://vitest.dev" target="_blank" rel="noopener noreferrer">Vitest</a></td></tr>
+            <tr><td>UI framework</td><td><a href="https://react.dev" target="_blank" rel="noopener noreferrer">React</a></td></tr>
+            <tr><td>editor</td><td><a href="https://codemirror.net" target="_blank" rel="noopener noreferrer">CodeMirror 6</a></td></tr>
+            <tr><td>lexer &amp; parser</td><td><a href="https://chevrotain.io" target="_blank" rel="noopener noreferrer">Chevrotain</a></td></tr>
+            <tr><td>icons</td><td><a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a></td></tr>
+            <tr><td>zip export</td><td><a href="https://stuk.github.io/jszip" target="_blank" rel="noopener noreferrer">JSZip</a></td></tr>
+            <tr><td>URL compression</td><td><a href="https://github.com/pieroxy/lz-string" target="_blank" rel="noopener noreferrer">lz-string</a></td></tr>
+          </tbody></table>
         </>}
       </div>
     </div>
