@@ -21,6 +21,8 @@ body {
   font-family: var(--serif);
   font-size: 18px;
   min-height: 100vh;
+  /* Off because <=, >=, ==, !=, -> ligatures clash with real ≤ ≥ ≡ ≢ → in source. */
+  font-variant-ligatures: none;
 }
 
 .app {
@@ -712,7 +714,7 @@ label {
 }
 
 
-/* ── π results ── */
+/* ── Output panel: print / assert results ── */
 .print-section {
   display: flex;
   flex-direction: column;

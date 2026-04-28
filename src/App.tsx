@@ -461,12 +461,12 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
   return (
     <Panel label="output" open={open} onToggle={onToggle}
       headerExtra={<>
-        <label className="panel-autorun-toggle" title="Auto-run: re-evaluate π/≡ on every edit">
+        <label className="panel-autorun-toggle" title="Auto-run: re-evaluate print/assert statements on every edit">
           <input type="checkbox" checked={autoRun} onChange={onToggleAutoRun} /> auto-run
         </label>
         <button className="panel-sort-btn" onClick={onRun} disabled={!runStale}
           style={autoRun ? { visibility: "hidden" } : undefined}
-          title="Run π/≡ for current source">run</button>
+          title="Run print/assert statements for current source">run</button>
         <button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>
       </>}>
       {hasContent ? (
@@ -475,7 +475,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
             <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
-                {" π "}{item.data.src}
+                {" "}{item.data.src}
               </code>
               {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
                 <code className="print-result">
@@ -520,7 +520,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
             <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
                 <span className="print-index">{item.data.line}:</span>
-                {" π "}{item.data.src}
+                {" "}{item.data.src}
                 <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
               </code>
               {item.data.notRun && <span className="eval-status not-run">not run</span>}
@@ -592,7 +592,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
           ))}
         </div>
       ) : (
-        <span className="placeholder">no π or ≡ statements in current program</span>
+        <span className="placeholder">no print or assert statements in current program</span>
       )}
     </Panel>
   );
