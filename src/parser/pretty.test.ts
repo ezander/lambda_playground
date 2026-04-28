@@ -41,8 +41,8 @@ describe("prettyPrint — backtick quoting", () => {
     expect(prettyPrint(Var("λ"))).toBe("`λ`");
   });
 
-  it("quotes π when used as a variable name", () => {
-    expect(prettyPrint(Var("π"))).toBe("`π`");
+  it("does not quote π — it is a regular identifier character", () => {
+    expect(prettyPrint(Var("π"))).toBe("π");
   });
 
 });

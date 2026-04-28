@@ -132,18 +132,6 @@ function insertAt(view: EditorView, text: string): boolean {
   return true;
 }
 
-// Insert text at the start of the current line (for line-level constructs like π and ≡).
-// If the line already starts with the text, do nothing.
-function insertAtLineStart(view: EditorView, text: string): boolean {
-  const line = view.state.doc.lineAt(view.state.selection.main.head);
-  if (line.text.startsWith(text)) return true;
-  view.dispatch({
-    changes: { from: line.from, insert: text },
-    selection: { anchor: line.from + text.length },
-  });
-  return true;
-}
-
 // ── Greek symbol table ────────────────────────────────────────────────────────
 // Shared by Tab-expansion and the symbol picker in App.tsx.
 
@@ -201,7 +189,7 @@ export const GREEK_SYMBOLS: GreekSymbol[] = [
   { sym: "ι", name: "iota"    }, { sym: "κ", name: "kappa"   },
   { sym: "λ", name: "lambda", shortcut: "alt-l" }, { sym: "μ", name: "mu"      },
   { sym: "ν", name: "nu"      }, { sym: "ξ", name: "xi"      },
-  { sym: "π", name: "pi", shortcut: "alt-p" }, { sym: "ρ", name: "rho"     },
+  { sym: "π", name: "pi"      }, { sym: "ρ", name: "rho"     },
   { sym: "σ", name: "sigma"   }, { sym: "τ", name: "tau"     },
   { sym: "υ", name: "upsilon" }, { sym: "φ", name: "phi"     },
   { sym: "χ", name: "chi"     }, { sym: "ψ", name: "psi"     },
@@ -269,8 +257,6 @@ export const lambdaKeymap: Extension = Prec.highest(keymap.of([
   { key: "Alt-L", run: v => insertAt(v, "λ") },
   { key: "Alt-b", run: v => insertAt(v, "β") },
   { key: "Alt-B", run: v => insertAt(v, "β") },
-  { key: "Alt-p", run: v => insertAtLineStart(v, "π") },
-  { key: "Alt-P", run: v => insertAtLineStart(v, "π") },
   { key: "Alt-e", run: v => insertAt(v, "≡") },
   { key: "Alt-E", run: v => insertAt(v, "≡") },
   { key: "Alt-n", run: v => insertAt(v, "≢") },

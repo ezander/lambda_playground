@@ -7,7 +7,6 @@ import {
   CmdAssert,
   CmdEval,
   Lambda,
-  Pi,
   Equiv,
   NEquiv,
   RedefAssign,
@@ -111,10 +110,7 @@ class LambdaParser extends CstParser {
   });
 
   printStmt = this.RULE("printStmt", () => {
-    this.OR([
-      { ALT: () => this.CONSUME(Pi) },
-      { ALT: () => this.CONSUME(CmdPrint) },
-    ]);
+    this.CONSUME(CmdPrint);
     this.OPTION(() => this.SUBRULE(this.comprehensionSpec));
     this.SUBRULE(this.term);
   });
@@ -312,7 +308,7 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   printStmt(ctx: any): RawPrint | RawEmpty {
-    const kwTok = (ctx.Pi?.[0] ?? ctx.CmdPrint?.[0]) as IToken | undefined;
+    const kwTok = ctx.CmdPrint?.[0] as IToken | undefined;
     if (!kwTok || !ctx.term) return { kind: "empty" };
     const term = this.visit(ctx.term[0]) as Term;
     const bindings = ctx.comprehensionSpec ? this.visit(ctx.comprehensionSpec[0]) as RawBinding[] : null;

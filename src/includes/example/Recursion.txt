@@ -22,13 +22,13 @@ fac ::= Y fac
 :set normalize-defs
 
 # For 0..2 the factorial is pretty fast
-π[n:={0,1,2}] fac n
+:print[n:={0,1,2}] fac n
 
 # For 3, and especially for 4 it can take a while and needs a higher step limit
 # Uncomment at your own risk
 :set max-steps 4000
-# π[n:={3,4}] fac n
+# :print[n:={3,4}] fac n
 :set max-steps 1000
 
 # The iterative version for Church numerals is much faster
-π[n:={0,1,2,3,4}] fact n
+:print[n:={0,1,2,3,4}] fact n

@@ -65,7 +65,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>identifiers</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code></td><td>alphanumeric + Greek (except λ, π); may start with a digit; α/η/∀/∃/⊢ reserved; β reserved unless fused to a binder name (<code>βx</code>)</td></tr>
+            <tr><td><code>x</code>, <code>x_1</code>, <code>42</code>, <code>ω</code>, <code>π₁</code></td><td>alphanumeric + Greek (except λ); may start with a digit; α/η/∀/∃/⊢ reserved; β reserved unless fused to a binder name (<code>βx</code>)</td></tr>
             <tr><td><code>+</code>, <code>∧</code>, <code>∧x</code></td><td>operator: starts with <code>+ - * / ^ ~ &amp; | &lt; &gt; ! ? =</code> or a free logic symbol; chars may freely mix</td></tr>
             <tr><td><code>`any name`</code></td><td>backtick-quoted — allows spaces and special chars</td></tr>
           </tbody></table>
@@ -74,8 +74,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <table className="help-table"><tbody>
             <tr><td><code>name := expr</code></td><td>define a name; expanded into later statements</td></tr>
             <tr><td><code>f x y := expr</code></td><td>shorthand for <code>f := \x y. expr</code></td></tr>
-            <tr><td><code>π expr</code></td><td>evaluate to normal form, show in output panel</td></tr>
-            <tr><td><code>π[a:=&#123;T,F&#125;] expr</code></td><td>comprehension: evaluate for each combination of substitutions</td></tr>
+            <tr><td><code>expr</code></td><td>bare expression: evaluate to normal form, show in output panel; last one is also loaded into the eval panel</td></tr>
+            <tr><td><code>:print expr</code></td><td>same as a bare expression — explicit form</td></tr>
+            <tr><td><code>:print[a:=&#123;T,F&#125;] expr</code></td><td>comprehension: evaluate for each combination of substitutions</td></tr>
             <tr><td><code>:assert lhs ≡ rhs</code></td><td>assert alpha-beta equivalence; halts script on failure</td></tr>
             <tr><td><code>:assert lhs ≢ rhs</code></td><td>assert non-equivalence; halts script on failure</td></tr>
             <tr><td><code>:assert[a:=&#123;T,F&#125;] lhs ≡ rhs</code></td><td>assertion comprehension over substitution combinations</td></tr>
@@ -87,14 +88,13 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:import "…" quiet</code></td><td>like import, but imported names are hidden from match list and autocomplete</td></tr>
             <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending)</td></tr>
             <tr><td><code>:mixin "…" quiet</code></td><td>like mixin, with names hidden from match list and autocomplete</td></tr>
-            <tr><td><code>:print expr</code></td><td>alternative to <code>π</code></td></tr>
             <tr><td><code>:eval expr</code></td><td>load expression into eval panel (last one wins; overrides bare expressions)</td></tr>
             <tr><td><code>:infix name1 name2 …</code></td><td>mark definitions as infix operators; <code>a + b</code> is read as <code>+ a b</code></td></tr>
           </tbody></table>
           <h3>settings (<code>:set</code>)</h3>
           <table className="help-table"><tbody>
             <tr><td><code>:set max-steps 500</code></td><td>set both max-steps-print and max-steps-ident</td></tr>
-            <tr><td><code>:set max-steps-print 500</code></td><td>beta step limit for π statements</td></tr>
+            <tr><td><code>:set max-steps-print 500</code></td><td>beta step limit for print statements (bare or <code>:print</code>)</td></tr>
             <tr><td><code>:set max-steps-ident 500</code></td><td>beta step limit for definition matching / normalization</td></tr>
             <tr><td><code>:set max-history 20</code></td><td>max history entries stored</td></tr>
             <tr><td><code>:set max-size 5000</code></td><td>max AST nodes before reduction halts</td></tr>
@@ -120,7 +120,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>η-step</strong></td><td>one eta step (λx. f x → f when x ∉ fv(f))</td></tr>
             <tr><td><strong>continue</strong></td><td>reduce up to step limit from current position</td></tr>
             <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta; auto-reloads</td></tr>
-            <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when off: π/≡ are not evaluated on edit, only parsed; click <strong>run</strong> to evaluate once for current source</td></tr>
+            <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when off: print and ≡ statements are not evaluated on edit, only parsed; click <strong>run</strong> to evaluate once for current source</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
             <tr><td><code>Ctrl-S</code></td><td>save current named buffer (no-op on scratch)</td></tr>
@@ -139,7 +139,6 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>`</code> without selection</td><td>insert paired backticks, cursor inside</td></tr>
             <tr><td><code>Alt-L</code></td><td>insert λ at cursor</td></tr>
             <tr><td><code>Alt-B</code></td><td>insert β at cursor (for eager binders, e.g. <code>λβx. body</code>)</td></tr>
-            <tr><td><code>Alt-P</code></td><td>insert π at start of line</td></tr>
             <tr><td><code>Alt-E</code></td><td>insert ≡ at cursor</td></tr>
             <tr><td><code>Alt-N</code></td><td>insert ≢ at cursor</td></tr>
             <tr><td><code>\name</code> + <kbd>space</kbd></td><td>insert symbol (e.g. <code>\omega</code> → ω)</td></tr>

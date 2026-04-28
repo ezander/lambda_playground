@@ -92,17 +92,17 @@ describe("computeHighlightRanges", () => {
       );
     });
 
-    it("π forward reference is fv", () => {
-      expect(tagged("π g\ng := λx. x\n")).toBe(
-        "<kw>π</kw> <fv>g</fv>\n" +
+    it("forward reference is fv", () => {
+      expect(tagged("g\ng := λx. x\n")).toBe(
+        "<fv>g</fv>\n" +
         "<defi>g</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <bv>x</bv>\n"
       );
     });
 
-    it("π back-reference is defu", () => {
-      expect(tagged("g := λx. x\nπ g\n")).toBe(
+    it("back-reference is defu", () => {
+      expect(tagged("g := λx. x\ng\n")).toBe(
         "<defi>g</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <bv>x</bv>\n" +
-        "<kw>π</kw> <defu>g</defu>\n"
+        "<defu>g</defu>\n"
       );
     });
   });
@@ -222,7 +222,7 @@ describe("computeHighlightRanges", () => {
   describe("large regression", () => {
     // Covers: pragma, line comment, block comment, :=, ::= (known + unknown),
     // multi-param def, nested lambdas, back-refs (defu), forward refs (fv),
-    // bound vars, free vars, π, ≡, ≢, backtick identifier.
+    // bound vars, free vars, bare expressions, ≡, ≢, backtick identifier.
     const SRC = [
       ":set max-steps 500",
       "# Church booleans",
@@ -249,7 +249,7 @@ describe("computeHighlightRanges", () => {
       "# free variable: z is never defined",
       "strange := λx. z",
       "# print and equiv",
-      "π tru",
+      "tru",
       ":assert tru ≡ tru",
       ":assert tru ≢ fls",
     ].join("\n") + "\n";
@@ -265,10 +265,10 @@ describe("computeHighlightRanges", () => {
     it("included def name is highlighted as def-use, not free var", () => {
       const lib = "foo := λx. x\n";
       const res = (p: string) => p === "lib" ? lib : null;
-      const parsed = parseProgram(":import \"lib\"\nπ foo\n", {}, res);
-      const ranges = computeHighlightRanges(":import \"lib\"\nπ foo\n", parsed);
-      const tags = tag(":import \"lib\"\nπ foo\n", ranges);
-      // foo after π should be defu (defined-use), not fv (free variable)
+      const parsed = parseProgram(":import \"lib\"\nfoo\n", {}, res);
+      const ranges = computeHighlightRanges(":import \"lib\"\nfoo\n", parsed);
+      const tags = tag(":import \"lib\"\nfoo\n", ranges);
+      // bare foo should be defu (defined-use), not fv (free variable)
       expect(tags).toContain("<defu>foo</defu>");
     });
 
@@ -279,14 +279,14 @@ describe("computeHighlightRanges", () => {
         p === "bool" ? boolLib : p === "num" ? numLib : null;
 
       const src = [
-        "π true one two",
+        "true one two",
         "true one two",
         ":import \"bool\"",
-        "π true one two",
+        "true one two",
         "true one two",
         ":assert (true one two) ≢ xyz",
         ":import \"num\"",
-        "π true one two",
+        "true one two",
         "true one two",
         ":assert (true one two) ≢ xyz",
       ].join("\n") + "\n";
@@ -295,16 +295,13 @@ describe("computeHighlightRanges", () => {
       const ranges = computeHighlightRanges(src, parsed);
       const tags = tag(src, ranges);
 
-      // Before any includes — all free variables (π, bare expr)
-      expect(tags).toMatch(/<kw>π<\/kw> <fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n/);
-      expect(tags).toMatch(/\n<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<pg>/);
-      // After bool include — true is def-use, one/two still free (π, bare expr, :assert)
-      expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n/);
-      expect(tags).toMatch(/\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>:assert<\/kw>/);
+      // Before any includes — all free variables (two bare expressions)
+      expect(tags).toMatch(/<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<fv>true<\/fv> <fv>one<\/fv> <fv>two<\/fv>\n<pg>/);
+      // After bool include — true is def-use, one/two still free (two bare, then :assert)
+      expect(tags).toMatch(/<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>\n<kw>:assert<\/kw>/);
       expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <fv>one<\/fv> <fv>two<\/fv>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n<pg>/);
-      // After both includes — all def-use (π, bare expr, :assert); xyz always free
-      expect(tags).toMatch(/<kw>π<\/kw> <defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n/);
-      expect(tags).toMatch(/\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>:assert<\/kw>/);
+      // After both includes — all def-use (bare exprs and :assert); xyz always free
+      expect(tags).toMatch(/<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>\n<kw>:assert<\/kw>/);
       expect(tags).toMatch(/<kw>:assert<\/kw>.*<defu>true<\/defu> <defu>one<\/defu> <defu>two<\/defu>.*<kw>≢<\/kw> <fv>xyz<\/fv>\n$/m);
     });
   });

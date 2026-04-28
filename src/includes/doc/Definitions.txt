@@ -22,7 +22,7 @@
 
 I := λx . x
 # I applied to I gives again the identity
-π I I 
+I I 
 
 #* 
   Note that definitions are somewhat similar to C macros in that in all lines
@@ -36,7 +36,7 @@ I := λx . x
 
 foo := foo bar
 # This prints `foo bar` in the output window, since foo is just a free var here
-π foo
+foo
 
 #* 
   If you redefine a definition, this is okay, as long as the normal form of the
@@ -55,7 +55,7 @@ I := λ x . y
 # If we redefine `foo` from above, you see that the `foo` on the right hand
 # side is just replace by the previous definition, still no recursion here.
 foo := foo quux
-π foo
+foo
 
 #* 
   Sometimes, it may happen, that you want to redefine something, that is already 

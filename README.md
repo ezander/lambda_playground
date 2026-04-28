@@ -8,7 +8,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 
 - Multi-line input: definitions and expressions, one per line (or `;`-separated)
 - Named definitions with eager expansion; shorthand `f x y := e` desugars to `f := λx y. e`
-- `π expr` / `:print expr` — evaluate to normal form and show in output panel
+- Bare `expr` (or `:print expr`) — evaluate to normal form and show in output panel; the last bare expression is also loaded into the eval panel
 - `:assert lhs ≡ rhs` — equivalence assertion (alpha-beta equivalence)
 - `:assert lhs ≢ rhs` — non-equivalence assertion
 - Comprehension bindings: `:assert[p:={true,false}] (not (not p)) ≡ p`
@@ -41,7 +41,7 @@ f :=                 # line continuation: indented lines
 
 ### Identifiers
 
-Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, apostrophes, Greek letters (`\u0370–\u03FF`, excluding λ and π; α, η, ∀, ∃, ⊢ are reserved; β is reserved unless fused to a binder name as in `λβx. body`), and operator characters (`+ - * / ^ ~ & | < > ! ? =`). Logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅) are also valid in identifiers.
+Plain identifiers are any non-empty sequence of ASCII letters, digits, underscores, apostrophes, Greek letters (`\u0370–\u03FF`, excluding λ; α, η, ∀, ∃, ⊢ are reserved; β is reserved unless fused to a binder name as in `λβx. body`), and operator characters (`+ - * / ^ ~ & | < > ! ? =`). Logic symbols (∧ ∨ ¬ → ↔ ⊤ ⊥ ⊕ ⊗ ∘ ≠ ∅) are also valid in identifiers. π is a regular identifier character (e.g. `π1`, `π_left`).
 
 Backtick-quoted identifiers allow arbitrary names:
 
@@ -61,11 +61,11 @@ Lines starting with `:` are directives:
 :import "user/my-buffer"        # import from a named user buffer
 :import "std/Pairs" quiet       # import without polluting autocomplete/match list
 :mixin "std/Boolean Tests"      # import that can see existing defs
-:print expr                     # alternative to π
+:print expr                     # explicit print (same as a bare expression)
 :assert lhs ≡ rhs               # equivalence assertion
 :assert lhs ≢ rhs               # non-equivalence assertion
 :set max-steps 500              # set both max-steps-print and max-steps-ident
-:set max-steps-print 500        # beta step limit for π statements
+:set max-steps-print 500        # beta step limit for print statements
 :set max-steps-ident 500        # beta step limit for definition matching
 :set max-history 20             # max history entries stored
 :set max-size 5000              # max AST nodes before reduction halts
@@ -82,13 +82,12 @@ true  := λx y. x          # define a name
 false := λx y. y
 and p q := p q false       # shorthand: f x y := e  means  f := λx y. e
 
-π and true false                   # print to output panel (normalized)
+and true false                     # bare expression: print to output, last is also loaded into the eval panel
 :assert (and true false) ≡ false   # assert equivalence
 :assert true ≢ false               # assert non-equivalence
-and true false                     # last expression is loaded into the eval panel
 ```
 
-Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning when the normal form changes. `π` and `:assert` results appear in the output panel; a failing assertion halts further evaluation.
+Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning when the normal form changes. Bare expressions and `:assert` results appear in the output panel; a failing assertion halts further evaluation.
 
 ## Controls
 
@@ -110,7 +109,6 @@ Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning
 | `` ` `` | Wrap in backticks, or insert paired backticks |
 | `#*` | Auto-insert closing `*#` |
 | `Alt-L` | Insert λ at cursor |
-| `Alt-P` | Insert π at start of line |
 | `Alt-E` | Insert ≡ at cursor |
 | `Alt-N` | Insert ≢ at cursor |
 | `Alt-Space` | Autocomplete (def names, directives, import paths) |

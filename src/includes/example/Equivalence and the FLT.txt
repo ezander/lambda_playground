@@ -29,9 +29,9 @@
 
 :mixin "std/Combinators"
 :set max-steps 2
-π (Y F)
+(Y F)
 :set max-steps 1 # F (Y F) is one β-step into (Y F)'s reduction...
-π (F (Y F))
+(F (Y F))
 :set max-steps 1000
 
 #*
@@ -113,7 +113,7 @@ anyPowTriple n0 :=
   anyNat n0 λβn . anyTriple (n + n + 1) n
 
 # For n0 = 2, this actually finds one (the first triple: 3,4,5)
-π anyPowTriple 2
+:print anyPowTriple 2
 
 # Now, if we really could disprove the following (i.e. n0 = 3), we would have
 # shown Fermat's Last Theorem to be true (which you didn't really expect from a

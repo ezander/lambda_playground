@@ -53,4 +53,4 @@ and true false
 # E.g. if you have the Church definition of true and false
 :import "std/Church Booleans"
 predicate := true
-π predicate `The predicate is true` `The predicate is false`
+predicate `The predicate is true` `The predicate is false`

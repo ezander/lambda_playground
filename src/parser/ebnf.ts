@@ -13,7 +13,6 @@ const TOKEN_LABELS: Record<string, string> = {
   CmdEval:       "':eval'",
   NewLine:       "'\\n'",
   Semi:          "';'",
-  Pi:            "'π'",
   Equiv:         "'≡'",
   NEquiv:        "'≢'",
   DefAssign:     "':='",

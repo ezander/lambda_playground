@@ -55,7 +55,7 @@ normalize s := pair (s (λ a b . (a - b))) (s (λa b . (b - a)))
 +' s r := normalize (pair ((first s) + (first r)) ((second s) + (second r)))
 :infix +'
 
-π -4' +' 3'
-π 5' +' -2'
+-4' +' 3'
+5' +' -2'
 
 # Now it's up to you to define substraction, multiplication, comparisons, etc.

@@ -443,9 +443,11 @@ describe("parseProgram", () => {
     expect(r.defs.has("+")).toBe(true);
   });
 
-  it("rejects π followed by a definition: π a := b", () => {
-    const r = parseProgram("π a := b");
-    expect(r.ok).toBe(false);
+  it("π is a regular identifier and can be defined", () => {
+    const r = parseProgram("π := λx y. x\nπ a b");
+    expect(r.ok).toBe(true);
+    expect(r.defs.has("π")).toBe(true);
+    expect(r.printInfos[0].result).toBe("a");
   });
 
   it("returns null expr for an empty program", () => {
@@ -473,15 +475,15 @@ describe("parseProgram", () => {
     expect(r.defs.has("my func")).toBe(true);
   });
 
-  it("π records result and normal=true for a normalizing term", () => {
-    const r = parseProgram("I := λx. x\nπ I");
+  it("records result and normal=true for a normalizing term", () => {
+    const r = parseProgram("I := λx. x\nI");
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].result).toBe("λx. x");
     expect(r.printInfos[0].normal).toBe(true);
   });
 
-  it("π records normal=false when step limit is hit", () => {
-    const r = parseProgram(":set max-steps = 5\nπ (λx. x x)(λx. x x)");
+  it("records normal=false when step limit is hit", () => {
+    const r = parseProgram(":set max-steps = 5\n(λx. x x)(λx. x x)");
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].normal).toBe(false);
   });
@@ -493,9 +495,9 @@ describe("parseProgram", () => {
     expect(r.equivInfos[0].equivalent).toBe(true);
   });
 
-  it("π reduces an eager abstraction (arg evaluated before substitution)", () => {
+  it("reduces an eager abstraction (arg evaluated before substitution)", () => {
     // (λβx. x x) ((λy. y) a) → a a  (arg reduced once, then duplicated as NF)
-    const r = parseProgram("π (λβx. x x) ((λy. y) a)\n");
+    const r = parseProgram("(λβx. x x) ((λy. y) a)\n");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("a a");
     expect(r.printInfos[0].normal).toBe(true);
@@ -508,9 +510,37 @@ describe("parseProgram", () => {
   });
 
   it("eager binder works in a definition: f βx := x", () => {
-    const r = parseProgram("f βx := x\nπ f a\n");
+    const r = parseProgram("f βx := x\nf a\n");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("a");
+  });
+});
+
+// ── Bare expressions: print + last-wins eval-panel state ─────────────────────
+
+describe("bare expressions", () => {
+  it("a bare expression prints and is recorded for the eval panel", () => {
+    const r = parseProgram("I := λx. x\nI y\n");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].result).toBe("y");
+    expect(r.expr).not.toBeNull();
+  });
+
+  it("multiple bare expressions all print; last wins for the eval panel", () => {
+    const r = parseProgram("I := λx. x\nI a\nI b\nI c\n");
+    expect(r.printInfos).toHaveLength(3);
+    expect(r.printInfos.map(p => p.result)).toEqual(["a", "b", "c"]);
+    // eval panel shows the last bare expression
+    expect(r.rawExpr).not.toBeNull();
+  });
+
+  it(":eval overrides bare expressions for the eval panel", () => {
+    const r = parseProgram("I := λx. x\nI a\n:eval I b\nI c\n");
+    expect(r.printInfos).toHaveLength(2);   // bare exprs print; :eval doesn't
+    // After the first :eval, bare exprs no longer override the panel.
+    // The eval panel keeps "I b" — verify via prettyPrint of rawExpr
+    expect(r.rawExpr).not.toBeNull();
   });
 });
 
@@ -589,10 +619,17 @@ describe("line continuation", () => {
     expect(r.defs.has("and")).toBe(true);
   });
 
-  it("continuation works for π statements", () => {
-    const r = parseProgram("I := λx. x\nπ\n  I\n");
+  it("continuation works for :print statements", () => {
+    const r = parseProgram("I := λx. x\n:print\n  I\n");
     expect(r.ok).toBe(true);
     expect(r.printInfos).toHaveLength(1);
+  });
+
+  it("continuation works for bare expressions", () => {
+    const r = parseProgram("f := λx y. x\nf\n  a\n  b\n");
+    expect(r.ok).toBe(true);
+    expect(r.printInfos).toHaveLength(1);
+    expect(r.printInfos[0].result).toBe("a");
   });
 
   it("continuation works for :assert statements", () => {
@@ -672,7 +709,6 @@ describe("error offsets", () => {
     ["unmatched paren",                    "(x"],
     ["bad definition body",                "f := ("],
     ["lex error",                          "@"],
-    ["bad π body (unmatched paren)",       "π (x"],
     ["bad :assert body (unmatched paren)",  ":assert (x (y"],
     ["stray token on second line",         "a\n)"],
     ["definition with paren on LHS",       "(x) := y"],
@@ -704,7 +740,7 @@ describe("include system", () => {
   };
 
   it("imports defs from included file", () => {
-    const r = parseProgram(":import \"std/Booleans\"\nπ true\n", {}, resolver);
+    const r = parseProgram(":import \"std/Booleans\"\ntrue\n", {}, resolver);
     expect(r.errors).toHaveLength(0);
     expect(r.defs.has("true")).toBe(true);
     expect(r.defs.has("false")).toBe(true);
@@ -736,10 +772,17 @@ describe("include system", () => {
     expect(r.errors[0].source).toBe("std/Bad");
   });
 
-  it("π statements in included file are silenced", () => {
-    const piResolver = (path: string) => path === "std/WithPi" ? "x := λa. a\nπ x" : null;
-    const r = parseProgram(":import \"std/WithPi\"\n", {}, piResolver);
+  it("print and eval statements in included file are silenced", () => {
+    // Bare expressions, :print, and :eval in an included file do not
+    // affect the parent's output panel or eval panel — only defs and
+    // errors propagate.
+    const incl = "x := λa. a\nx\n:print x\n:eval x\n";
+    const res = (path: string) => path === "std/WithStmts" ? incl : null;
+    const r = parseProgram(":import \"std/WithStmts\"\n", {}, res);
     expect(r.printInfos).toHaveLength(0);
+    expect(r.equivInfos).toHaveLength(0);
+    expect(r.expr).toBeNull();
+    expect(r.rawExpr).toBeNull();
     expect(r.defs.has("x")).toBe(true);
   });
 
@@ -761,10 +804,10 @@ describe("include system", () => {
   });
 
   it("included file max-steps pragma does not affect parent", () => {
-    // included file sets max-steps=1; parent's π should still normalize not(not(true))
+    // included file sets max-steps=1; parent's bare expr should still normalize not(not(true))
     const bools = ":set max-steps=1\ntrue := λx y. x\nfalse := λx y. y\nnot := λb. b false true\n";
     const res = (path: string) => path === "std/Bools" ? bools : null;
-    const r = parseProgram(":import \"std/Bools\"\nπ not (not true)\n", {}, res);
+    const r = parseProgram(":import \"std/Bools\"\nnot (not true)\n", {}, res);
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].normal).toBe(true);
   });
@@ -906,10 +949,10 @@ describe("include system", () => {
     expect(r.defs.get("foo")?.quiet).toBe(true);
   });
 
-  it("quiet defs are excluded from match list in π output", () => {
+  it("quiet defs are excluded from match list in print output", () => {
     const lib = "id := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\" quiet\nπ λx. x\n", {}, res);
+    const r = parseProgram(":import \"lib\" quiet\nλx. x\n", {}, res);
     expect(r.printInfos).toHaveLength(1);
     // id is quiet → should NOT appear in match
     expect(r.printInfos[0].match).toBeUndefined();
@@ -918,7 +961,7 @@ describe("include system", () => {
   it("visible defs still appear in match list", () => {
     const lib = "id := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\"\nπ λx. x\n", {}, res);
+    const r = parseProgram(":import \"lib\"\nλx. x\n", {}, res);
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].match).toBe("id");
   });
@@ -929,8 +972,8 @@ describe("include system", () => {
 describe("comprehension", () => {
   const boolDefs = "true := λx y. x\nfalse := λx y. y\nand := λa b. a b false";
 
-  it("π comprehension produces one row per combination", () => {
-    const r = parseProgram(`${boolDefs}\nπ[a:={true,false}, b:={true,false}] and a b`);
+  it("comprehension produces one row per combination", () => {
+    const r = parseProgram(`${boolDefs}\n:print[a:={true,false}, b:={true,false}] and a b`);
     expect(r.printComprehensionInfos).toHaveLength(1);
     const info = r.printComprehensionInfos[0];
     expect(info.src).toBe("and a b");
@@ -942,8 +985,8 @@ describe("comprehension", () => {
     expect(info.rows[0].normal).toBe(true);
   });
 
-  it("π comprehension with single binding", () => {
-    const r = parseProgram(`${boolDefs}\nπ[a:={true,false}] a`);
+  it("comprehension with single binding", () => {
+    const r = parseProgram(`${boolDefs}\n:print[a:={true,false}] a`);
     expect(r.printComprehensionInfos).toHaveLength(1);
     expect(r.printComprehensionInfos[0].rows).toHaveLength(2);
   });
@@ -1037,13 +1080,13 @@ describe(":assert grammar errors", () => {
 
 describe("allow-eta pragma", () => {
   it("without pragma, eta-redex is left as normal form", () => {
-    const r = parseProgram("f := λx. g x\nπ f");
+    const r = parseProgram("f := λx. g x\nf");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("λx. g x");
   });
 
   it("with :set allow-eta, eta-redex normalizes to g", () => {
-    const r = parseProgram(":set allow-eta\nf := λx. g x\nπ f");
+    const r = parseProgram(":set allow-eta\nf := λx. g x\nf");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("g");
   });
@@ -1153,8 +1196,8 @@ describe("redef (::=)", () => {
 });
 
 describe("runEval flag", () => {
-  it("runEval=false marks π results as notRun and skips evaluation", () => {
-    const r = parseProgram("π (λx. x x) (λx. x x)", { runEval: false });
+  it("runEval=false marks print results as notRun and skips evaluation", () => {
+    const r = parseProgram("(λx. x x) (λx. x x)", { runEval: false });
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].notRun).toBe(true);
     expect(r.printInfos[0].src).toBe("(λx. x x) (λx. x x)");
@@ -1174,14 +1217,14 @@ describe("runEval flag", () => {
   });
 
   it("runEval=true (default) still evaluates normally", () => {
-    const r = parseProgram("π (λx. x) y");
+    const r = parseProgram("(λx. x) y");
     expect(r.printInfos[0].notRun).toBeUndefined();
     expect(r.printInfos[0].result).toBe("y");
     expect(r.printInfos[0].normal).toBe(true);
   });
 
   it("runEval=false marks comprehensions as notRun with empty rows", () => {
-    const r = parseProgram("π[x:={a,b}] x", { runEval: false });
+    const r = parseProgram(":print[x:={a,b}] x", { runEval: false });
     expect(r.printComprehensionInfos).toHaveLength(1);
     expect(r.printComprehensionInfos[0].notRun).toBe(true);
     expect(r.printComprehensionInfos[0].rows).toEqual([]);

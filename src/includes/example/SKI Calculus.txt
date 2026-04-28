@@ -35,7 +35,7 @@ not b := b F T
 
 # And then `and` or `or` are of cause also the same as for Church booleans
 or a b := a T b
-π[a:={T,F},b:={T,F}] or a b
+:print[a:={T,F},b:={T,F}] or a b
 
 and a b := a b F
-π[a:={T,F},b:={T,F}] and a b
+:print[a:={T,F},b:={T,F}] and a b

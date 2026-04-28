@@ -9,7 +9,7 @@
 
 # We can define lists the e.g. like that
 
-π cons 3 (cons 5 (cons 2 nil)) # represents the list [3 5 2]
+cons 3 (cons 5 (cons 2 nil)) # represents the list [3 5 2]
 
 # To do that in a somewhat nicer fashing we'll redefine ∅ (\emptyset) to mean
 # nil and also // to mean `cons` but as an infix operator (of course, you could
@@ -49,4 +49,4 @@ sumSquare := fold (λ n m. n + m) 0 Lsqr
 
 # We don't have numerals over 32 defined, so we do it here for identification
 38 := 30 + 8
-π sumSquare # should be 38=9+25+4
+sumSquare # should be 38=9+25+4

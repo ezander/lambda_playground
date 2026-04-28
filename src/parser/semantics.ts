@@ -672,8 +672,38 @@ export function parseProgram(
       }
 
       case "expr": {
+        const merged = { ...defaultConfig, ...pragmaConfig };
+        const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
+        const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const infx = getInfixNames(defEntries);
+        const runEval = merged.runEval ?? true;
+
+        // A bare expression prints to the output panel (like :print expr).
+        if (!runEval) {
+          printInfos.push({
+            src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
+            offset: stmt.offset, line: currentLine, notRun: true,
+          });
+        } else {
+          const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
+          const runResult = timedNorm(`expr ${shortSrc(prettyPrint(stmt.term))}`, expanded, cfg);
+          const { term: normalizedTerm, kind, steps } = runResult;
+          const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
+          printInfos.push({
+            src:    prettyPrint(stmt.term),
+            result: prettyPrint(normalizedTerm),
+            normal: kind === "normalForm",
+            steps,
+            size:   kind === "sizeLimit" ? runResult.size : undefined,
+            match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
+            offset: stmt.offset,
+            line:   currentLine,
+          });
+        }
+
+        // Last bare expression also copies to the eval panel (unless an
+        // explicit :eval has been seen — that wins).
         if (!hasEval) {
-          const infx = getInfixNames(defEntries);
           rawExpr = stmt.term;
           expr    = expandDefs(swapInfix(stmt.term, infx), defs);
         }

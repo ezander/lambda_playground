@@ -26,14 +26,14 @@ user input → lexer.ts → grammar.ts (CST) → semantics.ts (AST + eval) → A
 - **`src/parser/ast.ts`** — Three node types: `Var`, `Abs` (single-param), `App`. Factory functions.
 - **`src/parser/lexer.ts`** — Chevrotain tokenizer.
 - **`src/parser/grammar.ts`** — Chevrotain CST parser + AST visitor. Desugars multi-param lambdas, folds left-associative application.
-- **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates π/≡/≢, handles `:import`/`:mixin` directives with caching.
+- **`src/parser/semantics.ts`** — Walks the statement list: resolves definitions, evaluates print/≡/≢ statements (bare expressions are equivalent to `:print`), handles `:import`/`:mixin` directives with caching.
 - **`src/parser/types.ts`** — Shared types: `ProgramResult`, `LambdaError`, `PragmaConfig`, `ProgramRunConfig`, `PositionMap`, etc.
 - **`src/parser/parser.ts`** — Barrel re-export; `parseProgram(source, config, resolver)` entry point.
 - **`src/parser/pretty.ts`** — Serializes AST back to surface syntax.
 - **`src/evaluator/eval.ts`** — Normal-order beta reduction. `EvalConfig = { maxSteps?, maxSize? }`. `RunResult` has kinds `normalForm | stepLimit | sizeLimit`. Also exports `termSize`, `buildNormDefs`, `findMatch` (skips `_`-prefixed names).
 - **`src/highlight.ts`** — `computeHighlightRanges(text, parsed)` pure function; CM6 `ViewPlugin` + `StateField` (`parsedField`) wiring; hover tooltips for errors/warnings.
 - **`src/links.ts`** — CM6 decorations for `[type/name]` comment links and `:import`/`:mixin` directive paths. Directive paths require Ctrl-click (underline/cursor only visible while Ctrl held via `CtrlTrackerPlugin`).
-- **`src/editor.ts`** — CM6 base theme, custom keymap (Alt-L/P/E/N, bracket wrapping, `\name`+Space expansion), line numbers.
+- **`src/editor.ts`** — CM6 base theme, custom keymap (Alt-L/B/E/N, bracket wrapping, `\name`+Space expansion), line numbers.
 - **`src/autocomplete.ts`** — Alt-Space autocomplete: def names, directive commands, import paths. Scroll wheel moves selection via global wheel listener.
 - **`src/rewrap.ts`** — Ctrl-R paragraph reflow for block comments; ruler line; wrap width from config.
 - **`src/storage.ts`** — `SAVE_PREFIX`, `getSavedSlots`, `resolveContent`, `contentExists`; all localStorage key constants.
@@ -52,9 +52,9 @@ Top-level surface forms:
 - **Application**: juxtaposition, left-associative (`f x y` = `(f x) y`).
 - **Substitution sugar**: `e[x:=a]` desugars to `(λx. e) a`. Eager variant: `e[βx:=a]`.
 - **Definitions**: `name params := body` (`::=` for redefinition). The name slot rejects β; param slots accept it.
-- **Statements**: `π expr` / `:print` (evaluate and show), `:assert lhs ≡ rhs` and `:assert lhs ≢ rhs` (alpha-beta equivalence assertions), `:eval expr`. `:print` and `:assert` each accept a comprehension prefix `[x := {a,b,c}]`.
+- **Statements**: bare `expr` (or `:print expr`) — evaluate and show in the output panel; the last bare expression is also loaded into the eval panel. `:assert lhs ≡ rhs` and `:assert lhs ≢ rhs` (alpha-beta equivalence assertions). `:eval expr` (explicit eval-panel override). `:print` and `:assert` each accept a comprehension prefix `[x := {a,b,c}]`.
 - **Directives** (line-start): `:import`, `:mixin`, `:set`, `:infix`. Pragmas `#! key value` inside line comments overlap with `:set`.
-- **Reserved letters**: λ, π, α, β, η, ∀, ∃, ⊢ — never absorbed into identifiers regardless of position.
+- **Reserved letters**: λ, α, β, η, ∀, ∃, ⊢ — never absorbed into identifiers regardless of position. (π is a regular identifier character.)
 
 For the full EBNF, see [`docs/grammar.md`](docs/grammar.md) (regenerate with `npm run gen:grammar`) or open the Grammar tab in the running app's Help modal — both are produced from the live Chevrotain parser via `src/parser/ebnf.ts`.
 

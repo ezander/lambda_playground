@@ -9,7 +9,7 @@ programItem        ::=  statementSep | statement statementSep | directiveLine
 statementSep       ::=  '\n' | ';'
 statement          ::=  printStmt | assertStmt | evalStmt | definition | term
 directiveLine      ::=  ':…' '\n'
-printStmt          ::=  ('π' | ':print') comprehensionSpec? term
+printStmt          ::=  ':print' comprehensionSpec? term
 assertStmt         ::=  ':assert' comprehensionSpec? term ('≡' | '≢') term
 evalStmt           ::=  ':eval' term
 definition         ::=  identifier binder* (':=' | '::=') term

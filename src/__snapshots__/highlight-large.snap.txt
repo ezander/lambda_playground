@@ -23,6 +23,6 @@
 <cm># free variable: z is never defined</cm>
 <defi>strange</defi> <op>:=</op> <lm>λ</lm><pm>x</pm><lm>.</lm> <fv>z</fv>
 <cm># print and equiv</cm>
-<kw>π</kw> <defu>tru</defu>
+<defu>tru</defu>
 <kw>:assert</kw> <defu>tru</defu> <kw>≡</kw> <defu>tru</defu>
 <kw>:assert</kw> <defu>tru</defu> <kw>≢</kw> <defu>fls</defu>

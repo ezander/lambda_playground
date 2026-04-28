@@ -18,10 +18,9 @@
     * Ctrl+space     - Code completion. Let's you select from defined or 
                        imported symbols, or from possible include files.
     * Ctrl+/         - Comments/Uncomments the current line/selected lines.
-    * Alt+l          - Inserts λ the current cursor position.
-    * Alt+p          - Inserts π at the start of the line.
-    * Alt+e          - Inserts ≡ at the start of the line.
-    * Alt+n          - Inserts ≢ at the start of the line.
+    * Alt+l          - Inserts λ at the current cursor position.
+    * Alt+e          - Inserts ≡ at the current cursor position.
+    * Alt+n          - Inserts ≢ at the current cursor position.
     * \name + space  - Inserts the character given by "name" at the current 
                        position. Case-sensitive. E.g. "\Sigma " inserts "Σ", 
                        "\and " inserts "∧", and "\equiv " inserts "≡"

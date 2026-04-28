@@ -14,7 +14,6 @@ import {
   BlockComment,
   UnterminatedBlockComment,
   Lambda,
-  Pi,
   Equiv,
   RedefAssign,
   DefAssign,
@@ -67,7 +66,7 @@ function applyTokenRanges(
       out.push({ from, to, cls: "cml-op" });
     else if (tokenMatcher(tok, Lambda) || tokenMatcher(tok, Dot))
       out.push({ from, to, cls: "cml-lambda" });
-    else if (tok.tokenType === Pi || tok.tokenType === Equiv || tok.tokenType === NEquiv)
+    else if (tok.tokenType === Equiv || tok.tokenType === NEquiv)
       out.push({ from, to, cls: "cml-pi" });
     else if (tok.tokenType === CmdPrint || tok.tokenType === CmdAssert || tok.tokenType === CmdEval)
       out.push({ from, to, cls: "cml-pi" });
