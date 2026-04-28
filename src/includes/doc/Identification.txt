@@ -1,1 +1,52 @@
-# WIP: Attention, this is still work in progress and will be expanded soon...
+#*
+  Identification
+  ==============
+
+  In order to not only show the final lambda expression after β-substitutions
+  (normal form if we can reduce that far), it's nicer to see the "meaning" of
+  the result. E.g. with the typical definitions of Church booleans "and true
+  false", would result in
+
+    λ x y . y
+
+  With some training in λ calculus one might see directly that this is "false",
+  but still this is awkward (e.g. which number is "λ s z . s (s (s (s (s (s (s
+  z))))))"?) and could also be wrong if you used a different representation. So,
+  in all the output panels, we try to identify the result form with any of the
+  definitions we have already encountered. Therefore, all definitions are
+  (usually) normalized and the result then canonicalized. For that they are
+  translated into so-called De Bruijn-style indices, where arguments are only
+  referenced by position (for the nit-picky: we go inside out here, not
+  outside-in), free variables are kept as is, and thus the naming of bound
+  variables does not matter. For example, for Church encoded booleans we have
+
+    true  := λx y. x #  →  λ(λ(#0))
+    false := λx y. y #  →  λ(λ(#1))
+
+  or for some bogus term "λx . foo x"
+
+    λx. foo x   #  →  λ(@(foo,#0))
+
+  The good thing about this is: we identify an expression that results in "true"
+  with "true", whether it's really "λx y.x" or "λa b.a". When you have chosen to
+  use "λ x y.y" as true and "λ x y.x" as false (which also works with a
+  corresponding form for if) you would also see "true" in the output.
+
+  However, since Church 0 is encoded as "λs z .z", this gets canonical form
+  "λ(λ(#1))", like "false" and is thus identified as both "0, false".
+*#
+
+true := λx y. x
+false := λx y. y
+
+:print true # should show "true"
+:print false # should show "false", def of "0" is not yet in scope
+
+0 := λs z. z
+:print 0 # should show "false, 0", since both have α-equivalent normal forms
+
+false := λ a b . b
+:print false # now shows "false, 0", since "0" is now in scope and names don't matter
+
+false ::= λ a b . a # note: ::= redefines a name with a different normal form without issuing a warning
+:print false # now show "true, false", you can shoot yourself in the foot, if you like
