@@ -645,6 +645,48 @@ describe("line continuation", () => {
   });
 });
 
+// ── Indented-statement warning ───────────────────────────────────────────────
+
+describe("indented-statement warning", () => {
+  const indentWarnings = (r: { errors: { kind?: string; message: string }[] }) =>
+    r.errors.filter(e => e.kind === "warning" && e.message.includes("not a continuation"));
+
+  it("warns on leading whitespace at start of file", () => {
+    const r = parseProgram("  λx. x\n");
+    expect(indentWarnings(r)).toHaveLength(1);
+  });
+
+  it("warns on leading whitespace after a blank line", () => {
+    const r = parseProgram("a\n\n  b\n");
+    expect(indentWarnings(r)).toHaveLength(1);
+  });
+
+  it("warns on leading whitespace after a whitespace-only line", () => {
+    const r = parseProgram("a\n   \n  b\n");
+    expect(indentWarnings(r)).toHaveLength(1);
+  });
+
+  it("does not warn on a normal indented continuation", () => {
+    const r = parseProgram("a\n  b\n  c\n");
+    expect(indentWarnings(r)).toHaveLength(0);
+  });
+
+  it("does not warn on an indented line comment", () => {
+    const r = parseProgram("a\n\n  # this is fine\nb\n");
+    expect(indentWarnings(r)).toHaveLength(0);
+  });
+
+  it("does not warn on an indented block comment", () => {
+    const r = parseProgram("a\n\n  #* fine *#\nb\n");
+    expect(indentWarnings(r)).toHaveLength(0);
+  });
+
+  it("flags only the first line of an indented block (continuations absorb the rest)", () => {
+    const r = parseProgram("a\n\n  b\n  c\n  d\n");
+    expect(indentWarnings(r)).toHaveLength(1);
+  });
+});
+
 // ── Directive value syntax ───────────────────────────────────────────────────────
 
 describe("pragma value syntax", () => {

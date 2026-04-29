@@ -328,6 +328,30 @@ export function parseProgram(
       errors.push({ message: `Lex error: ${e.message}`, offset: e.offset });
   }
 
+  // ── Indented-statement check ──────────────────────────────────────────────
+  // Warn when a line begins with whitespace but isn't a continuation. Skipped
+  // tokens (whitespace, comments, ContNewLine) are absent from the stream, so
+  // indented comments and continuations naturally pass.
+  {
+    let prevWasNewLine = true;
+    for (const tok of lexResult.tokens) {
+      if (tokenMatcher(tok, NewLine)) { prevWasNewLine = true; continue; }
+      if (prevWasNewLine) {
+        const offset = tok.startOffset ?? 0;
+        let lineStart = offset;
+        while (lineStart > 0 && input[lineStart - 1] !== "\n") lineStart--;
+        if (offset > lineStart) {
+          errors.push({
+            message: "Line starts with whitespace but is not a continuation",
+            offset: lineStart,
+            kind: "warning",
+          });
+        }
+      }
+      prevWasNewLine = false;
+    }
+  }
+
   // ── Parse ──────────────────────────────────────────────────────────────────
   parser.input = lexResult.tokens;
   const cst = parser.program();
