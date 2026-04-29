@@ -607,10 +607,15 @@ describe("line continuation", () => {
     expect(r.ok).toBe(false); // blank line breaks continuation
   });
 
-  it("whitespace-only lines are absorbed (don't break continuation)", () => {
+  it("whitespace-only lines also break continuation", () => {
     const r = parseProgram("f :=\n   \n  λx. x\n");
+    expect(r.ok).toBe(false); // whitespace-only line breaks like an empty line
+  });
+
+  it("whitespace-only line splits bare expressions instead of joining them", () => {
+    const r = parseProgram("I := λx. x\nI\n  \n  I\n");
     expect(r.ok).toBe(true);
-    expect(r.defs.has("f")).toBe(true);
+    expect(r.printInfos).toHaveLength(2);
   });
 
   it("multi-line definition with continuation", () => {

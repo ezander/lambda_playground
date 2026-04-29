@@ -77,11 +77,12 @@ export const WhiteSpace = createToken({
 });
 
 // Statement separators
-// A newline followed by an indented (non-empty) line is a continuation — the
-// newline is skipped so the parser sees one long statement.  Whitespace-only
-// lines between continuations are absorbed.
+// A newline followed by an indented line with content is a continuation — the
+// newline is skipped so the parser sees one long statement. A blank line
+// (whether truly empty or whitespace-only) breaks continuation.
 
-// Continuation newline: matched when the next non-empty line starts with whitespace.
+// Continuation newline: matched when the immediately-following line starts
+// with whitespace AND contains non-whitespace content.
 // Placed in SKIPPED group so the parser never sees it.
 export const ContNewLine = createToken({
   name: "ContNewLine",
@@ -91,24 +92,15 @@ export const ContNewLine = createToken({
     let pos = startOffset;
     if (text[pos] === "\r") pos++;
     pos++; // skip \n
-    // Skip whitespace-only lines (but NOT empty lines — those break continuation)
-    while (pos < text.length) {
-      // Empty line (immediate newline) → stop, this breaks continuation
-      if (text[pos] === "\n" || (text[pos] === "\r" && text[pos + 1] === "\n")) break;
-      // Non-newline char — check if this line is whitespace-only
-      let lineEnd = pos;
-      while (lineEnd < text.length && text[lineEnd] !== "\n" && text[lineEnd] !== "\r") lineEnd++;
-      if (text.slice(pos, lineEnd).trim() === "") { pos = lineEnd === text.length ? lineEnd : lineEnd + 1; continue; }
-      break;
-    }
-    // Next non-empty line starts with whitespace → continuation
-    if (pos < text.length && (text[pos] === " " || text[pos] === "\t")) {
-      const result = [""] as unknown as RegExpExecArray;
-      result.index = startOffset;
-      result[0] = text.slice(startOffset, startOffset + (text[startOffset] === "\r" ? 2 : 1));
-      return result;
-    }
-    return null;
+    if (text[pos] !== " " && text[pos] !== "\t") return null;
+    let scan = pos;
+    while (scan < text.length && (text[scan] === " " || text[scan] === "\t")) scan++;
+    if (scan >= text.length) return null;
+    if (text[scan] === "\n" || (text[scan] === "\r" && text[scan + 1] === "\n")) return null;
+    const result = [""] as unknown as RegExpExecArray;
+    result.index = startOffset;
+    result[0] = text.slice(startOffset, startOffset + (text[startOffset] === "\r" ? 2 : 1));
+    return result;
   },
   line_breaks: true,
   start_chars_hint: ["\n", "\r"],
