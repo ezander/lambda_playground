@@ -433,18 +433,20 @@ function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, 
   );
 }
 
-function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale, cursorOffset }: {
+function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale, cursorOffset, kinoActive }: {
   open: boolean; onToggle: () => void;
   printDesc: boolean; onTogglePrintDesc: () => void;
   programResult: ProgramResult; showPassingEquiv: boolean;
   onJumpTo: (offset: number) => void;
   autoRun: boolean; onToggleAutoRun: () => void; onRun: () => void; runStale: boolean;
   cursorOffset: number | null;
+  kinoActive: boolean;
 }) {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
+    if (!kinoActive) return;
     sectionRef.current?.querySelector(".print-entry-current")?.scrollIntoView({ block: "nearest" });
-  }, [cursorOffset]);
+  }, [cursorOffset, kinoActive]);
   const hasContent = programResult.printInfos.length > 0 || programResult.equivInfos.length > 0
     || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0;
   type PrintItem     = { kind: "print";      data: typeof programResult.printInfos[number] };
@@ -1231,6 +1233,7 @@ export default function App() {
             onRun={() => setRunForSource(debouncedSource)}
             runStale={!runEval}
             cursorOffset={cursorPos?.offset ?? null}
+            kinoActive={kinoActive}
           />
         </div>
       </main>
