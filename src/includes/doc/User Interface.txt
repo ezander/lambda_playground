@@ -14,7 +14,7 @@
   highlighting, autocomplete, and click-to-jump on errors and links. See
   [doc/Editor] for the full list of keys and behaviors.
 
-  Above the editor sit three toolbar strips:
+  Above the editor are three toolbar strips:
 
     * Buffer toolbar: shows the current buffer name (or "*scratch*"), a
       save button (or an "auto" indicator if auto-save is on), a
