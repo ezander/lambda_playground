@@ -158,6 +158,7 @@
 * [ ] introduce typed lambda calculus (τ for type inf?)
 * [ ] should we have line continuation with e.g. \ or next line starts with tab? maybe only when we have types lc, as lines get longer
 * [ ] when we show which subst is to be made (hygienically), shall we clean it somehow (like x → x', or x → x5)
+* [ ] paste special: convert external λ-calc notation to ours when pasting from textbooks/papers (e.g. `L`/`\`/`^` → `λ`, split concatenated single-char vars `λxy.yx` → `λx y. y x`); explicit dialog so it's not auto-applied
 
 ## Possible performance enhancements
 
