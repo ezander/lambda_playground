@@ -2,14 +2,14 @@
 # Can be used with Church numerals, but also with any other numerals implementation that defines
 # `zero`, `succ`, `plus`, `times` and `pow` (e.g. Scott numerals)
 
-# First test that input is somewhat sensible
-# (plus (succ zero) (succ zero)) (succ (succ zero))
-# (plus (succ zero) (succ zero)) (succ (succ zero))
+# First test that already defined symbols (zero, plus, succ) are somewhat sensible
+:assert plus (succ zero) (succ zero) ≡ succ (succ zero)
+:assert plus (succ zero) (succ (succ zero)) ≡ succ (succ (succ zero))
 
 ++ := succ
 0 := zero
 
-              1 := ++  0;  2 := ++  1;  3 := ++  2;  4 := ++  3;
+;             1 := ++  0;  2 := ++  1;  3 := ++  2;  4 := ++  3;
  5 := ++  4;  6 := ++  5;  7 := ++  6;  8 := ++  7;  9 := ++  8;
 10 := ++  9; 11 := ++ 10; 12 := ++ 11; 13 := ++ 12; 14 := ++ 13;
 15 := ++ 14; 16 := ++ 15; 17 := ++ 16; 18 := ++ 17; 19 := ++ 18;
