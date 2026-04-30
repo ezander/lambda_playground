@@ -783,6 +783,29 @@ label {
   flex-shrink: 0;
 }
 
+.copy-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.1rem 0;
+  margin-left: -0.4rem;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s;
+}
+.print-entry:hover > .print-result > .copy-btn,
+.comp-row:hover .copy-btn {
+  opacity: 0.55;
+}
+.print-entry:hover > .print-result > .copy-btn:hover,
+.comp-row:hover .copy-btn:hover {
+  opacity: 1;
+  color: var(--text);
+}
+
 .print-equiv { color: var(--muted); }
 
 .equiv-op { font-weight: bold; }

@@ -12,7 +12,7 @@ import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS, SET_SYMBOLS, MATH_SYMBOLS } from "./editor";
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap, autocompleteWheelPlugin } from "./autocomplete";
-import { Settings, Share2, Maximize2, Minimize2 } from "lucide-react";
+import { Settings, Share2, Maximize2, Minimize2, Copy, Check } from "lucide-react";
 import { lambdaHighlight, lambdaDiagnosticTooltip, setParsed, parsedField } from "./highlight";
 import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
@@ -86,6 +86,21 @@ function TruncatedText({ text }: { text: string }) {
 
 function Truncated({ text }: { text: string }) {
   return <TruncatedText key={text} text={text} />;
+}
+
+function CopyButton({ text, title = "Copy" }: { text: string; title?: string }) {
+  const [copied, setCopied] = useState(false);
+  const onClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+  return (
+    <button className="copy-btn" onClick={onClick} title={title} aria-label={title}>
+      {copied ? <Check size={14} /> : <Copy size={14} />}
+    </button>
+  );
 }
 
 type EvalSession = { term: Term; done: boolean; sizeLimited?: boolean; stepNum: number; effectiveConfig: Config } | null;
@@ -490,6 +505,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                         ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
                         : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
                   </span>
+                  <CopyButton text={item.data.result} title="Copy result" />
                 </code>
               )}
             </div>
@@ -515,6 +531,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                         ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
                         : <span className="eval-status did-not-terminate">no normal form</span>}
                   </span>
+                  <CopyButton text={`${item.data.norm1} ${item.opSym} ${item.data.norm2}`} title="Copy result" />
                 </code>
               )}
             </div>
@@ -542,6 +559,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                               ? <span className="eval-status did-not-terminate">exceeded {row.size} nodes after {row.steps} steps</span>
                               : <span className="eval-status did-not-terminate">did not terminate in {row.steps} steps</span>}
                         </span>
+                        <CopyButton text={row.result} title="Copy result" />
                       </code>
                     </div>
                   </div>
@@ -584,6 +602,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                                 ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
                                 : <span className="eval-status did-not-terminate">no normal form</span>}
                           </span>
+                          <CopyButton text={`${row.norm1} ${item.data.negated ? "≢" : "≡"} ${row.norm2}`} title="Copy result" />
                         </code>
                       </div>
                     </div>
