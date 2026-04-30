@@ -34,6 +34,56 @@ function getAllIncludePaths(): string[] {
   return [...Object.keys(BUNDLED_CONTENT), ...getUserIncludePaths()];
 }
 
+const IMPORT_SECTIONS = {
+  std:      { name: "std",      rank: 0 },
+  user:     { name: "user",     rank: 1 },
+  tutorial: { name: "tutorial", rank: 2 },
+};
+
+type PathOption = {
+  label: string;
+  displayLabel: string;
+  type: "text";
+  section: { name: string; rank: number };
+};
+
+function getImportablePathOptions(): PathOption[] {
+  const bundled = Object.keys(BUNDLED_CONTENT);
+  const make = (label: string, section: { name: string; rank: number }): PathOption => ({
+    label,
+    displayLabel: label.slice(label.indexOf("/") + 1),
+    type: "text",
+    section,
+  });
+  const std      = bundled.filter(p => p.startsWith("std/"))     .map(p => make(p, IMPORT_SECTIONS.std));
+  const user     = getUserIncludePaths()                         .map(p => make(p, IMPORT_SECTIONS.user));
+  const tutorial = bundled.filter(p => p.startsWith("tutorial/")).map(p => make(p, IMPORT_SECTIONS.tutorial));
+  return [...std, ...user, ...tutorial];
+}
+
+// Substring filter + ranking for import paths. Replaces CM6's default fuzzy
+// matcher because the default biases short queries toward label-prefix matches,
+// so e.g. "n" wouldn't find "Numerals" in "std/Church Numerals".
+function filterImportPaths(query: string, opts: PathOption[]): PathOption[] {
+  if (!query) return opts;
+  const q = query.toLowerCase();
+  const out: { opt: PathOption; rank: number; idx: number }[] = [];
+  for (const opt of opts) {
+    const lbl = opt.label.toLowerCase();
+    const idx = lbl.indexOf(q);
+    if (idx < 0) continue;
+    const bareStart = opt.label.indexOf("/") + 1;
+    const rank = idx === 0 ? 0 : idx === bareStart ? 1 : 2;
+    out.push({ opt, rank, idx });
+  }
+  out.sort((a, b) =>
+    a.rank !== b.rank ? a.rank - b.rank :
+    a.idx  !== b.idx  ? a.idx  - b.idx  :
+    a.opt.label.localeCompare(b.opt.label)
+  );
+  return out.map(x => x.opt);
+}
+
 function completionSource(context: CompletionContext): CompletionResult | null {
   const parsed = context.state.field(parsedField);
   if (!parsed) return null;
@@ -48,10 +98,11 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     if (pathMatch) {
       const quotePos = line.from + line.text.indexOf('"') + 1;
       if (context.pos >= quotePos) {
+        const typed = line.text.slice(line.text.indexOf('"') + 1, context.pos - line.from);
         return {
           from: quotePos,
-          options: getAllIncludePaths().map(p => ({ label: p, type: "text" as const })),
-          filter: true,
+          options: filterImportPaths(typed, getImportablePathOptions()),
+          filter: false,
         };
       }
     }
