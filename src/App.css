@@ -363,7 +363,7 @@ label {
   justify-content: flex-end;
   margin-top: 1rem;
 }
-.settings-ok, .settings-cancel {
+.settings-ok, .settings-cancel, .settings-reset {
   font-family: var(--mono);
   font-size: 0.78rem;
   padding: 0.3rem 1.1rem;
@@ -378,12 +378,13 @@ label {
   font-weight: 600;
 }
 .settings-ok:hover { opacity: 0.85; }
-.settings-cancel {
+.settings-cancel, .settings-reset {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--muted);
 }
-.settings-cancel:hover { border-color: var(--accent); color: var(--accent); }
+.settings-cancel:hover, .settings-reset:hover { border-color: var(--accent); color: var(--accent); }
+.settings-reset { margin-right: auto; }
 
 .ex-btn {
   font-family: var(--mono);

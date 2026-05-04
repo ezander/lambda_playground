@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Config } from "./config";
+import { Config, DEFAULT_CONFIG } from "./config";
 import { TraceLevel } from "./trace";
 import { useFocusTrap } from "./useFocusTrap";
 
@@ -27,6 +27,20 @@ export function SettingsModal({ config, onApply, onCancel }: {
 
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef);
+
+  const reset = () => {
+    setMaxStepsPrint(String(DEFAULT_CONFIG.maxStepsPrint));
+    setMaxStepsRun(String(DEFAULT_CONFIG.maxStepsRun));
+    setMaxStepsIdent(String(DEFAULT_CONFIG.maxStepsIdent));
+    setMaxHistory(String(DEFAULT_CONFIG.maxHistory));
+    setMaxHistorySize(String(DEFAULT_CONFIG.maxHistorySize));
+    setMaxSize(String(DEFAULT_CONFIG.maxSize));
+    setShowPassingEquiv(DEFAULT_CONFIG.showPassingEquiv);
+    setWrapWidth(String(DEFAULT_CONFIG.wrapWidth));
+    setAutoSave(DEFAULT_CONFIG.autoSave);
+    setAutoRun(DEFAULT_CONFIG.autoRun);
+    setTraceLevelState(DEFAULT_CONFIG.traceLevel);
+  };
 
   const apply = () => onApply({
     maxStepsPrint:    parsePositiveInt(maxStepsPrint, config.maxStepsPrint),
@@ -159,6 +173,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
           </tbody>
         </table>
         <div className="settings-buttons">
+          <button className="settings-reset"  onClick={reset} title="restore default values (still requires ok to apply)">reset</button>
           <button className="settings-ok"     onClick={apply}>ok</button>
           <button className="settings-cancel" onClick={onCancel}>cancel</button>
         </div>

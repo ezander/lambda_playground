@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - Changelog tab in the help modal.
 - `max history size` setting (default 200000): caps the *total* AST nodes summed across all retained history entries. Oldest entries are dropped when the sum exceeds the limit. Complements `max history` (entry count).
+- Reset button in the settings modal: repopulates all fields with the current defaults (still requires ok to apply). Useful after default-value changes like the limit bumps below.
 
 ### Changed
 - Default limits raised to take advantage of the substitution and size-check speedups: `max steps (print)` 1000 → 10000, `max steps (ident)` 1000 → 10000, `max term size` 3000 → 30000. `max steps (run)` stays at 1000 (the eval-panel "continue" button is the natural escape valve).
