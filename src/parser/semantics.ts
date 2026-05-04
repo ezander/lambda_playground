@@ -445,7 +445,7 @@ export function parseProgram(
 
   const parseElapsed = performance.now() - tParseStart;
   _phase.parse += parseElapsed;
-  traceSummary("parse total", parseElapsed);
+  if (_includeStack.length === 0) traceSummary("parse total", parseElapsed);
 
   // After an ≡ failure the rest of the program is skipped semantically, but we
   // still record positions for syntax highlighting (def names as defs, term
@@ -795,7 +795,8 @@ export function parseProgram(
     prettyTotal: _phase.pretty - phase0.pretty,
     matchTotal:  _phase.match  - phase0.match,
   };
-  traceSummary("eval total", timing.evalTotal);
+  if (_includeStack.length === 0 && (defaultConfig.runEval ?? true))
+    traceSummary("eval total", timing.evalTotal);
 
   return {
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,

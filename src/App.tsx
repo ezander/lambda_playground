@@ -465,12 +465,12 @@ function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, 
   );
 }
 
-function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, runStale, cursorOffset, kinoActive }: {
+function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResult, showPassingEquiv, onJumpTo, autoRun, onToggleAutoRun, onRun, cursorOffset, kinoActive }: {
   open: boolean; onToggle: () => void;
   printDesc: boolean; onTogglePrintDesc: () => void;
   programResult: ProgramResult; showPassingEquiv: boolean;
   onJumpTo: (offset: number) => void;
-  autoRun: boolean; onToggleAutoRun: () => void; onRun: () => void; runStale: boolean;
+  autoRun: boolean; onToggleAutoRun: () => void; onRun: () => void;
   cursorOffset: number | null;
   kinoActive: boolean;
 }) {
@@ -498,7 +498,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
         <label className="panel-autorun-toggle" title="Auto-run: re-evaluate print/assert statements on every edit">
           <input type="checkbox" checked={autoRun} onChange={onToggleAutoRun} /> auto-run
         </label>
-        <button className="panel-sort-btn" onClick={onRun} disabled={!runStale}
+        <button className="panel-sort-btn" onClick={onRun}
           style={autoRun ? { visibility: "hidden" } : undefined}
           title="Run print/assert statements for current source">run</button>
         <button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>
@@ -725,18 +725,30 @@ export default function App() {
 
   const includeResolver = useCallback((path: string): string | null => resolveContent(path), []);
 
-  // Source for which the user explicitly requested a one-shot eval (Run button).
-  // Eval runs when autoRun is on, OR when the source matches this — i.e. user
-  // clicked Run for the current source. Editing diverges debouncedSource from
-  // runForSource, so eval falls back to off automatically.
+  // Source the user explicitly requested a run for. Cleared on any change
+  // that affects parse/eval output — source edits (typing, undo, redo, load)
+  // or parse-relevant config fields. Cosmetic config changes (wrapWidth, etc.)
+  // leave it intact so existing results stay visible. runNonce bumps on every
+  // explicit Run click so a repeat click on an unchanged source still re-fires.
   const [runForSource, setRunForSource] = useState<string | null>(null);
+  const [runNonce, setRunNonce] = useState(0);
+  useEffect(() => { setRunForSource(null); },
+    [debouncedSource, config.maxStepsPrint, config.maxStepsIdent, config.maxSize]);
   const runEval = config.autoRun || debouncedSource === runForSource;
+  const requestRun = useCallback(() => {
+    setRunForSource(debouncedSource);
+    setRunNonce(n => n + 1);
+  }, [debouncedSource]);
   const programResult = useMemo(() => {
     const t0 = performance.now();
     const r  = parseProgram(debouncedSource, { ...config, runEval }, includeResolver);
-    traceSummary("program total", performance.now() - t0);
+    if (runEval) traceSummary("program total", performance.now() - t0);
     return r;
-  }, [debouncedSource, config, runEval, includeResolver]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- parseProgram only
+  // reads maxStepsPrint/Ident/maxSize from config; cosmetic fields must not
+  // invalidate this memo (would cause a wasted re-parse on every wrapWidth tweak).
+  // runNonce is intentionally a dep so repeat Run clicks force a re-parse.
+  }, [debouncedSource, config.maxStepsPrint, config.maxStepsIdent, config.maxSize, runEval, runNonce, includeResolver]);
   const programResultRef = useRef(programResult);
   programResultRef.current = programResult;
 
@@ -1103,7 +1115,7 @@ export default function App() {
       }
       if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
       if (e.key === "s" && e.ctrlKey) { e.preventDefault(); handleSaveOverwrite(); }
-      if (e.key === "F5")  { e.preventDefault(); setRunForSource(debouncedSource); handleLoadRun(); }
+      if (e.key === "F5")  { e.preventDefault(); requestRun(); handleLoadRun(); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
       if (e.key === "F10") { e.preventDefault(); handleStep(); }
@@ -1111,7 +1123,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen, debouncedSource]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen, requestRun]);
 
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -1297,8 +1309,7 @@ export default function App() {
             onJumpTo={jumpTo}
             autoRun={config.autoRun}
             onToggleAutoRun={() => updateConfig({ autoRun: !config.autoRun })}
-            onRun={() => setRunForSource(debouncedSource)}
-            runStale={!runEval}
+            onRun={requestRun}
             cursorOffset={cursorPos?.offset ?? null}
             kinoActive={kinoActive}
           />
