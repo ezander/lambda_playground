@@ -6,11 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-05-04
+
 ### Added
 - Dialect importer (toolbar `import`): lexical converter for files in other LC dialects.
 
 ### Changed
 - Renamed the zip export/import feature to backup/restore (button labels, modal, tooltips).
+
+### Fixed
+- Output panel no longer silently re-evaluates after a Run when the source round-trips (undo) or a cosmetic config field changes; repeat Run clicks now always re-fire.
+- Run button is always enabled while auto-run is off.
 
 ## [1.0.3] - 2026-05-04
 
