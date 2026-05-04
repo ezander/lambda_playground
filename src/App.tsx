@@ -786,11 +786,15 @@ export default function App() {
     setHistory([{ label: "0:", text: prettyPrint(term), match: findMatch(term, nd), status: done ? "normalForm" : undefined }]);
   }, [programResult, source, mergeConfig]);
 
-  // Auto-reload when source changes or showSubst toggles
+  // Auto-reload when source/parse-relevant config changes or showSubst toggles.
+  // Deps are intentionally narrow: handleLoad's identity also flips on print-panel
+  // run signals (runNonce/runEval), which would otherwise wipe a freshly-run eval
+  // session — see F5 path which calls requestRun() then handleLoadRun().
   useEffect(() => {
     if (!programResult.expr) { setEvalSession(null); setHistory([]); return; }
     handleLoad();
-  }, [handleLoad, showSubst]); // handleLoad changes when programResult/source changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSource, parseSig, showSubst]);
 
   const advance = useCallback((maxSteps: number) => {
     if (!evalSession || evalSession.done) return;
