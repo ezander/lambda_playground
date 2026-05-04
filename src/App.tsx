@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
+import { parseProgram, parseConfigSig, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
@@ -732,8 +732,8 @@ export default function App() {
   // explicit Run click so a repeat click on an unchanged source still re-fires.
   const [runForSource, setRunForSource] = useState<string | null>(null);
   const [runNonce, setRunNonce] = useState(0);
-  useEffect(() => { setRunForSource(null); },
-    [debouncedSource, config.maxStepsPrint, config.maxStepsIdent, config.maxSize]);
+  const parseSig = parseConfigSig(config);
+  useEffect(() => { setRunForSource(null); }, [debouncedSource, parseSig]);
   const runEval = config.autoRun || debouncedSource === runForSource;
   const requestRun = useCallback(() => {
     setRunForSource(debouncedSource);
@@ -744,11 +744,11 @@ export default function App() {
     const r  = parseProgram(debouncedSource, { ...config, runEval }, includeResolver);
     if (runEval) traceSummary("program total", performance.now() - t0);
     return r;
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- parseProgram only
-  // reads maxStepsPrint/Ident/maxSize from config; cosmetic fields must not
-  // invalidate this memo (would cause a wasted re-parse on every wrapWidth tweak).
-  // runNonce is intentionally a dep so repeat Run clicks force a re-parse.
-  }, [debouncedSource, config.maxStepsPrint, config.maxStepsIdent, config.maxSize, runEval, runNonce, includeResolver]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- parseSig captures
+  // every Config field parseProgram reads; cosmetic fields are intentionally
+  // excluded so wrapWidth tweaks etc. don't re-parse. runNonce forces a fresh
+  // parse on repeat Run clicks against an unchanged source.
+  }, [debouncedSource, parseSig, runEval, runNonce, includeResolver]);
   const programResultRef = useRef(programResult);
   programResultRef.current = programResult;
 

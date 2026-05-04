@@ -72,6 +72,13 @@ function configKey(cfg: ProgramRunConfig): string {
   return JSON.stringify(cfg, Object.keys(cfg).sort());
 }
 
+// Stable signature of the Config fields parseProgram actually reads. Callers
+// use this to narrow useMemo/useEffect deps without hardcoding the field list.
+// If parseProgram starts reading a new field, update here only.
+export function parseConfigSig(cfg: Partial<ProgramRunConfig>): string {
+  return `${cfg.maxStepsPrint}|${cfg.maxStepsIdent}|${cfg.maxSize}`;
+}
+
 function cachedParseInclude(
   path: string,
   content: string,
