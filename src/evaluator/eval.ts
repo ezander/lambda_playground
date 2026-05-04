@@ -56,18 +56,12 @@ export function freeVars(term: Term): Set<string> {
 
 // ── Fresh name generation ─────────────────────────────────────────────────────
 
-let counter = 0;
-
-export function resetCounter() {
-  counter = 0;
-}
-
 function freshName(base: string, avoid: Set<string>): string {
-  let candidate = base;
-  while (avoid.has(candidate)) {
-    candidate = `${base}${++counter}`;
+  if (!avoid.has(base)) return base;
+  for (let i = 1; ; i++) {
+    const candidate = `${base}${i}`;
+    if (!avoid.has(candidate)) return candidate;
   }
-  return candidate;
 }
 
 // ── Substitution: term[x := replacement] ─────────────────────────────────────
@@ -262,7 +256,6 @@ export function normalize(
 ): RunResult {
   const stepLimit = config.maxSteps ?? DEFAULT_STEP_LIMIT;
   const sizeLimit = config.maxSize  ?? DEFAULT_SIZE_LIMIT;
-  resetCounter();
   let current = term;
   let steps = 0;
   while (steps < stepLimit) {
