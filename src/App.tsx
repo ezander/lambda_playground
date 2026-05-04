@@ -3,7 +3,7 @@ import { parseProgram, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivCo
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
-import { step, etaStep, findMatch, termSize } from "./evaluator/eval";
+import { step, etaStep, findMatch } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -113,7 +113,22 @@ function buildEntry(term: Term, stepNum: number, defs: Map<string, DefEntry>, su
     text: prettyPrint(term) + suffix,
     match: normal ? findMatch(term, defs) : undefined,
     status,
+    size: term.size,
   };
+}
+
+// Trim history to satisfy both caps: at most `maxCount` entries, and total
+// term-size sum ≤ `maxTotalSize`. Drops oldest entries first; always retains
+// at least the most recent entry, even if its size alone exceeds the cap.
+// Newest entry is at index 0 (history is stored newest-first in App state).
+function trimHistory(entries: HistoryEntry[], maxCount: number, maxTotalSize: number): HistoryEntry[] {
+  const capped = entries.slice(0, maxCount);
+  let sum = 0;
+  for (let i = 0; i < capped.length; i++) {
+    sum += capped[i].size ?? 0;
+    if (sum > maxTotalSize && i > 0) return capped.slice(0, i);
+  }
+  return capped;
 }
 
 // Run reduction up to maxSteps, building a history entry per step. Tags the
@@ -142,8 +157,7 @@ function runSteps(
     if (lastNext === null) break;
     current = lastNext;
     entries.push(buildEntry(current, ++stepNum, defs));
-    const sz = termSize(current);
-    if (sz > maxSize) { sizeLimitHit = true; hitSize = sz; break; }
+    if (current.size > maxSize) { sizeLimitHit = true; hitSize = current.size; break; }
   }
   const done = sizeLimitHit || lastNext === null || step(current, showSubst) === null;
   const batchLimitHit = !done && i === maxSteps && maxSteps > 1;
@@ -767,8 +781,8 @@ export default function App() {
     if (!evalSession || evalSession.done) return;
     const r = runSteps(evalSession.term, evalSession.stepNum, maxSteps, evalSession.effectiveConfig.maxSize, showSubst, normDefs);
     setEvalSession({ term: r.finalTerm, done: r.done, sizeLimited: r.sizeLimitHit || undefined, stepNum: r.finalStepNum, effectiveConfig: evalSession.effectiveConfig });
-    const maxHistory = evalSession.effectiveConfig.maxHistory;
-    setHistory(h => [...r.entries.slice(-maxHistory).reverse(), ...h].slice(0, maxHistory));
+    const { maxHistory, maxHistorySize } = evalSession.effectiveConfig;
+    setHistory(h => trimHistory([...r.entries.slice(-maxHistory).reverse(), ...h], maxHistory, maxHistorySize));
   }, [evalSession, normDefs, showSubst]);
 
   const jumpTo = useCallback((offset: number) => {
@@ -1007,7 +1021,8 @@ export default function App() {
     const entry = buildEntry(next, stepNum, normDefs);
     if (done) entry.status = "normalForm";
     setEvalSession({ term: next, done, stepNum, effectiveConfig: evalSession.effectiveConfig });
-    setHistory(h => [entry, ...h].slice(0, evalSession.effectiveConfig.maxHistory));
+    const { maxHistory, maxHistorySize } = evalSession.effectiveConfig;
+    setHistory(h => trimHistory([entry, ...h], maxHistory, maxHistorySize));
   }, [evalSession, normDefs, showSubst]);
   const handleLoadRun = useCallback(() => {
     if (!programResult.expr) return;
@@ -1018,7 +1033,7 @@ export default function App() {
     setLoadedSource(source);
     const r = runSteps(term, 0, effectiveConfig.maxStepsRun, effectiveConfig.maxSize, showSubst, nd, buildEntry(term, 0, nd));
     setEvalSession({ term: r.finalTerm, done: r.done, sizeLimited: r.sizeLimitHit || undefined, stepNum: r.finalStepNum, effectiveConfig });
-    setHistory(r.entries.slice(-effectiveConfig.maxHistory).reverse());
+    setHistory(trimHistory(r.entries.slice(-effectiveConfig.maxHistory).reverse(), effectiveConfig.maxHistory, effectiveConfig.maxHistorySize));
   }, [programResult, source, showSubst, mergeConfig]);
 
   const editorExtensions = useMemo(() => {

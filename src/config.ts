@@ -8,6 +8,7 @@ export type Config = {
   maxStepsRun:     number;
   maxStepsIdent:   number;
   maxHistory:      number;
+  maxHistorySize:  number;
   maxSize:         number;
   showPassingEquiv: boolean;
   wrapWidth:       number;
@@ -17,11 +18,12 @@ export type Config = {
 };
 
 export const DEFAULT_CONFIG: Config = {
-  maxStepsPrint:   1000,
+  maxStepsPrint:   10000,
   maxStepsRun:     1000,
-  maxStepsIdent:   1000,
+  maxStepsIdent:   10000,
   maxHistory:      200,
-  maxSize:         3000,
+  maxHistorySize:  200000,
+  maxSize:         30000,
   showPassingEquiv: true,
   wrapWidth:       80,
   autoSave:        true,

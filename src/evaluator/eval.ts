@@ -240,10 +240,13 @@ export type RunResult =
   | { kind: "sizeLimit"; term: Term; steps: number; size: number };
 
 const DEFAULT_STEP_LIMIT = 1000;
-const DEFAULT_SIZE_LIMIT = 3_000;
+const DEFAULT_SIZE_LIMIT = 30_000;
 
 export type EvalConfig = { maxSteps?: number; maxSize?: number; allowEta?: boolean };
 
+// Recomputes term size by walking the AST. Each Term node now carries its own
+// `.size`, so prefer `t.size` at runtime — `termSize(t)` is kept as a
+// self-consistency check (see eval.test.ts: termSize(t) === t.size).
 export function termSize(term: Term): number {
   switch (term.kind) {
     case "Var":   return 1;
@@ -267,8 +270,7 @@ export function normalize(
     if (next === null) return { kind: "normalForm", term: current, steps };
     current = next;
     steps++;
-    const sz = termSize(current);
-    if (sz > sizeLimit) return { kind: "sizeLimit", term: current, steps, size: sz };
+    if (current.size > sizeLimit) return { kind: "sizeLimit", term: current, steps, size: current.size };
   }
   // The last step may have produced a normal form — check before declaring step limit
   const finalNext = step(current) ?? (config.allowEta ? etaStep(current) : null);

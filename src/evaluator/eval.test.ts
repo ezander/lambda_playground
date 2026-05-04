@@ -373,6 +373,36 @@ describe("termSize", () => {
     // f x y = App(App(Var("f"), Var("x")), Var("y")) → 1 + (1+1+1) + 1 = 5
     expect(termSize(App(App(Var("f"), Var("x")), Var("y")))).toBe(5);
   });
+
+  // .size is set by the AST factory functions; termSize walks the tree
+  // afresh. They must agree for any term — built directly, produced by
+  // substitute, or returned from step. If they ever diverge, a constructor
+  // forgot to compute .size.
+  it("termSize(t) === t.size for hand-built terms", () => {
+    const samples: Term[] = [
+      Var("x"),
+      I, K, T, F, zero, one, two,
+      App(K, I),
+      Subst(App(Var("f"), Var("x")), "x", Abs("z", Var("z"))),
+      Abs("a", Abs("b", App(App(Var("a"), Var("b")), Var("a")))),
+    ];
+    for (const t of samples) expect(t.size).toBe(termSize(t));
+  });
+
+  it("termSize(t) === t.size after substitute", () => {
+    // (λx. x x)[x := λy. y y]
+    const sub = substitute(Abs("x", App(Var("x"), Var("x"))), "x", Abs("y", App(Var("y"), Var("y"))));
+    expect(sub.size).toBe(termSize(sub));
+  });
+
+  it("termSize(t) === t.size after step", () => {
+    // (λx. x) (λy. y) → λy. y, plus a few more steps on a richer term
+    let cur: Term | null = App(App(K, I), I);
+    for (let i = 0; i < 5 && cur !== null; i++) {
+      expect(cur.size).toBe(termSize(cur));
+      cur = step(cur);
+    }
+  });
 });
 
 // ── findMatch ─────────────────────────────────────────────────────────────────

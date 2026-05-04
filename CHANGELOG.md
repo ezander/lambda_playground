@@ -8,9 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Performance
 - Substitution into a non-trivial term (Y combinator, Church numerals, etc.) is now linear in the term size instead of effectively quadratic. Heavy reductions are ~10–15× faster.
+- Term size is now cached on every AST node at construction. The size-limit check inside the eval loop is O(1) instead of O(term-size) per step, removing a hidden quadratic factor on long reductions.
 
 ### Added
 - Changelog tab in the help modal.
+- `max history size` setting (default 200000): caps the *total* AST nodes summed across all retained history entries. Oldest entries are dropped when the sum exceeds the limit. Complements `max history` (entry count).
+
+### Changed
+- Default limits raised to take advantage of the substitution and size-check speedups: `max steps (print)` 1000 → 10000, `max steps (ident)` 1000 → 10000, `max term size` 3000 → 30000. `max steps (run)` stays at 1000 (the eval-panel "continue" button is the natural escape valve).
 
 ## [1.0.2] - 2026-04-30
 

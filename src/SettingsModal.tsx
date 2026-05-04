@@ -17,6 +17,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
   const [maxStepsRun,   setMaxStepsRun]   = useState(String(config.maxStepsRun));
   const [maxStepsIdent, setMaxStepsIdent] = useState(String(config.maxStepsIdent));
   const [maxHistory,    setMaxHistory]    = useState(String(config.maxHistory));
+  const [maxHistorySize, setMaxHistorySize] = useState(String(config.maxHistorySize));
   const [maxSize,           setMaxSize]           = useState(String(config.maxSize));
   const [showPassingEquiv,  setShowPassingEquiv]  = useState(config.showPassingEquiv);
   const [wrapWidth,         setWrapWidth]         = useState(String(config.wrapWidth));
@@ -32,6 +33,7 @@ export function SettingsModal({ config, onApply, onCancel }: {
     maxStepsRun:      parsePositiveInt(maxStepsRun,   config.maxStepsRun),
     maxStepsIdent:    parsePositiveInt(maxStepsIdent, config.maxStepsIdent),
     maxHistory:       parsePositiveInt(maxHistory,    config.maxHistory),
+    maxHistorySize:   parsePositiveInt(maxHistorySize, config.maxHistorySize),
     maxSize:          parsePositiveInt(maxSize,       config.maxSize),
     showPassingEquiv,
     wrapWidth:        parsePositiveInt(wrapWidth,     config.wrapWidth),
@@ -90,6 +92,15 @@ export function SettingsModal({ config, onApply, onCancel }: {
                   onChange={e => setMaxHistory(e.target.value)} />
               </td>
               <td className="settings-hint">reduction steps stored (panel scrolls)</td>
+            </tr>
+            <tr>
+              <td>max history size</td>
+              <td>
+                <input className="config-input" type="number" min={1000} max={10000000}
+                  value={maxHistorySize}
+                  onChange={e => setMaxHistorySize(e.target.value)} />
+              </td>
+              <td className="settings-hint">total AST nodes across history; oldest entries dropped beyond this</td>
             </tr>
             <tr>
               <td>max term size</td>

@@ -100,6 +100,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:set max-steps-print 500</code></td><td>beta step limit for print statements (bare or <code>:print</code>)</td></tr>
             <tr><td><code>:set max-steps-ident 500</code></td><td>beta step limit for definition matching / normalization</td></tr>
             <tr><td><code>:set max-history 20</code></td><td>max history entries stored</td></tr>
+            <tr><td><code>:set max-history-size 100000</code></td><td>max total AST nodes summed across history (oldest dropped)</td></tr>
             <tr><td><code>:set max-size 5000</code></td><td>max AST nodes before reduction halts</td></tr>
             <tr><td><code>:set normalize-defs</code></td><td>normalize defs at load time (default on); <code>no-normalize-defs</code> to disable</td></tr>
             <tr><td><code>:set allow-eta</code></td><td>enable η-reduction during normalization (default off); <code>no-allow-eta</code> to disable</td></tr>

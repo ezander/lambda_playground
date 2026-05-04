@@ -48,24 +48,26 @@ export type DefInfo = {
 };
 
 export type OptionsConfig = {
-  maxStepsPrint?: number;
-  maxStepsIdent?: number;
-  maxHistory?:    number;
-  normalizeDefs?: boolean;
-  maxSize?:       number;
-  allowEta?:      boolean;
+  maxStepsPrint?:  number;
+  maxStepsIdent?:  number;
+  maxHistory?:     number;
+  maxHistorySize?: number;
+  normalizeDefs?:  boolean;
+  maxSize?:        number;
+  allowEta?:       boolean;
 };
 
 // Option keys are split by value type so the parser can assign without casts.
-type NumericOptionKey = "maxStepsPrint" | "maxStepsIdent" | "maxHistory" | "maxSize";
+type NumericOptionKey = "maxStepsPrint" | "maxStepsIdent" | "maxHistory" | "maxHistorySize" | "maxSize";
 type BooleanOptionKey = "normalizeDefs" | "allowEta";
 
 export const NUMERIC_OPTIONS: Record<string, NumericOptionKey[]> = {
-  "max-steps":       ["maxStepsPrint", "maxStepsIdent"],
-  "max-steps-print": ["maxStepsPrint"],
-  "max-steps-ident": ["maxStepsIdent"],
-  "max-history":     ["maxHistory"],
-  "max-size":        ["maxSize"],
+  "max-steps":        ["maxStepsPrint", "maxStepsIdent"],
+  "max-steps-print":  ["maxStepsPrint"],
+  "max-steps-ident":  ["maxStepsIdent"],
+  "max-history":      ["maxHistory"],
+  "max-history-size": ["maxHistorySize"],
+  "max-size":         ["maxSize"],
 };
 
 export const BOOLEAN_OPTIONS: Record<string, BooleanOptionKey[]> = {
