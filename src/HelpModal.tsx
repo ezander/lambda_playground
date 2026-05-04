@@ -237,7 +237,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td>editor</td><td><a href="https://codemirror.net" target="_blank" rel="noopener noreferrer">CodeMirror 6</a></td></tr>
             <tr><td>lexer &amp; parser</td><td><a href="https://chevrotain.io" target="_blank" rel="noopener noreferrer">Chevrotain</a></td></tr>
             <tr><td>icons</td><td><a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">Lucide</a></td></tr>
-            <tr><td>zip export</td><td><a href="https://stuk.github.io/jszip" target="_blank" rel="noopener noreferrer">JSZip</a></td></tr>
+            <tr><td>zip backup</td><td><a href="https://stuk.github.io/jszip" target="_blank" rel="noopener noreferrer">JSZip</a></td></tr>
             <tr><td>URL compression</td><td><a href="https://github.com/pieroxy/lz-string" target="_blank" rel="noopener noreferrer">lz-string</a></td></tr>
           </tbody></table>
         </>}

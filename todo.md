@@ -2,6 +2,7 @@
 
 ## Done
 
+* [x] rename zip export/import to backup/restore (UI labels, tooltips, modal heading, identifiers, CSS classes); frees the word "import" for a future dialect importer
 * [x] auto-run toggle in output panel: when off, parse + imports only; π/≡ marked "not run"; click run to evaluate once for current source
 * [x] For the pretty-printer, assert that when reparsing the pretty-printed version, it is the same as the original AST
 * [x] Make everything after `#` a comment until the end of the line

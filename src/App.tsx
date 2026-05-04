@@ -226,7 +226,7 @@ function LambdaEditor({ source, extensions, onChange, onCreateEditor, onUpdate }
   );
 }
 
-function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, saveBtnRef, saveNameInputRef, onSaveOverwrite, saveName, onSaveNameChange, onSaveNameKeyDown, slotPickerRef, slotOpen, onToggleSlotOpen, savedSlots, onSwitchToScratch, onSwitchToSlot, onSaveSlotAs, onNewBuffer, onDeleteSlot, onDownload, onExport, importInputRef, onImportPick }: {
+function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, saveBtnRef, saveNameInputRef, onSaveOverwrite, saveName, onSaveNameChange, onSaveNameKeyDown, slotPickerRef, slotOpen, onToggleSlotOpen, savedSlots, onSwitchToScratch, onSwitchToSlot, onSaveSlotAs, onNewBuffer, onDeleteSlot, onDownload, onBackup, restoreInputRef, onRestorePick }: {
   loadedSlotName: string | null; showDirty: boolean; programResult: ProgramResult; autoSave: boolean;
   saveBtnRef: React.RefObject<HTMLButtonElement | null>; saveNameInputRef: React.RefObject<HTMLInputElement | null>;
   onSaveOverwrite: () => void; saveName: string;
@@ -234,8 +234,8 @@ function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, sa
   slotPickerRef: React.RefObject<HTMLDivElement | null>; slotOpen: boolean; onToggleSlotOpen: () => void;
   savedSlots: string[]; onSwitchToScratch: () => void; onSwitchToSlot: (name: string) => void;
   onSaveSlotAs: () => void; onNewBuffer: () => void; onDeleteSlot: () => void;
-  onDownload: () => void; onExport: () => void;
-  importInputRef: React.RefObject<HTMLInputElement | null>; onImportPick: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownload: () => void; onBackup: () => void;
+  restoreInputRef: React.RefObject<HTMLInputElement | null>; onRestorePick: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
   const hasWarnings = programResult.errors.some(e => e.kind === "warning");
@@ -288,12 +288,12 @@ function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, sa
       <div className="toolbar-group">
         <button className="ex-btn" onClick={onDownload}
           title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
-        <button className="ex-btn" onClick={onExport}
+        <button className="ex-btn" onClick={onBackup}
           disabled={savedSlots.length === 0}
-          title="Export all named buffers to a zip file">export</button>
-        <button className="ex-btn" onClick={() => importInputRef.current?.click()}
-          title="Import buffers from a zip file">import</button>
-        <input ref={importInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={onImportPick} />
+          title="Backup all named buffers to a zip file">backup</button>
+        <button className="ex-btn" onClick={() => restoreInputRef.current?.click()}
+          title="Restore buffers from a zip file">restore</button>
+        <input ref={restoreInputRef} type="file" accept=".zip" style={{ display: "none" }} onChange={onRestorePick} />
       </div>
     </div>
   );
@@ -952,9 +952,9 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [source, saveName]);
 
-  const handleExport = useCallback(async () => {
-    if (savedSlots.length === 0) { alert("No named buffers to export."); return; }
-    if (!window.confirm(`Export ${savedSlots.length} named buffer${savedSlots.length === 1 ? "" : "s"} to lambda-buffers.zip?`)) return;
+  const handleBackup = useCallback(async () => {
+    if (savedSlots.length === 0) { alert("No named buffers to backup."); return; }
+    if (!window.confirm(`Backup ${savedSlots.length} named buffer${savedSlots.length === 1 ? "" : "s"} to lambda-buffers.zip?`)) return;
     const zip = new JSZip();
     for (const name of savedSlots) {
       const content = localStorage.getItem(SAVE_PREFIX + name) ?? "";
@@ -967,24 +967,24 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [savedSlots]);
 
-  const [importItems, setImportItems] = useState<{ name: string; content: string; conflict: boolean; loaded: boolean; checked: boolean }[]>([]);
-  const [showImport, setShowImport]   = useState(false);
-  const showImportRef   = useRef(false);
-  showImportRef.current = showImport;
-  anyModalOpenRef.current = anyModalOpenRef.current || showImport;
-  const importInputRef   = useRef<HTMLInputElement>(null);
-  const importModalRef   = useRef<HTMLDivElement>(null);
-  useFocusTrap(importModalRef, showImport);
+  const [restoreItems, setRestoreItems] = useState<{ name: string; content: string; conflict: boolean; loaded: boolean; checked: boolean }[]>([]);
+  const [showRestore, setShowRestore]   = useState(false);
+  const showRestoreRef   = useRef(false);
+  showRestoreRef.current = showRestore;
+  anyModalOpenRef.current = anyModalOpenRef.current || showRestore;
+  const restoreInputRef   = useRef<HTMLInputElement>(null);
+  const restoreModalRef   = useRef<HTMLDivElement>(null);
+  useFocusTrap(restoreModalRef, showRestore);
   const saveNameInputRef = useRef<HTMLInputElement>(null);
   const saveBtnRef       = useRef<HTMLButtonElement>(null);
 
-  const handleImportPick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRestorePick = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
     try {
       const zip = await JSZip.loadAsync(file);
-      const items: typeof importItems = [];
+      const items: typeof restoreItems = [];
       for (const [path, entry] of Object.entries(zip.files)) {
         if (entry.dir || !path.endsWith(".txt")) continue;
         const content = await entry.async("string");
@@ -995,19 +995,19 @@ export default function App() {
       }
       if (items.length === 0) { alert("No .txt files found in zip."); return; }
       items.sort((a, b) => a.name.localeCompare(b.name));
-      setImportItems(items);
-      setShowImport(true);
+      setRestoreItems(items);
+      setShowRestore(true);
     } catch { alert("Could not read zip file."); }
   }, [savedSlots, loadedSlotName]);
 
-  const handleImportConfirm = useCallback(() => {
-    for (const item of importItems) {
+  const handleRestoreConfirm = useCallback(() => {
+    for (const item of restoreItems) {
       if (!item.checked) continue;
       localStorage.setItem(SAVE_PREFIX + item.name, item.content);
     }
     setSavedSlots(getSavedSlots());
-    setShowImport(false);
-  }, [importItems]);
+    setShowRestore(false);
+  }, [restoreItems]);
 
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(evalSession?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, evalSession, config.maxStepsRun]);
@@ -1059,7 +1059,7 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showImportRef.current)  { setShowImport(false);   return; }
+        if (showRestoreRef.current) { setShowRestore(false);  return; }
         if (showHelpRef.current)    { setShowHelp(false);     return; }
         if (showSettingsRef.current){ setShowSettings(false); return; }
         if (e.defaultPrevented) return; // CM6 handled it (e.g. closed autocomplete/search)
@@ -1160,31 +1160,31 @@ export default function App() {
   return (
     <div className={kinoActive ? "app kino" : "app"}>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
-      {showImport && (
-        <div className="modal-backdrop" onClick={() => setShowImport(false)}>
-          <div className="modal import-modal" ref={importModalRef} onClick={e => e.stopPropagation()}>
-            <h2>IMPORT BUFFERS</h2>
-            <div className="import-actions">
-              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: i.loaded ? false : true })))}>check all</button>
-              <button className="ex-btn" onClick={() => setImportItems(items => items.map(i => ({ ...i, checked: false })))}>uncheck all</button>
+      {showRestore && (
+        <div className="modal-backdrop" onClick={() => setShowRestore(false)}>
+          <div className="modal restore-modal" ref={restoreModalRef} onClick={e => e.stopPropagation()}>
+            <h2>RESTORE BUFFERS</h2>
+            <div className="restore-actions">
+              <button className="ex-btn" onClick={() => setRestoreItems(items => items.map(i => ({ ...i, checked: i.loaded ? false : true })))}>check all</button>
+              <button className="ex-btn" onClick={() => setRestoreItems(items => items.map(i => ({ ...i, checked: false })))}>uncheck all</button>
             </div>
-            <ul className="import-list">
-              {importItems.map((item, i) => (
+            <ul className="restore-list">
+              {restoreItems.map((item, i) => (
                 <li key={item.name}>
                   <label style={item.loaded ? { cursor: "default", opacity: 0.6 } : undefined}>
                     <input type="checkbox" checked={item.checked} disabled={item.loaded}
-                      onChange={e => setImportItems(items => items.map((it, j) => j === i ? { ...it, checked: e.target.checked } : it))} />
+                      onChange={e => setRestoreItems(items => items.map((it, j) => j === i ? { ...it, checked: e.target.checked } : it))} />
                     {" "}{item.name}
-                    {item.loaded   ? <span className="import-loaded-tag"> (currently loaded — cannot import)</span> :
-                     item.conflict ? <span className="import-conflict-tag"> (exists — overwrite?)</span> : ""}
+                    {item.loaded   ? <span className="restore-loaded-tag"> (currently loaded — cannot restore)</span> :
+                     item.conflict ? <span className="restore-conflict-tag"> (exists — overwrite?)</span> : ""}
                   </label>
                 </li>
               ))}
             </ul>
             <div className="modal-buttons">
-              <button className="ex-btn" onClick={handleImportConfirm}
-                disabled={importItems.every(i => !i.checked)}>import selected</button>
-              <button className="ex-btn" onClick={() => setShowImport(false)}>cancel</button>
+              <button className="ex-btn" onClick={handleRestoreConfirm}
+                disabled={restoreItems.every(i => !i.checked)}>restore selected</button>
+              <button className="ex-btn" onClick={() => setShowRestore(false)}>cancel</button>
             </div>
           </div>
         </div>
@@ -1234,8 +1234,8 @@ export default function App() {
             savedSlots={savedSlots} onSwitchToScratch={() => { switchToScratch(); setSlotOpen(false); }}
             onSwitchToSlot={name => { switchToSlot(name); setSlotOpen(false); }}
             onSaveSlotAs={handleSaveSlot} onNewBuffer={handleNewBuffer} onDeleteSlot={handleDeleteSlot}
-            onDownload={handleDownload} onExport={handleExport}
-            importInputRef={importInputRef} onImportPick={handleImportPick}
+            onDownload={handleDownload} onBackup={handleBackup}
+            restoreInputRef={restoreInputRef} onRestorePick={handleRestorePick}
           />
           <ContentToolbar
             onLoadExample={loadExample}

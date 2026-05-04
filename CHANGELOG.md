@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- Renamed the zip export/import feature to backup/restore (button labels, modal, tooltips).
+
 ## [1.0.3] - 2026-05-04
 
 ### Performance
