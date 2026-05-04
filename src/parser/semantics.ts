@@ -14,8 +14,8 @@ import {
   EquivInfo,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
-import { normalize, alphaEq, canonicalForm, findMatch, RunResult } from "../evaluator/eval";
-import { prettyPrint } from "./pretty";
+import { normalize, alphaEq, canonicalForm, findMatch as _findMatch, RunResult } from "../evaluator/eval";
+import { prettyPrint as _prettyPrint } from "./pretty";
 import { traceSummary, traceDetail, isDetailEnabled } from "../trace";
 
 // ── Definition expansion ───────────────────────────────────────────────────────
@@ -89,9 +89,46 @@ function cachedParseInclude(
 
 const mixinCache = new Map<string, ProgramResult>();
 
+// Test/bench helper: drop both caches so a subsequent parseProgram call does
+// the full include + mixin work from scratch. Not used by the app.
+export function clearIncludeCaches(): void {
+  includeCache.clear();
+  mixinCache.clear();
+}
+
+// Module-level phase accumulators. Each parseProgram call snapshots these on
+// entry and reports the delta as `result.timing`, so the timing field for any
+// call covers its own work *plus* nested includes/mixins triggered by it.
+// Single-threaded JS makes shared accumulators safe; nested calls are
+// strictly nested in time.
+const _phase = { parse: 0, eval: 0, pretty: 0, match: 0 };
+
+function tEval(label: string, term: Term, cfg: any): RunResult {
+  const t0 = performance.now();
+  const r = normalize(term, cfg);
+  const dt = performance.now() - t0;
+  _phase.eval += dt;
+  if (isDetailEnabled()) traceDetail(label, dt, normMeta(r));
+  return r;
+}
+
+function tPretty(term: Term): string {
+  const t0 = performance.now();
+  const r = _prettyPrint(term);
+  _phase.pretty += performance.now() - t0;
+  return r;
+}
+
+function tFindMatch(term: Term, defs: Map<string, { canon?: string }>): string | undefined {
+  const t0 = performance.now();
+  const r = _findMatch(term, defs);
+  _phase.match += performance.now() - t0;
+  return r;
+}
+
 function defsKey(defs: Map<string, Term>): string {
   return [...defs.entries()].sort(([a], [b]) => a < b ? -1 : 1)
-    .map(([k, v]) => `${k}:${prettyPrint(v)}`).join("|");
+    .map(([k, v]) => `${k}:${_prettyPrint(v)}`).join("|");
 }
 
 function cachedParseMixin(
@@ -307,16 +344,15 @@ export function parseProgram(
   const options: OptionsConfig = {};
   const equivFailed = { value: false };
 
-  // Tracing — accumulate eval time across all normalize calls.
-  let evalTotal = 0;
-  const timedNorm = (label: string, term: Term, cfg: any): RunResult => {
-    const t0 = performance.now();
-    const r = normalize(term, cfg);
-    const dt = performance.now() - t0;
-    evalTotal += dt;
-    if (isDetailEnabled()) traceDetail(label, dt, normMeta(r));
-    return r;
-  };
+  // Snapshot module-level phase accumulators on entry so we can report this
+  // call's *delta* as result.timing — covering work done in this call plus
+  // any nested parseProgram calls triggered via :import/:mixin.
+  const phase0 = { ..._phase };
+
+  // Local aliases keep the call sites below readable.
+  const timedNorm = tEval;
+  const prettyPrint = tPretty;
+  const findMatch = tFindMatch;
 
   if (!input.endsWith("\n")) input += "\n";
 
@@ -407,7 +443,9 @@ export function parseProgram(
     paramPositions: bindings.map(b => ({ from: b.nameTok.startOffset, to: (b.nameTok.endOffset ?? b.nameTok.startOffset) + 1 })),
   } : {};
 
-  traceSummary("parse total", performance.now() - tParseStart);
+  const parseElapsed = performance.now() - tParseStart;
+  _phase.parse += parseElapsed;
+  traceSummary("parse total", parseElapsed);
 
   // After an ≡ failure the rest of the program is skipped semantically, but we
   // still record positions for syntax highlighting (def names as defs, term
@@ -751,7 +789,13 @@ export function parseProgram(
     }
   }
 
-  traceSummary("eval total", evalTotal);
+  const timing = {
+    parse:       _phase.parse  - phase0.parse,
+    evalTotal:   _phase.eval   - phase0.eval,
+    prettyTotal: _phase.pretty - phase0.pretty,
+    matchTotal:  _phase.match  - phase0.match,
+  };
+  traceSummary("eval total", timing.evalTotal);
 
   return {
     ok: !equivFailed.value && errors.filter(e => e.kind !== "warning").length === 0,
@@ -766,5 +810,6 @@ export function parseProgram(
     printComprehensionInfos,
     equivComprehensionInfos,
     options,
+    timing,
   };
 }

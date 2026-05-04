@@ -29,6 +29,7 @@
     "build": "vite build",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "gen:grammar": "npx vite-node scripts/gen-grammar.mts"
+    "gen:grammar": "npx vite-node scripts/gen-grammar.mts",
+    "bench": "npx vite-node bench/run.mts"
   }
 }

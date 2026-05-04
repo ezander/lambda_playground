@@ -121,6 +121,7 @@ Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning
 npm run dev      # start Vite dev server with hot reload
 npm run build    # TypeScript compile + production bundle to /dist
 npm test         # run Vitest unit tests
+npm run bench    # parseProgram benchmark (writes JSON snapshot to bench/results/)
 npx tsc --noEmit # type-check without emitting
 ```
 

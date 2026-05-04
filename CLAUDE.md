@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # Start Vite dev server with hot reload
 npm run build    # TypeScript compile + production bundle to /dist
 npm test         # Run Vitest unit tests
+npm run bench    # parseProgram benchmark (3 workloads, JSON snapshot to bench/results/; --baseline <file> for delta)
 npx tsc --noEmit # Type-check without emitting
 ```
 

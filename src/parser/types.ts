@@ -141,6 +141,12 @@ export type ProgramResult = {
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];
   options:      OptionsConfig;
+  timing?: {
+    parse:        number;  // ms — lex + parse + visit
+    evalTotal:    number;  // ms — sum of normalize() calls
+    prettyTotal:  number;  // ms — sum of prettyPrint() calls
+    matchTotal:   number;  // ms — sum of findMatch() calls
+  };
 };
 
 export type ProgramRunConfig = {
