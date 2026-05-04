@@ -30,6 +30,8 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "gen:grammar": "npx vite-node scripts/gen-grammar.mts",
-    "bench": "npx vite-node bench/run.mts"
+    "bench": "npx vite-node bench/run.mts",
+    "bench:freeze": "node bench/freeze.mjs",
+    "bench:vs": "node bench/vs.mjs"
   }
 }

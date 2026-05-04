@@ -5,11 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev      # Start Vite dev server with hot reload
-npm run build    # TypeScript compile + production bundle to /dist
-npm test         # Run Vitest unit tests
-npm run bench    # parseProgram benchmark (3 workloads, JSON snapshot to bench/results/; --baseline <file> for delta)
-npx tsc --noEmit # Type-check without emitting
+npm run dev                    # Start Vite dev server with hot reload
+npm run build                  # TypeScript compile + production bundle to /dist
+npm test                       # Run Vitest unit tests
+npm run bench                  # parseProgram benchmark (3 workloads, JSON snapshot to bench/results/; --baseline <file> for delta)
+npm run bench:freeze <ref> <name>  # Capture a named baseline at <ref> via temporary git worktree → bench/baselines/<name>.json
+npm run bench:vs <name>        # Run current bench vs bench/baselines/<name>.json
+npx tsc --noEmit               # Type-check without emitting
 ```
 
 ## Architecture
@@ -70,6 +72,15 @@ Definition names starting with `_` are private: they work locally but are not ex
 ## Defaults
 
 `DEFAULT_CONFIG.autoSave` is `true` and load-bearing — Firefox tabs crash often enough that scratch/buffer loss is a real concern. Don't flip it back to `false` for "cleaner default UX"; the dirty-indicator tradeoff is accepted.
+
+## Bench baselines
+
+Named baselines live in `bench/baselines/` (tracked) and serve as fixed reference points for performance regressions. `bench/results/` holds ephemeral per-run snapshots (gitignored).
+
+- **Workloads are additive-only.** New workloads can be added to `bench/run.mts`; existing ones must not be edited or removed. Old baselines remain valid because they label exactly the workloads they ran. The bench harness shows "—" for workloads missing from a baseline.
+- **One canonical machine** — Elmar's laptop. Cross-machine numbers don't compare cleanly (thermal/scheduler noise), so on a machine change, regenerate every baseline with `npm run bench:freeze`.
+- **When to capture a baseline**: every tagged release (`v1.0.3.json`, …), plus named milestone commits for any non-trivial perf-affecting change (`pre-perf.json` = before any perf work; `post-hoist.json` = after the freeVars hoist; …). One commit per baseline; never overwrite.
+- **Caveat**: `bench:freeze` predates a commit's bench harness will fail — `b6d447e` is the earliest commit where the harness exists.
 
 ## Language design
 
