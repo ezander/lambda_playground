@@ -74,51 +74,53 @@ function freshName(base: string, avoid: Set<string>): string {
 // Capture-avoiding substitution.
 
 export function substitute(term: Term, x: string, replacement: Term): Term {
+  // freeVars(replacement) is invariant for the whole recursion; compute once.
+  return substIn(term, x, replacement, freeVars(replacement));
+}
+
+function substIn(term: Term, x: string, replacement: Term, fvRepl: Set<string>): Term {
   switch (term.kind) {
     case "Var":
       return term.name === x ? replacement : term;
 
     case "App":
       return App(
-        substitute(term.func, x, replacement),
-        substitute(term.arg,  x, replacement)
+        substIn(term.func, x, replacement, fvRepl),
+        substIn(term.arg,  x, replacement, fvRepl)
       );
 
     case "Abs": {
       // Bound variable is the same as what we're substituting — stop
       if (term.param === x) return term;
 
-      const fvRepl = freeVars(replacement);
-
       // No capture risk — substitute freely
       if (!fvRepl.has(term.param)) {
-        return Abs(term.param, substitute(term.body, x, replacement), term.eager);
+        return Abs(term.param, substIn(term.body, x, replacement, fvRepl), term.eager);
       }
 
       // Capture would occur — alpha-rename the bound variable first
       const avoid = new Set([...fvRepl, ...freeVars(term.body), x]);
       const fresh = freshName(term.param, avoid);
       const renamedBody = substitute(term.body, term.param, Var(fresh));
-      return Abs(fresh, substitute(renamedBody, x, replacement), term.eager);
+      return Abs(fresh, substIn(renamedBody, x, replacement, fvRepl), term.eager);
     }
 
     case "Subst": {
       // Subst(body, param, arg)[x := repl]
       // param acts as a binder for body (like Abs)
-      const newArg = substitute(term.arg, x, replacement);
+      const newArg = substIn(term.arg, x, replacement, fvRepl);
       if (term.param === x) {
         // param shadows x in body — only substitute in arg
         return Subst(term.body, term.param, newArg);
       }
-      const fvRepl = freeVars(replacement);
       if (!fvRepl.has(term.param)) {
-        return Subst(substitute(term.body, x, replacement), term.param, newArg);
+        return Subst(substIn(term.body, x, replacement, fvRepl), term.param, newArg);
       }
       // Capture-avoiding: rename param in body
       const avoid = new Set([...fvRepl, ...freeVars(term.body), x]);
       const fresh = freshName(term.param, avoid);
       const renamedBody = substitute(term.body, term.param, Var(fresh));
-      return Subst(substitute(renamedBody, x, replacement), fresh, newArg);
+      return Subst(substIn(renamedBody, x, replacement, fvRepl), fresh, newArg);
     }
   }
 }
