@@ -95,6 +95,11 @@ describe("dialect.convert — definitions", () => {
   it("does not touch = inside an expression", () => {
     expect(run("f x = a = b", { defEquals: true })).toBe("f x := a = b");
   });
+  it("digit-starting names (Church numerals)", () => {
+    expect(run("2 = λf x. f (f x)", { defEquals: true })).toBe("2 := λf x. f (f x)");
+    expect(run("12 = λf. 3 (4 f)",   { defEquals: true })).toBe("12 := λf. 3 (4 f)");
+    expect(run("4k = 12 2",          { defEquals: true })).toBe("4k := 12 2");
+  });
 });
 
 describe("dialect.convert — unindent", () => {
