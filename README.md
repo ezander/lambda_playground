@@ -21,6 +21,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 - Issues panel showing errors and warnings with click-to-jump
 - Cursor-tracked output panel: matching cell highlighted and scrolled into view as the cursor moves
 - Named buffers with auto-save; backup/restore as zip; share via URL
+- Best-effort import from other LC dialects (Haskell-style `\x -> y`, Lean-style `λx := y`, comment styles, etc.)
 - Docs, tutorials, and examples accessible from toolbar dropdowns
 - CodeMirror 6 editor with custom keybindings, autocomplete, block comment auto-close, paragraph reflow
 

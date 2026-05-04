@@ -155,6 +155,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><strong>▾</strong></td><td>dropdown of saved names</td></tr>
             <tr><td><strong>load / save / delete</strong></td><td>manage named slots in browser local storage</td></tr>
             <tr><td><strong>download</strong></td><td>download editor content as <em>name</em>.txt</td></tr>
+            <tr><td><strong>import</strong></td><td>best-effort lexical converter for files in other LC dialects (lambda token, comment style, definition operator); won't touch <code>let</code>/<code>where</code>/types</td></tr>
+            <tr><td><strong>backup</strong> / <strong>restore</strong></td><td>zip all named buffers / restore a previous backup with selective overwrite</td></tr>
           </tbody></table>
 
           <h3>history panel</h3>

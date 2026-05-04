@@ -337,6 +337,50 @@ label {
 /* ── Settings modal ── */
 .settings-modal { max-width: 380px; }
 
+/* ── Dialect import modal ── */
+.dialect-modal { max-width: 640px; }
+.dialect-note { font-size: 0.85rem; color: var(--muted, #888); margin: 0 0 0.8rem 0; line-height: 1.4; }
+.dialect-note code { font-family: var(--mono); font-size: 0.9em; }
+.dialect-section { margin-bottom: 0.8rem; }
+.dialect-section-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted, #888); margin-bottom: 0.3rem; }
+.dialect-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem; }
+.dialect-section-header .dialect-section-label { margin-bottom: 0; }
+.dialect-section-header-right { display: flex; align-items: center; gap: 0.5rem; }
+.dialect-row-label { font-family: var(--mono); font-size: 0.85rem; color: var(--muted, #888); }
+.dialect-file-btn { display: inline-block; cursor: pointer; }
+.dialect-filename { font-family: var(--mono); font-size: 0.85rem; color: var(--muted, #888); }
+.dialect-source, .dialect-preview { width: 100%; min-height: 6rem; max-height: 10rem; font-family: var(--mono); font-size: 0.85rem; padding: 0.4rem; box-sizing: border-box; margin-top: 0.3rem; }
+.dialect-preview { background: var(--bg-alt, #f7f7f7); }
+.dialect-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.8rem; }
+.dialect-check { font-family: var(--mono); font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; text-transform: none; }
+.dialect-radio { display: block; font-size: 0.9rem; cursor: pointer; margin: 0.2rem 0; text-transform: none; }
+.dialect-unindent-row { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.5rem; }
+.dialect-modal input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  vertical-align: middle;
+  margin: 0;
+}
+.dialect-modal input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0.45rem; height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+}
+.dialect-name-input { font-family: var(--mono); font-size: 0.85rem; margin-left: 0.4rem; padding: 0.15rem 0.3rem; }
+.dialect-conflict { color: var(--accent); font-size: 0.85em; }
+
 /* ── Restore modal ── */
 .restore-modal { max-width: 420px; }
 .restore-actions { display: flex; gap: 0.4rem; margin-bottom: 0.8rem; }

@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- Dialect importer (toolbar `import`): lexical converter for files in other LC dialects.
+
 ### Changed
 - Renamed the zip export/import feature to backup/restore (button labels, modal, tooltips).
 

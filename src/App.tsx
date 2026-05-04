@@ -3,6 +3,7 @@ import { parseProgram, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivCo
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
+import { DialectImportModal, DialectImportResult } from "./DialectImportModal";
 import { step, etaStep, findMatch } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-codemirror";
@@ -226,7 +227,7 @@ function LambdaEditor({ source, extensions, onChange, onCreateEditor, onUpdate }
   );
 }
 
-function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, saveBtnRef, saveNameInputRef, onSaveOverwrite, saveName, onSaveNameChange, onSaveNameKeyDown, slotPickerRef, slotOpen, onToggleSlotOpen, savedSlots, onSwitchToScratch, onSwitchToSlot, onSaveSlotAs, onNewBuffer, onDeleteSlot, onDownload, onBackup, restoreInputRef, onRestorePick }: {
+function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, saveBtnRef, saveNameInputRef, onSaveOverwrite, saveName, onSaveNameChange, onSaveNameKeyDown, slotPickerRef, slotOpen, onToggleSlotOpen, savedSlots, onSwitchToScratch, onSwitchToSlot, onSaveSlotAs, onNewBuffer, onDeleteSlot, onDownload, onDialectImport, onBackup, restoreInputRef, onRestorePick }: {
   loadedSlotName: string | null; showDirty: boolean; programResult: ProgramResult; autoSave: boolean;
   saveBtnRef: React.RefObject<HTMLButtonElement | null>; saveNameInputRef: React.RefObject<HTMLInputElement | null>;
   onSaveOverwrite: () => void; saveName: string;
@@ -234,7 +235,7 @@ function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, sa
   slotPickerRef: React.RefObject<HTMLDivElement | null>; slotOpen: boolean; onToggleSlotOpen: () => void;
   savedSlots: string[]; onSwitchToScratch: () => void; onSwitchToSlot: (name: string) => void;
   onSaveSlotAs: () => void; onNewBuffer: () => void; onDeleteSlot: () => void;
-  onDownload: () => void; onBackup: () => void;
+  onDownload: () => void; onDialectImport: () => void; onBackup: () => void;
   restoreInputRef: React.RefObject<HTMLInputElement | null>; onRestorePick: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const hasErrors = !programResult.ok || programResult.errors.some(e => e.kind !== "warning");
@@ -288,6 +289,8 @@ function BuffersToolbar({ loadedSlotName, showDirty, programResult, autoSave, sa
       <div className="toolbar-group">
         <button className="ex-btn" onClick={onDownload}
           title={`Download as ${(saveName.trim() || "lambda") + ".txt"}`}>download</button>
+        <button className="ex-btn" onClick={onDialectImport}
+          title="Import a file written in another lambda calculus dialect (best-effort lexical converter)">import</button>
         <button className="ex-btn" onClick={onBackup}
           disabled={savedSlots.length === 0}
           title="Backup all named buffers to a zip file">backup</button>
@@ -1009,6 +1012,28 @@ export default function App() {
     setShowRestore(false);
   }, [restoreItems]);
 
+  const [showDialectImport, setShowDialectImport] = useState(false);
+  const showDialectImportRef = useRef(false);
+  showDialectImportRef.current = showDialectImport;
+  anyModalOpenRef.current = anyModalOpenRef.current || showDialectImport;
+
+  const handleDialectConfirm = useCallback((r: DialectImportResult) => {
+    setShowDialectImport(false);
+    if (r.destination === "insertAtCursor") {
+      const view = editorViewRef.current;
+      if (!view) return;
+      const { from, to } = view.state.selection.main;
+      view.dispatch({ changes: { from, to, insert: r.text } });
+      view.focus();
+    } else {
+      const name = r.bufferName;
+      if (!name) return;
+      localStorage.setItem(SAVE_PREFIX + name, r.text);
+      setSavedSlots(getSavedSlots());
+      switchToSlot(name);
+    }
+  }, [switchToSlot]);
+
   const handleStep    = useCallback(() => advance(1),    [advance]);
   const handleRun     = useCallback(() => advance(evalSession?.effectiveConfig.maxStepsRun ?? config.maxStepsRun), [advance, evalSession, config.maxStepsRun]);
 
@@ -1060,6 +1085,7 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showRestoreRef.current) { setShowRestore(false);  return; }
+        if (showDialectImportRef.current) { setShowDialectImport(false); return; }
         if (showHelpRef.current)    { setShowHelp(false);     return; }
         if (showSettingsRef.current){ setShowSettings(false); return; }
         if (e.defaultPrevented) return; // CM6 handled it (e.g. closed autocomplete/search)
@@ -1189,6 +1215,13 @@ export default function App() {
           </div>
         </div>
       )}
+      {showDialectImport && (
+        <DialectImportModal
+          existingNames={savedSlots}
+          onConfirm={handleDialectConfirm}
+          onCancel={() => setShowDialectImport(false)}
+        />
+      )}
       {showSettings && (
         <SettingsModal
           config={config}
@@ -1234,7 +1267,7 @@ export default function App() {
             savedSlots={savedSlots} onSwitchToScratch={() => { switchToScratch(); setSlotOpen(false); }}
             onSwitchToSlot={name => { switchToSlot(name); setSlotOpen(false); }}
             onSaveSlotAs={handleSaveSlot} onNewBuffer={handleNewBuffer} onDeleteSlot={handleDeleteSlot}
-            onDownload={handleDownload} onBackup={handleBackup}
+            onDownload={handleDownload} onDialectImport={() => setShowDialectImport(true)} onBackup={handleBackup}
             restoreInputRef={restoreInputRef} onRestorePick={handleRestorePick}
           />
           <ContentToolbar
