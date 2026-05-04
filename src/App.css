@@ -1059,6 +1059,38 @@ label {
 }
 .help-diagrams-btn:hover { color: var(--text); border-color: var(--muted); }
 
+/* Versions are the primary navigational pins — make them prominent. */
+.help-changelog h3 {
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 1.4rem 0 0.4rem;
+}
+.help-changelog h3:first-child { margin-top: 0; }
+
+/* Category subheadings (Added / Changed / Performance) — same role as the
+   existing .modal h3, so match that style. */
+.help-changelog h4 {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0.9rem 0 0.3rem;
+}
+
+.help-changelog p { margin: 0.4rem 0; }
+.help-changelog ul { margin: 0.3rem 0 0.6rem 1.25rem; padding: 0; }
+.help-changelog li {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0.25rem 0;
+}
+
 
 /* ── Autocomplete tooltip ── */
 .cm-tooltip-autocomplete {

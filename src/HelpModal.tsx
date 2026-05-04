@@ -3,10 +3,12 @@ import { useFocusTrap } from "./useFocusTrap";
 import { createSyntaxDiagramsCode } from "chevrotain";
 import { parser } from "./parser/parser";
 import { generateEBNF } from "./parser/ebnf";
+import changelogSrc from "../CHANGELOG.md?raw";
+import { renderChangelog } from "./changelog";
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-type Tab = "language" | "editing" | "grammar" | "credits";
+type Tab = "language" | "editing" | "grammar" | "changelog" | "credits";
 
 export function HelpModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("language");
@@ -39,6 +41,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <button className={`help-tab-btn${tab === "language" ? " active" : ""}`} onClick={() => setTab("language")}>Language</button>
           <button className={`help-tab-btn${tab === "editing"  ? " active" : ""}`} onClick={() => setTab("editing")}>UI &amp; editing</button>
           <button className={`help-tab-btn${tab === "grammar"  ? " active" : ""}`} onClick={() => setTab("grammar")}>Grammar</button>
+          <button className={`help-tab-btn${tab === "changelog"? " active" : ""}`} onClick={() => setTab("changelog")}>Changelog</button>
           <button className={`help-tab-btn${tab === "credits"  ? " active" : ""}`} onClick={() => setTab("credits")}>Credits</button>
         </div>
 
@@ -172,6 +175,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <pre className="help-ebnf">{generateEBNF()}</pre>
         </>}
+
+        {/* ── Changelog tab ── */}
+        {tab === "changelog" && <div className="help-changelog">{renderChangelog(changelogSrc)}</div>}
 
         {/* ── Credits tab ── */}
         {tab === "credits" && <>
