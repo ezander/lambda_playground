@@ -14,7 +14,7 @@ An interactive browser-based environment for the untyped lambda calculus with st
 - Comprehension bindings: `:assert[p:={true,false}] (not (not p)) ≡ p`
 - Normal-order (leftmost-outermost) beta reduction with capture-avoiding substitution
 - Step-by-step or batch evaluation; optional substitution display; eta reduction
-- Import system: `:import "std/Church Booleans"`, `:mixin`, quiet imports
+- Import system: `:import "std/Church Booleans"`, `:mixin`, bracketed options (`[quiet]`, `[prefix="C"]`)
 - Bundled libraries (booleans, numerals, pairs, lists, combinators) with symbolic alias mixins
 - Live syntax highlighting: defined names, lambda binders, bound/free variables, comments
 - Greek letters and logic symbols in identifiers; backtick-quoted identifiers for arbitrary names
@@ -61,7 +61,8 @@ Lines starting with `:` are directives:
 ```
 :import "std/Church Booleans"   # import definitions from a module
 :import "user/my-buffer"        # import from a named user buffer
-:import "std/Pairs" quiet       # import without polluting autocomplete/match list
+:import[quiet] "std/Pairs"      # import without polluting autocomplete/match list
+:import[prefix="C"] "std/Church Numerals"  # prepend "C" to every imported name
 :mixin "std/Boolean Tests"      # import that can see existing defs
 :print expr                     # explicit print (same as a bare expression)
 :assert lhs ≡ rhs               # equivalence assertion

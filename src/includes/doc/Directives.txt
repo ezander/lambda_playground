@@ -61,7 +61,7 @@
 *#
 
 # Examples
-:import "std/Church Numerals Symbolic" quiet  # already :infix-marks +, *, etc.
+:import[quiet] "std/Church Numerals Symbolic"  # already :infix-marks +, *, etc.
 :print 2 + 3
 :print (2 + 3) * 4
 

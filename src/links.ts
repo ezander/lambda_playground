@@ -10,9 +10,12 @@ const LINK_RE    = /\[(doc|std|example|tutorial|user)\/([^\]\n]+)\]/g;
 const URL_LINK_RE = /\[https?:\/\/[^\]\n]+\]/g;
 
 // ── Import/mixin directive pattern ───────────────────────────────────────────
-// Matches the path inside :import "..." and :mixin "..." directive lines.
+// Matches the path inside :import[opts]? "..." and :mixin[opts]? "..." lines.
+// Group 1: the head up to (but not including) the path's opening quote — used
+// to locate the quote precisely even when the [opts] block contains "..." (as
+// in `prefix="C"`). Group 2: the path text.
 
-const INCLUDE_RE = /^[ \t]*:(?:import|mixin)\s+"([^"\n]+)"/gm;
+const INCLUDE_RE = /^([ \t]*:(?:import|mixin)\s*(?:\[[^\]]*\])?\s+)"([^"\n]+)"/gm;
 
 export type LinkHandler = (type: string, name: string) => void;
 
@@ -48,8 +51,8 @@ class LinkViewPlugin {
 
     INCLUDE_RE.lastIndex = 0;
     while ((m = INCLUDE_RE.exec(text)) !== null) {
-      const quoteStart = text.indexOf('"', m.index) + 1;
-      matches.push({ from: quoteStart, to: quoteStart + m[1].length, dead: false, pragma: true });
+      const quoteStart = m.index + m[1].length + 1;
+      matches.push({ from: quoteStart, to: quoteStart + m[2].length, dead: false, pragma: true });
     }
 
     matches.sort((a, b) => a.from - b.from);
@@ -121,10 +124,10 @@ function buildLinkTooltip(view: EditorView, pos: number) {
 
   INCLUDE_RE.lastIndex = 0;
   while ((m = INCLUDE_RE.exec(text)) !== null) {
-    const quoteStart = text.indexOf('"', m.index) + 1;
-    const from = quoteStart, to = quoteStart + m[1].length;
+    const quoteStart = m.index + m[1].length + 1;
+    const from = quoteStart, to = quoteStart + m[2].length;
     if (pos >= from && pos < to) {
-      if (!contentExists(m[1])) return null; // parser already reports the error
+      if (!contentExists(m[2])) return null; // parser already reports the error
       const linkText = text.slice(from, to);
       const msg = linkTooltipMessage(linkText, false, false, true);
       if (!msg) return null;

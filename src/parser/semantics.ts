@@ -1,5 +1,5 @@
 import { tokenMatcher } from "chevrotain";
-import { LambdaLexer, NewLine, findDirectiveCommentStart } from "./lexer";
+import { LambdaLexer, NewLine, findDirectiveCommentStart, MIXED } from "./lexer";
 import { Term, App, Abs } from "./ast";
 import { parser, astBuilder, tokenName, isEagerBinder, RawStmt, RawBinding } from "./grammar";
 import {
@@ -177,6 +177,45 @@ function formatSubstExpr(src: string, substs: { name: string; value: string }[])
 // resolve a path, parse the content, fold the resulting defs into the current
 // scope, and propagate the quiet flag. They differ only in whether the parsed
 // content sees the current defs (mixin does, import doesn't) and in wording.
+// Validates a prefix value: must be a (possibly empty) sequence of identifier
+// characters, so prefix+name yields a parseable identifier.
+const PREFIX_VALID = new RegExp(`^(?:${MIXED})*$`);
+
+function parseDirectiveOptions(
+  raw: string,
+  kindLow: string,
+  offset: number,
+  errors: LambdaError[],
+): { quiet: boolean; prefix: string } {
+  let quiet = false;
+  let prefix = "";
+  if (raw.trim().length === 0) return { quiet, prefix };
+  for (const rawTok of raw.split(",")) {
+    const tok = rawTok.trim();
+    if (tok.length === 0) continue;
+    const kv = tok.match(/^([a-zA-Z][\w-]*)\s*=\s*"([^"]*)"$/);
+    if (kv) {
+      const key = kv[1];
+      const val = kv[2];
+      if (key === "prefix") {
+        if (!PREFIX_VALID.test(val))
+          errors.push({ message: `Invalid prefix "${val}": must be a sequence of identifier characters`, offset, kind: "warning" });
+        else prefix = val;
+      } else {
+        errors.push({ message: `Unknown ${kindLow} option: "${key}"`, offset, kind: "warning" });
+      }
+      continue;
+    }
+    if (/^[a-zA-Z][\w-]*$/.test(tok)) {
+      if (tok === "quiet") quiet = true;
+      else errors.push({ message: `Unknown ${kindLow} option: "${tok}"`, offset, kind: "warning" });
+      continue;
+    }
+    errors.push({ message: `Malformed ${kindLow} option: "${tok}"`, offset, kind: "warning" });
+  }
+  return { quiet, prefix };
+}
+
 // Returns true when the directive was an import/mixin (handled or rejected
 // with errors); false when neither pattern matched.
 function processIncludeLike(
@@ -190,25 +229,24 @@ function processIncludeLike(
   includeStack: string[],
   equivFailed: { value: boolean },
 ): boolean {
-  const importMatch = text.match(/^import\s+"([^"]+)"(.*)$/);
-  const mixinMatch  = text.match(/^mixin\s+"([^"]+)"(.*)$/);
-  const match = importMatch ?? mixinMatch;
+  // Options live in an optional [...] block before the path. After the path,
+  // nothing else is allowed except the (already-stripped) trailing comment.
+  const match = text.match(/^(import|mixin)\s*(?:\[([^\]]*)\])?\s+"([^"]+)"(.*)$/);
   if (!match) return false;
-  const isMixin = !!mixinMatch;
+  const isMixin = match[1] === "mixin";
   const kindCap = isMixin ? "Mixin" : "Include";
   const kindLow = isMixin ? "mixin" : "include";
   const fileNoun = isMixin ? "mixin" : "included file";
 
-  const path = match[1];
-  // Modifiers are whitespace-separated tokens. Currently only "quiet" is
-  // recognized; unknown tokens warn individually so future modifiers can be
-  // added by extending this loop without touching the parsing.
-  const modTokens = match[2].trim().split(/\s+/).filter(t => t.length > 0);
-  let quiet = false;
-  for (const tok of modTokens) {
-    if (tok === "quiet") quiet = true;
-    else errors.push({ message: `Unknown ${kindLow} modifier: "${tok}" (expected "quiet" or none)`, offset, kind: "warning" });
+  const optsRaw = match[2] ?? "";
+  const path = match[3];
+  const trailing = match[4].trim();
+  if (trailing.length > 0) {
+    // Catches the old `:import "path" quiet` form and any other stray text.
+    errors.push({ message: `Unexpected text after path: "${trailing}". Options now go in brackets before the path: :${match[1]}[<opts>] "<path>"`, offset, kind: "warning" });
   }
+
+  const { quiet, prefix } = parseDirectiveOptions(optsRaw, kindLow, offset, errors);
 
   if (includeStack.includes(path)) {
     errors.push({ message: `Circular ${kindLow}: "${path}"`, offset });
@@ -235,17 +273,20 @@ function processIncludeLike(
   }
 
   // Names starting with `_` are private — they don't cross import/mixin boundaries.
+  // Prefix is applied AFTER the private filter, so prefixing never resurrects a
+  // private name. `prefix="_"` therefore makes every public import private locally.
   for (const [name, entry] of result.defs) {
     if (name.startsWith("_")) continue;
-    const prev = defEntries.get(name);
+    const exported = prefix + name;
+    const prev = defEntries.get(exported);
     if (prev && prev.canon !== undefined && entry.canon !== undefined && prev.canon !== entry.canon)
-      errors.push({ message: `Warning: '${name}' redefined with a different normal form (from ${kindLow} "${path}")`, offset, kind: "warning" });
-    defs.set(name, entry.term);
+      errors.push({ message: `Warning: '${exported}' redefined with a different normal form (from ${kindLow} "${path}")`, offset, kind: "warning" });
+    defs.set(exported, entry.term);
     // quiet modifier on the directive forces all imported names quiet; otherwise
     // we propagate whatever quiet flag the source file set on each name.
     // offset = first time this name became available (keep existing if already known).
     const isQuiet = quiet || entry.quiet;
-    defEntries.set(name, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
+    defEntries.set(exported, { term: entry.term, offset: prev?.offset ?? offset, quiet: isQuiet, infix: entry.infix, canon: entry.canon });
   }
   return true;
 }

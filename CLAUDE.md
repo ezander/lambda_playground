@@ -65,9 +65,12 @@ For the full EBNF, see [`docs/grammar.md`](docs/grammar.md) (regenerate with `np
 
 Definition names starting with `_` are private: they work locally but are not exported across `:import`/`:mixin` boundaries and are excluded from ≡ match display.
 
-### Quiet imports
+### Import options
 
-`:import "path" quiet` imports all non-private names but marks them as *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through import chains (if B quietly imports C, and A imports B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.
+`:import` and `:mixin` accept a bracketed, comma-separated, order-independent options block before the path: `:import[<opts>] "path"`. Recognized options:
+
+- **`quiet`** — imported names are *quiet*: hidden from the ≡ match list and autocomplete. Quiet status propagates through import chains (if B quietly imports C, and A imports B normally, C's names stay quiet in A). Local redefinition resets a name to visible. When the same name is imported multiple times, the latter import wins. Useful for tutorial utilities that provide infrastructure without cluttering the user's namespace.
+- **`prefix="<str>"`** — prepend `<str>` to every imported public name (private `_`-prefixed names are skipped first, then prefix is applied). Disambiguates competing libraries (`:import[prefix="C"] "Church Numerals"` and `:import[prefix="S"] "Scott Numerals"` coexist as `C0`/`S0`, …). The `infix` flag travels with the renamed name. The idiom `:import[prefix="_"] "lib"` rewrites every public name to start with `_`, making the import private locally and not re-exported.
 
 ## Defaults
 

@@ -65,7 +65,7 @@
 *#
 
 # Examples
-:import "std/Church Booleans" quiet
+:import[quiet] "std/Church Booleans"
 
 not (not true)                          # bare expression
 :print and true false                   # explicit :print, same effect

@@ -40,10 +40,22 @@
   already existing definition for "and".
 
   Sometimes, you want to include symbols, but don't want to directly see them
-  in dropdowns for code completion. In that case you can postfix the import
-  or mixin with "quiet", which hides the imported names from autocomplete and
-  the ≡ match list. The definitions are still there and active — they just
-  don't clutter the UI.
+  in dropdowns for code completion. In that case you can pass the "quiet"
+  option in the bracketed options block: ':import[quiet] "path"' hides the
+  imported names from autocomplete and the ≡ match list. The definitions are
+  still there and active — they just don't clutter the UI.
+
+  Two libraries that define the same name (Church and Scott numerals both
+  define "0", "succ", …) collide on import. To disambiguate, pass a "prefix"
+  option that prepends a string to every imported public name:
+
+    :import[prefix="C"] "std/Church Numerals"   # exports C0, Csucc, …
+    :import[prefix="S"] "std/Scott Numerals"    # exports S0, Ssucc, …
+
+  Options can be combined in any order: ':import[quiet, prefix="L"] "lib"'.
+  A useful idiom: ':import[prefix="_"] "lib"' rewrites every public name to
+  start with "_", which by the existing rules is private locally and not
+  re-exported — letting you use a library's helpers without leaking them.
 
   One final note: of course, you can also define your own definitions files and
   import them into other buffers. Say you've written a buffer that you have
@@ -57,7 +69,7 @@ true := λ x y . x Bool
 false := λ x y . y Bool
 if p t e := p (λ y . t) (λ y . e)
 # Embellish with logic operators in textual and symbolic form
-:mixin "std/Boolean Operators" quiet
+:mixin[quiet] "std/Boolean Operators"
 :mixin "std/Logic Symbols"
 :print true ∧ false
 :print false → true

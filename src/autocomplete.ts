@@ -93,12 +93,14 @@ function completionSource(context: CompletionContext): CompletionResult | null {
   // ── Directive context: : at line start ───────────────────────────────────────
   const trimmedLine = line.text.trimStart();
   if (trimmedLine.startsWith(":")) {
-    // Path completion for :import "..." and :mixin "..."
-    const pathMatch = line.text.match(/^\s*:(?:import|mixin)\s*"([^"]*)/);
+    // Path completion for :import[opts]? "..." and :mixin[opts]? "..."
+    // Capture the head explicitly so we don't mis-locate the path quote when
+    // the options bracket itself contains "..." (e.g. prefix="C").
+    const pathMatch = line.text.match(/^(\s*:(?:import|mixin)\s*(?:\[[^\]]*\])?\s*)"([^"]*)/);
     if (pathMatch) {
-      const quotePos = line.from + line.text.indexOf('"') + 1;
+      const quotePos = line.from + pathMatch[1].length + 1;
       if (context.pos >= quotePos) {
-        const typed = line.text.slice(line.text.indexOf('"') + 1, context.pos - line.from);
+        const typed = line.text.slice(pathMatch[1].length + 1, context.pos - line.from);
         return {
           from: quotePos,
           options: filterImportPaths(typed, getImportablePathOptions()),

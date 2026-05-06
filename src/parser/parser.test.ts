@@ -875,46 +875,50 @@ describe("include system", () => {
     expect(r.defs.has("_helper")).toBe(false);
   });
 
-  it("import quiet marks all imported names as quiet", () => {
+  it("import[quiet] marks all imported names as quiet", () => {
     const lib = "foo := λx. x\nbar := λy. y\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\" quiet\n", {}, res);
+    const r = parseProgram(":import[quiet] \"lib\"\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.has("bar")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(true);
     expect(r.defs.get("bar")?.quiet).toBe(true);
   });
 
-  it("mixin quiet marks all mixed-in names as quiet", () => {
+  it("mixin[quiet] marks all mixed-in names as quiet", () => {
     const lib = "foo := λx. x\nbar := λy. y\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":mixin \"lib\" quiet\n", {}, res);
+    const r = parseProgram(":mixin[quiet] \"lib\"\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.has("bar")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(true);
     expect(r.defs.get("bar")?.quiet).toBe(true);
   });
 
-  it("warns on unknown import/mixin modifiers per token", () => {
+  it("warns on unknown import/mixin options per token", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    // Single unknown token: warns about that token, foo still imports normally.
-    const r1 = parseProgram(":import \"lib\" quie\n", {}, res);
+    // Single unknown bare flag.
+    const r1 = parseProgram(":import[quie] \"lib\"\n", {}, res);
     expect(r1.defs.get("foo")?.quiet).toBe(false);
-    expect(r1.errors.find(e => e.message.includes("Unknown include modifier") && e.message.includes("quie"))).toBeDefined();
+    expect(r1.errors.find(e => e.message.includes("Unknown include option") && e.message.includes("quie"))).toBeDefined();
 
     // quiet + unknown: quiet still applies, unknown still warns.
-    const r2 = parseProgram(":import \"lib\" quiet bogus\n", {}, res);
+    const r2 = parseProgram(":import[quiet, bogus] \"lib\"\n", {}, res);
     expect(r2.defs.get("foo")?.quiet).toBe(true);
     expect(r2.errors.find(e => e.message.includes("\"bogus\""))).toBeDefined();
 
     // Multiple unknowns: warn for each separately.
-    const r3 = parseProgram(":import \"lib\" foo bar\n", {}, res);
-    expect(r3.errors.filter(e => e.message.includes("Unknown include modifier")).length).toBe(2);
+    const r3 = parseProgram(":import[foo, bar] \"lib\"\n", {}, res);
+    expect(r3.errors.filter(e => e.message.includes("Unknown include option")).length).toBe(2);
 
     // Mixin uses "mixin" wording in the warning, not "include".
-    const r4 = parseProgram(":mixin \"lib\" oopz\n", {}, res);
-    expect(r4.errors.find(e => e.message.includes("Unknown mixin modifier"))).toBeDefined();
+    const r4 = parseProgram(":mixin[oopz] \"lib\"\n", {}, res);
+    expect(r4.errors.find(e => e.message.includes("Unknown mixin option"))).toBeDefined();
+
+    // Unknown kv option warns by key.
+    const r5 = parseProgram(":import[suffix=\"X\"] \"lib\"\n", {}, res);
+    expect(r5.errors.find(e => e.message.includes("Unknown include option") && e.message.includes("suffix"))).toBeDefined();
   });
 
   it("strips trailing # comments from directive lines", () => {
@@ -927,8 +931,8 @@ describe("include system", () => {
     expect(r1.defs.get("foo")?.quiet).toBe(false);
     expect(r1.errors).toEqual([]);
 
-    // Comment after a recognized modifier: modifier still applies.
-    const r2 = parseProgram(":import \"lib\" quiet # justification\n", {}, res);
+    // Comment after a recognized option: option still applies.
+    const r2 = parseProgram(":import[quiet] \"lib\" # justification\n", {}, res);
     expect(r2.defs.get("foo")?.quiet).toBe(true);
     expect(r2.errors).toEqual([]);
 
@@ -950,10 +954,19 @@ describe("include system", () => {
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
+  it("empty options bracket is a no-op", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[] \"lib\"\n", {}, res);
+    expect(r.defs.has("foo")).toBe(true);
+    expect(r.defs.get("foo")?.quiet).toBe(false);
+    expect(r.errors).toEqual([]);
+  });
+
   it("local redefinition clears quiet flag", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\" quiet\nfoo ::= λy. y\n", {}, res);
+    const r = parseProgram(":import[quiet] \"lib\"\nfoo ::= λy. y\n", {}, res);
     expect(r.defs.has("foo")).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
@@ -961,20 +974,20 @@ describe("include system", () => {
   it("latter import wins: quiet then normal → visible", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\" quiet\n:import \"lib\"\n", {}, res);
+    const r = parseProgram(":import[quiet] \"lib\"\n:import \"lib\"\n", {}, res);
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
   it("latter import wins: normal then quiet → quiet", () => {
     const lib = "foo := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\"\n:import \"lib\" quiet\n", {}, res);
+    const r = parseProgram(":import \"lib\"\n:import[quiet] \"lib\"\n", {}, res);
     expect(r.defs.get("foo")?.quiet).toBe(true);
   });
 
   it("quiet flag propagates through include chain", () => {
     const inner = "bar := λx. x\n";
-    const outer = ":import \"inner\" quiet\nfoo := λy. y\n";
+    const outer = ":import[quiet] \"inner\"\nfoo := λy. y\n";
     const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
     // outer imports inner quietly → bar is quiet in outer
     // parent imports outer normally → bar stays quiet, foo is visible
@@ -985,13 +998,13 @@ describe("include system", () => {
     expect(r.defs.get("foo")?.quiet).toBe(false);
   });
 
-  it("import quiet forces transitive names quiet regardless of chain", () => {
+  it("import[quiet] forces transitive names quiet regardless of chain", () => {
     const inner = "bar := λx. x\n";
     const outer = ":import \"inner\"\nfoo := λy. y\n";
     const res = (path: string) => path === "inner" ? inner : path === "outer" ? outer : null;
     // outer imports inner normally → bar is visible in outer
     // parent imports outer quietly → both bar and foo become quiet
-    const r = parseProgram(":import \"outer\" quiet\n", {}, res);
+    const r = parseProgram(":import[quiet] \"outer\"\n", {}, res);
     expect(r.defs.get("bar")?.quiet).toBe(true);
     expect(r.defs.get("foo")?.quiet).toBe(true);
   });
@@ -999,10 +1012,104 @@ describe("include system", () => {
   it("quiet defs are excluded from match list in print output", () => {
     const lib = "id := λx. x\n";
     const res = (path: string) => path === "lib" ? lib : null;
-    const r = parseProgram(":import \"lib\" quiet\nλx. x\n", {}, res);
+    const r = parseProgram(":import[quiet] \"lib\"\nλx. x\n", {}, res);
     expect(r.printInfos).toHaveLength(1);
     // id is quiet → should NOT appear in match
     expect(r.printInfos[0].match).toBeUndefined();
+  });
+
+  it("legacy trailing 'quiet' form warns with migration hint", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import \"lib\" quiet\n", {}, res);
+    // Import still succeeds (path is recognized), but a warning points to new syntax.
+    expect(r.defs.has("foo")).toBe(true);
+    const warn = r.errors.find(e => e.message.includes("Unexpected text after path"));
+    expect(warn).toBeDefined();
+    expect(warn?.message).toContain("[<opts>]");
+    // The trailing 'quiet' is NOT applied (no silent acceptance).
+    expect(r.defs.get("foo")?.quiet).toBe(false);
+  });
+
+  it("prefix renames public defs", () => {
+    const lib = "zero := λs z. z\nsucc n := λs z. s (n s z)\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[prefix=\"C\"] \"lib\"\n", {}, res);
+    expect(r.defs.has("Czero")).toBe(true);
+    expect(r.defs.has("Csucc")).toBe(true);
+    expect(r.defs.has("zero")).toBe(false);
+    expect(r.defs.has("succ")).toBe(false);
+  });
+
+  it("two prefixed imports of competing libraries don't collide", () => {
+    const church = "zero := λs z. z\nsucc n := λs z. s (n s z)\n";
+    const scott = "zero := λs z. z\nsucc n := λs z. s n\n";
+    const res = (path: string) => path === "church" ? church : path === "scott" ? scott : null;
+    const r = parseProgram(":import[prefix=\"C\"] \"church\"\n:import[prefix=\"S\"] \"scott\"\n", {}, res);
+    expect(r.defs.has("Czero")).toBe(true);
+    expect(r.defs.has("Szero")).toBe(true);
+    expect(r.errors.filter(e => e.kind === "warning")).toEqual([]);
+  });
+
+  it("prefix skips private defs", () => {
+    const lib = "_helper := λx. x\npublic := λy. y\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[prefix=\"S\"] \"lib\"\n", {}, res);
+    expect(r.defs.has("Spublic")).toBe(true);
+    expect(r.defs.has("S_helper")).toBe(false);
+    expect(r.defs.has("_helper")).toBe(false);
+  });
+
+  it("prefix=\"_\" makes imported defs private locally and not re-exported", () => {
+    const lib = "cons := λh t. λc n. c h (t c n)\n";
+    const outer = ":import[prefix=\"_\"] \"lib\"\nuser := _cons\n";
+    const res = (path: string) => path === "lib" ? lib : path === "outer" ? outer : null;
+    const r = parseProgram(":import \"outer\"\n", {}, res);
+    // _cons works inside outer — proven by `user := _cons` not erroring out.
+    expect(r.errors.filter(e => e.kind !== "warning")).toEqual([]);
+    expect(r.defs.has("user")).toBe(true);
+    // _cons is private → not re-exported up to the parent.
+    expect(r.defs.has("_cons")).toBe(false);
+    expect(r.defs.has("cons")).toBe(false);
+  });
+
+  it("quiet and prefix combine, order-independent", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r1 = parseProgram(":import[quiet, prefix=\"X\"] \"lib\"\n", {}, res);
+    const r2 = parseProgram(":import[prefix=\"X\", quiet] \"lib\"\n", {}, res);
+    for (const r of [r1, r2]) {
+      expect(r.defs.has("Xfoo")).toBe(true);
+      expect(r.defs.get("Xfoo")?.quiet).toBe(true);
+    }
+  });
+
+  it("infix flag follows prefix rename", () => {
+    // Library defines `+` as infix and aliases it to add.
+    const lib = "add a b := a\n+ := add\n:infix +\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[prefix=\"S\"] \"lib\"\n", {}, res);
+    expect(r.defs.has("Sadd")).toBe(true);
+    expect(r.defs.has("S+")).toBe(true);
+    // infix is per-DefEntry — the renamed `S+` carries the flag.
+    expect(r.defs.get("S+")?.infix).toBe(true);
+    expect(r.defs.get("Sadd")?.infix).toBe(false);
+  });
+
+  it("invalid prefix value warns and is treated as empty", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[prefix=\"bad space\"] \"lib\"\n", {}, res);
+    expect(r.errors.find(e => e.message.includes("Invalid prefix"))).toBeDefined();
+    // Falls back to empty prefix → name imports unchanged.
+    expect(r.defs.has("foo")).toBe(true);
+  });
+
+  it("malformed option token warns", () => {
+    const lib = "foo := λx. x\n";
+    const res = (path: string) => path === "lib" ? lib : null;
+    const r = parseProgram(":import[prefix=missingquotes] \"lib\"\n", {}, res);
+    expect(r.errors.find(e => e.message.includes("Malformed include option"))).toBeDefined();
   });
 
   it("visible defs still appear in match list", () => {
