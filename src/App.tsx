@@ -13,7 +13,7 @@ import { openSearchPanel } from "@codemirror/search";
 import { lambdaTheme, lambdaKeymap, GREEK_SYMBOLS, LOGIC_SYMBOLS, SET_SYMBOLS, MATH_SYMBOLS } from "./editor";
 import { makeWrapExtensions, wrapCompartment } from "./rewrap";
 import { lambdaComplete, lambdaCompleteKeymap, autocompleteWheelPlugin } from "./autocomplete";
-import { Settings, Share2, Maximize2, Minimize2, Copy, Check } from "lucide-react";
+import { Settings, Share2, Maximize2, Minimize2, Copy, Check, CornerUpLeft } from "lucide-react";
 import { lambdaHighlight, lambdaDiagnosticTooltip, setParsed, parsedField } from "./highlight";
 import { lambdaLinks, LinkHandler } from "./links";
 import "./App.css";
@@ -89,16 +89,28 @@ function Truncated({ text }: { text: string }) {
   return <TruncatedText key={text} text={text} />;
 }
 
-function CopyButton({ text, title = "Copy" }: { text: string; title?: string }) {
+function GotoBtn({ onGoto }: { onGoto: () => void }) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onGoto();
+  };
+  return (
+    <button className="line-action-btn line-goto-btn" onClick={handleClick} title="Go to source" aria-label="Go to source">
+      <CornerUpLeft size={14} />
+    </button>
+  );
+}
+
+function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
-  const onClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
   return (
-    <button className="copy-btn" onClick={onClick} title={title} aria-label={title}>
+    <button className="line-action-btn line-copy-btn" onClick={handleClick} title="Copy result" aria-label="Copy result">
       {copied ? <Check size={14} /> : <Copy size={14} />}
     </button>
   );
@@ -532,8 +544,9 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
       {hasContent ? (
         <div className="print-section" ref={sectionRef}>
           {items.map((item, i) => item.kind === "print" ? (
-            <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
               <code className="print-src">
+                <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />
                 <span className="print-src-text">
                   <span className="print-index">{item.data.line}:</span>
                   {" "}{item.data.src}
@@ -542,6 +555,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               </code>
               {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
                 <code className="print-result">
+                  <CopyBtn text={item.data.result} />
                   <span className="print-result-text"><Truncated text={item.data.result} /></span>
                   <span className="print-result-status">
                     {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
@@ -551,13 +565,13 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                         ? <span className="eval-status did-not-terminate">exceeded size limit</span>
                         : <span className="eval-status did-not-terminate">did not terminate</span>}
                   </span>
-                  <CopyButton text={item.data.result} title="Copy result" />
                 </code>
               )}
             </div>
           ) : item.kind === "equiv" ? (
-            <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
               <code className="print-src">
+                <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />
                 <span className="print-src-text">
                   <span className="print-index">{item.data.line}:</span>
                   {" "}{item.data.src1}
@@ -570,6 +584,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               </code>
               {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
                 <code className="print-result">
+                  <CopyBtn text={`${item.data.norm1} ${item.opSym} ${item.data.norm2}`} />
                   <span className="print-result-text">
                     <Truncated text={item.data.norm1} />
                     <span className={`equiv-op ${item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
@@ -582,16 +597,18 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                         ? <span className={`eval-status ${item.passed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
                         : <span className="eval-status did-not-terminate">no normal form</span>}
                   </span>
-                  <CopyButton text={`${item.data.norm1} ${item.opSym} ${item.data.norm2}`} title="Copy result" />
                 </code>
               )}
             </div>
           ) : item.kind === "print-comp" ? (
-            <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry print-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
               <code className="print-src">
-                <span className="print-index">{item.data.line}:</span>
-                {" "}{item.data.src}
-                <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />
+                <span className="print-src-text">
+                  <span className="print-index">{item.data.line}:</span>
+                  {" "}{item.data.src}
+                  <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                </span>
               </code>
               {item.data.notRun && <span className="eval-status not-run">not run</span>}
               <div className="comp-rows">
@@ -604,6 +621,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                         {row.stats && <StatsBadge stats={row.stats} />}
                       </code>
                       <code className="print-result">
+                        <CopyBtn text={row.result} />
                         <span className="print-result-text"><Truncated text={row.result} /></span>
                         <span className="print-result-status">
                           {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
@@ -613,7 +631,6 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                               ? <span className="eval-status did-not-terminate">exceeded size limit</span>
                               : <span className="eval-status did-not-terminate">did not terminate</span>}
                         </span>
-                        <CopyButton text={row.result} title="Copy result" />
                       </code>
                     </div>
                   </div>
@@ -621,13 +638,16 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
               </div>
             </div>
           ) : (
-            <div key={i} className={"print-entry equiv-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
+            <div key={i} className={"print-entry equiv-comp-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
               <code className="print-src">
-                <span className="print-index">{item.data.line}:</span>
-                {" "}{item.data.src1}
-                <span className={`equiv-op ${item.data.notRun ? "" : item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
-                {item.data.src2}
-                <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />
+                <span className="print-src-text">
+                  <span className="print-index">{item.data.line}:</span>
+                  {" "}{item.data.src1}
+                  <span className={`equiv-op ${item.data.notRun ? "" : item.data.allPassed ? "equiv-pass" : "equiv-fail"}`}> {item.data.negated ? "≢" : "≡"} </span>
+                  {item.data.src2}
+                  <span className="comp-spec"> [{item.data.bindings.map(b => `${b.name}:={${b.values.join(",")}}`).join(", ")}]</span>
+                </span>
               </code>
               {item.data.notRun && <span className="eval-status not-run">not run</span>}
               <div className="comp-rows">
@@ -649,6 +669,7 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                           )}
                         </code>
                         <code className="print-result">
+                          <CopyBtn text={`${row.norm1} ${item.data.negated ? "≢" : "≡"} ${row.norm2}`} />
                           <span className="print-result-text">
                             <Truncated text={row.norm1} />
                             <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
@@ -661,7 +682,6 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                                 ? <span className={`eval-status ${rowPassed ? "normal-form" : "did-not-terminate"}`}>not equivalent</span>
                                 : <span className="eval-status did-not-terminate">no normal form</span>}
                           </span>
-                          <CopyButton text={`${row.norm1} ${item.data.negated ? "≢" : "≡"} ${row.norm2}`} title="Copy result" />
                         </code>
                       </div>
                     </div>
