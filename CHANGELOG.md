@@ -4,7 +4,22 @@ All notable changes to the λ playground are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-05-07
+
+### Added
+- `:import[prefix="…"] "path"` — prepend a string to every imported public name, letting two libraries coexist (`:import[prefix="C"] "Church Numerals"` and `:import[prefix="S"] "Scott Numerals"` give `C0`/`S0`, …). The idiom `:import[prefix="_"] "lib"` makes an import private locally.
+- Output panel: each print / ≡ / bare expression now shows a muted runtime-stats badge — β-reductions, time, and peak term size during evaluation. Equiv assertions show the aggregate, with the lhs/rhs breakdown in the tooltip.
+
+### Changed
+- `:import` / `:mixin` options moved into a bracketed prefix (`:import[quiet] "path"`); the old trailing `quiet` keyword is parsed but warns.
+- `F5` now only reduces the current expression in the eval panel. `Ctrl-F5` runs the print / ≡ statements in the output panel. `Ctrl-Shift-F5` toggles auto-run.
+- Output panel rows: row-wide click replaced by explicit hover buttons — a goto-source button on each source line, a copy-result button on each result line. Status text reads flush-right.
+- Dialect importer (toolbar `import`): unindents the whole input by default.
+
+### Fixed
+- `F5` no longer resets the eval panel after running.
+- Dialect importer (toolbar `import`): accepts identifiers that start with a digit.
+- Aliased imports (e.g. `+ := plus` in `Numeric Symbols`) now identify in the match list under `:set no-normalize-defs` and through `:mixin` boundaries.
 
 ## [1.0.4] - 2026-05-04
 
