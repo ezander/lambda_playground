@@ -32,6 +32,18 @@ export function alphaEq(t1: Term, t2: Term): boolean {
   return canonicalForm(t1) === canonicalForm(t2);
 }
 
+// True if `t` contains no beta-redex (and no Subst node, which is by
+// construction an unresolved redex). On NF terms, `canonicalForm(t)` is a
+// well-defined match key; on non-NF terms it isn't.
+export function isBetaNF(t: Term): boolean {
+  switch (t.kind) {
+    case "Var":   return true;
+    case "Abs":   return isBetaNF(t.body);
+    case "App":   return t.func.kind !== "Abs" && isBetaNF(t.func) && isBetaNF(t.arg);
+    case "Subst": return false;
+  }
+}
+
 // ── Free variables ────────────────────────────────────────────────────────────
 
 export function freeVars(term: Term): Set<string> {

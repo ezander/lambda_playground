@@ -745,6 +745,92 @@ describe("pragma value syntax", () => {
     // Without: f = λx. (λy. y) x (redex preserved)
     expect(prettyPrint(withoutNorm.defs.get("f")!.term)).not.toBe("λx. x");
   });
+
+  it("alias under no-normalize-defs gets canon when body is in NF", () => {
+    // plus normalizes while normalize is on → its term is stored in NF and
+    // gets a canon. + := plus under no-normalize-defs expands to plus's
+    // already-NF body, so + picks up an equivalent canon via the isBetaNF
+    // fallback and identifies in the match list.
+    const r = parseProgram(
+      "plus := λm n s z. m s (n s z)\n" +
+      ":set no-normalize-defs\n" +
+      "+ := plus\n",
+    );
+    expect(r.defs.get("plus")?.canon).toBeDefined();
+    expect(r.defs.get("+")?.canon).toBe(r.defs.get("plus")?.canon);
+  });
+
+  it("non-NF body under no-normalize-defs gets no canon", () => {
+    // (λy. y) x is a beta-redex inside f's body — body is not in NF, so
+    // isBetaNF returns false and canon stays undefined. Must NOT fabricate
+    // a canon from a non-NF term (would produce meaningless match keys).
+    const r = parseProgram(
+      ":set no-normalize-defs\n" +
+      "f x := (λy. y) x\n",
+    );
+    expect(r.defs.get("f")?.canon).toBeUndefined();
+  });
+
+  it("NF body under no-normalize-defs gets canon even without alias chain", () => {
+    // λx. x is already in NF — under no-normalize-defs, the normalize block
+    // doesn't run, but the isBetaNF fallback sets canon directly.
+    const r = parseProgram(
+      ":set no-normalize-defs\n" +
+      "id := λx. x\n",
+    );
+    expect(r.defs.get("id")?.canon).toBeDefined();
+  });
+
+  it("alias canon transits through chains under no-normalize-defs", () => {
+    const r = parseProgram(
+      "plus := λm n s z. m s (n s z)\n" +
+      ":set no-normalize-defs\n" +
+      "+ := plus\n" +
+      "++ := +\n",
+    );
+    const plusCanon = r.defs.get("plus")?.canon;
+    expect(plusCanon).toBeDefined();
+    expect(r.defs.get("+")?.canon).toBe(plusCanon);
+    expect(r.defs.get("++")?.canon).toBe(plusCanon);
+  });
+
+  it("def with params has canon distinct from its body reference", () => {
+    // f x := plus is λx. plus — NF, but NOT alpha-equivalent to plus itself.
+    // Both should have canons (bodies are NF), but they must differ.
+    const r = parseProgram(
+      "plus := λm n s z. m s (n s z)\n" +
+      ":set no-normalize-defs\n" +
+      "f x := plus\n",
+    );
+    const plusCanon = r.defs.get("plus")?.canon;
+    const fCanon    = r.defs.get("f")?.canon;
+    expect(plusCanon).toBeDefined();
+    expect(fCanon).toBeDefined();
+    expect(fCanon).not.toBe(plusCanon);
+  });
+
+  it("alias canon survives :mixin boundary under no-normalize-defs", () => {
+    // Repro of the Church Numerals Symbolic case: outer file imports plus
+    // (normalized → canon set), then mixes in a file that does
+    // `:set no-normalize-defs; + := plus`. Without the isBetaNF fallback
+    // running inside the mixin's parseProgram, + would lose its canon
+    // because cachedParseMixin doesn't pass parent's defEntries through.
+    const resolver = (path: string) => {
+      const files: Record<string, string> = {
+        "outer/Numerals":      "plus := λm n s z. m s (n s z)\n",
+        "outer/Symbols":       ":set no-normalize-defs\n+ := plus\n",
+      };
+      return files[path] ?? null;
+    };
+    const r = parseProgram(
+      ":import \"outer/Numerals\"\n:mixin \"outer/Symbols\"\n",
+      {}, resolver,
+    );
+    expect(r.errors.filter(e => e.kind !== "warning")).toHaveLength(0);
+    const plusCanon = r.defs.get("plus")?.canon;
+    expect(plusCanon).toBeDefined();
+    expect(r.defs.get("+")?.canon).toBe(plusCanon);
+  });
 });
 
 // ── Error clickability: every error must carry an offset ─────────────────────

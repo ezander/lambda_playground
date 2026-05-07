@@ -14,7 +14,7 @@ import {
   EquivInfo,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
-import { normalize, alphaEq, canonicalForm, findMatch as _findMatch, RunResult } from "../evaluator/eval";
+import { normalize, alphaEq, canonicalForm, isBetaNF, findMatch as _findMatch, RunResult } from "../evaluator/eval";
 import { prettyPrint as _prettyPrint } from "./pretty";
 import { traceSummary, traceDetail, isDetailEnabled } from "../trace";
 
@@ -559,6 +559,15 @@ export function parseProgram(
             canon = canonicalForm(body);
           }
         }
+        // If the normalize block didn't run (or didn't reach NF), the body
+        // may still already be in beta-NF — e.g. `+ := plus` under
+        // `:set no-normalize-defs` expands to plus's already-normalized
+        // term. In that case `canonicalForm(body)` is a valid match key.
+        // Travels through :mixin transparently (no extra state passed).
+        // Skipped under runEval=false: nothing is ever matched against in
+        // that mode, so don't waste the traversal.
+        if (canon === undefined && (merged.runEval ?? true) && isBetaNF(body))
+          canon = canonicalForm(body);
 
         if (stmt.redef) {
           if (!defs.has(name))
