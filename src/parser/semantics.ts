@@ -361,9 +361,9 @@ function processDirective(
 // ── Main program parser ───────────────────────────────────────────────────────
 
 function normMeta(r: RunResult): string {
-  if (r.kind === "normalForm") return `steps=${r.steps}`;
-  if (r.kind === "stepLimit")  return `stepLimit steps=${r.steps}`;
-  return `sizeLimit steps=${r.steps} size=${r.size}`;
+  if (r.kind === "normalForm") return `steps=${r.stats.steps}`;
+  if (r.kind === "stepLimit")  return `stepLimit steps=${r.stats.steps}`;
+  return `sizeLimit steps=${r.stats.steps} size=${r.stats.maxSize}`;
 }
 
 function shortSrc(s: string, max = 22): string {
@@ -609,7 +609,7 @@ export function parseProgram(
             for (const b of stmt.bindings) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
           } else {
             printInfos.push({
-              src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
+              src: prettyPrint(stmt.term), result: "",
               offset: stmt.offset, line: currentLine, endOffset, notRun: true,
             });
             exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
@@ -639,13 +639,12 @@ export function parseProgram(
             const wrappedTerm = applySubsts(expandedBase, combo.map(c => ({ name: c.name, value: c.valueTerm })));
             const compStr = combo.map(c => `${c.name}=${c.valueSrc}`).join(",");
             const runResult = timedNorm(`π ${shortSrc(baseSrc)} [${compStr}]`, wrappedTerm, cfg);
-            const { term: normalizedTerm, kind, steps } = runResult;
+            const { term: normalizedTerm, kind, stats } = runResult;
             rows.push({
               substExpr: formatSubstExpr(baseSrc, combo.map(c => ({ name: c.name, value: c.valueSrc }))),
               result:    prettyPrint(normalizedTerm),
-              normal:    kind === "normalForm",
-              steps,
-              size:      kind === "sizeLimit" ? runResult.size : undefined,
+              runKind:   kind,
+              stats,
               match:     kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             });
           }
@@ -660,14 +659,13 @@ export function parseProgram(
         } else {
           const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
           const runResult = timedNorm(`π ${shortSrc(prettyPrint(stmt.term))}`, expanded, cfg);
-          const { term: normalizedTerm, kind, steps } = runResult;
+          const { term: normalizedTerm, kind, stats } = runResult;
           const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
           printInfos.push({
             src:    prettyPrint(stmt.term),
             result: prettyPrint(normalizedTerm),
-            normal: kind === "normalForm",
-            steps,
-            size:   kind === "sizeLimit" ? runResult.size : undefined,
+            runKind: kind,
+            stats,
             match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             offset: stmt.offset,
             line:   currentLine,
@@ -746,6 +744,8 @@ export function parseProgram(
               norm2: prettyPrint(r2.term),
               equivalent,
               terminated,
+              stats1: r1.stats,
+              stats2: r2.stats,
             });
           }
 
@@ -781,6 +781,8 @@ export function parseProgram(
             offset: stmt.offset,
             line: currentLine,
             endOffset,
+            stats1: r1.stats,
+            stats2: r2.stats,
           });
           if (!passed) {
             equivFailed.value = true;
@@ -813,20 +815,19 @@ export function parseProgram(
         // A bare expression prints to the output panel (like :print expr).
         if (!runEval) {
           printInfos.push({
-            src: prettyPrint(stmt.term), result: "", normal: false, steps: 0,
+            src: prettyPrint(stmt.term), result: "",
             offset: stmt.offset, line: currentLine, endOffset, notRun: true,
           });
         } else {
           const expanded = expandDefs(swapInfix(stmt.term, infx), defs);
           const runResult = timedNorm(`expr ${shortSrc(prettyPrint(stmt.term))}`, expanded, cfg);
-          const { term: normalizedTerm, kind, steps } = runResult;
+          const { term: normalizedTerm, kind, stats } = runResult;
           const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
           printInfos.push({
             src:    prettyPrint(stmt.term),
             result: prettyPrint(normalizedTerm),
-            normal: kind === "normalForm",
-            steps,
-            size:   kind === "sizeLimit" ? runResult.size : undefined,
+            runKind: kind,
+            stats,
             match:  kind === "normalForm" ? findMatch(normalizedTerm, visibleDefEntries) : undefined,
             offset: stmt.offset,
             line:   currentLine,

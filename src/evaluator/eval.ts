@@ -240,10 +240,16 @@ export function findMatch(
 
 // ── Run to normal form ────────────────────────────────────────────────────────
 
+export type RunStats = {
+  steps:   number;  // beta (and eta if enabled) reduction steps performed
+  ms:      number;  // wall-clock time spent inside the normalize loop
+  maxSize: number;  // peak term size observed across the run
+};
+
 export type RunResult =
-  | { kind: "normalForm"; term: Term; steps: number }
-  | { kind: "stepLimit"; term: Term; steps: number }
-  | { kind: "sizeLimit"; term: Term; steps: number; size: number };
+  | { kind: "normalForm"; term: Term; stats: RunStats }
+  | { kind: "stepLimit";  term: Term; stats: RunStats }
+  | { kind: "sizeLimit";  term: Term; stats: RunStats };
 
 const DEFAULT_STEP_LIMIT = 1000;
 const DEFAULT_SIZE_LIMIT = 30_000;
@@ -268,17 +274,26 @@ export function normalize(
 ): RunResult {
   const stepLimit = config.maxSteps ?? DEFAULT_STEP_LIMIT;
   const sizeLimit = config.maxSize  ?? DEFAULT_SIZE_LIMIT;
+  const t0 = performance.now();
   let current = term;
   let steps = 0;
+  let maxSize = current.size;
   while (steps < stepLimit) {
     const next = step(current) ?? (config.allowEta ? etaStep(current) : null);
-    if (next === null) return { kind: "normalForm", term: current, steps };
+    if (next === null) {
+      return { kind: "normalForm", term: current, stats: { steps, ms: performance.now() - t0, maxSize } };
+    }
     current = next;
     steps++;
-    if (current.size > sizeLimit) return { kind: "sizeLimit", term: current, steps, size: current.size };
+    if (current.size > maxSize) maxSize = current.size;
+    if (current.size > sizeLimit) {
+      return { kind: "sizeLimit", term: current, stats: { steps, ms: performance.now() - t0, maxSize } };
+    }
   }
   // The last step may have produced a normal form — check before declaring step limit
   const finalNext = step(current) ?? (config.allowEta ? etaStep(current) : null);
-  if (finalNext === null) return { kind: "normalForm", term: current, steps };
-  return { kind: "stepLimit", term: current, steps };
+  if (finalNext === null) {
+    return { kind: "normalForm", term: current, stats: { steps, ms: performance.now() - t0, maxSize } };
+  }
+  return { kind: "stepLimit", term: current, stats: { steps, ms: performance.now() - t0, maxSize } };
 }

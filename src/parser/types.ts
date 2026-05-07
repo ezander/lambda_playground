@@ -1,4 +1,5 @@
 import { Term, Var, Abs, Pos } from "./ast";
+import { RunStats } from "../evaluator/eval";
 
 // ── Error type ────────────────────────────────────────────────────────────────
 
@@ -85,17 +86,20 @@ export type EquivInfo = {
   line:       number;
   endOffset:  number;
   notRun?:    boolean;  // auto-run was off when this statement was parsed
+  stats1?:    RunStats; // lhs normalize stats
+  stats2?:    RunStats; // rhs normalize stats
 };
 
 export type ComprehensionBinding = { name: string; values: string[] };
 
+export type RunKind = "normalForm" | "stepLimit" | "sizeLimit";
+
 export type PrintComprehensionRow = {
   substExpr: string;
   result:    string;
-  normal:    boolean;
-  steps:     number;
-  size?:     number;
+  runKind:   RunKind;
   match?:    string;
+  stats?:    RunStats;
 };
 
 export type PrintComprehensionInfo = {
@@ -115,6 +119,8 @@ export type EquivComprehensionRow = {
   norm2:       string;
   equivalent:  boolean;
   terminated:  boolean;
+  stats1?:     RunStats;
+  stats2?:     RunStats;
 };
 
 export type EquivComprehensionInfo = {
@@ -138,7 +144,7 @@ export type ProgramResult = {
   rawExpr:     Term | null;
   defInfos:    DefInfo[];
   exprInfos:   { term: Term; positions: PositionMap; boundNames?: Set<string>; paramPositions?: Pos[]; offset: number }[];
-  printInfos:  { src: string; result: string; normal: boolean; steps: number; size?: number; match?: string; offset: number; line: number; endOffset: number; notRun?: boolean }[];
+  printInfos:  { src: string; result: string; runKind?: RunKind; match?: string; offset: number; line: number; endOffset: number; notRun?: boolean; stats?: RunStats }[];
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];

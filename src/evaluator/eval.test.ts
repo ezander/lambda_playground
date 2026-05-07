@@ -326,7 +326,7 @@ describe("normalize", () => {
     const tri = Abs("x", App(App(Var("x"), Var("x")), Var("x")));
     const r = normalize(App(tri, tri), { maxSize: 15 });
     expect(r.kind).toBe("sizeLimit");
-    if (r.kind === "sizeLimit") expect(r.size).toBeGreaterThan(15);
+    if (r.kind === "sizeLimit") expect(r.stats.maxSize).toBeGreaterThan(15);
   });
 
   it("returns normalForm when term reaches normal form exactly at the step limit", () => {
@@ -334,7 +334,7 @@ describe("normalize", () => {
     const r = normalize(App(App(I, I), Var("a")), { maxSteps: 2 });
     expect(r.kind).toBe("normalForm");
     expect(r.term).toEqual(Var("a"));
-    expect(r.steps).toBe(2);
+    expect(r.stats.steps).toBe(2);
   });
 });
 
@@ -540,7 +540,7 @@ describe("eager binders", () => {
 
     // Eager should be meaningfully cheaper. Ratio between 2× and 3× covers
     // the expected lazy-vs-eager gap on a 3-use body with a 3-step arg.
-    const ratio = rl.steps / rs.steps;
+    const ratio = rl.stats.steps / rs.stats.steps;
     expect(ratio).toBeGreaterThanOrEqual(2);
     expect(ratio).toBeLessThanOrEqual(3);
   });

@@ -4,7 +4,7 @@ import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
 import { DialectImportModal, DialectImportResult } from "./DialectImportModal";
-import { step, etaStep, findMatch } from "./evaluator/eval";
+import { step, etaStep, findMatch, RunStats } from "./evaluator/eval";
 import { Term } from "./parser/ast";
 import CodeMirror, { EditorView, EditorState, ViewUpdate } from "@uiw/react-codemirror";
 import { lineNumbers } from "@codemirror/view";
@@ -101,6 +101,32 @@ function CopyButton({ text, title = "Copy" }: { text: string; title?: string }) 
     <button className="copy-btn" onClick={onClick} title={title} aria-label={title}>
       {copied ? <Check size={14} /> : <Copy size={14} />}
     </button>
+  );
+}
+
+function fmtMs(ms: number): string {
+  return Math.round(ms) + "ms";
+}
+
+function StatsBadge({ stats, tip }: { stats: RunStats; tip?: string }) {
+  const defaultTip = `${stats.steps} β-reductions, ${fmtMs(stats.ms)}, peak term size ${stats.maxSize}`;
+  return (
+    <span className="print-stats" title={tip ?? defaultTip}>
+      {stats.steps}β·{fmtMs(stats.ms)}·max {stats.maxSize}
+    </span>
+  );
+}
+
+function aggStats(a: RunStats, b: RunStats): RunStats {
+  return { steps: a.steps + b.steps, ms: a.ms + b.ms, maxSize: Math.max(a.maxSize, b.maxSize) };
+}
+
+function equivTip(s1: RunStats, s2: RunStats): string {
+  const tot = aggStats(s1, s2);
+  return (
+    `total: ${tot.steps} β-reductions, ${fmtMs(tot.ms)}, peak term size ${tot.maxSize}\n` +
+    `  lhs: ${s1.steps}β · ${fmtMs(s1.ms)} · max ${s1.maxSize}\n` +
+    `  rhs: ${s2.steps}β · ${fmtMs(s2.ms)} · max ${s2.maxSize}`
   );
 }
 
@@ -508,19 +534,22 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
           {items.map((item, i) => item.kind === "print" ? (
             <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
-                <span className="print-index">{item.data.line}:</span>
-                {" "}{item.data.src}
+                <span className="print-src-text">
+                  <span className="print-index">{item.data.line}:</span>
+                  {" "}{item.data.src}
+                </span>
+                {item.data.stats && <StatsBadge stats={item.data.stats} />}
               </code>
               {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
                 <code className="print-result">
                   <span className="print-result-text"><Truncated text={item.data.result} /></span>
                   <span className="print-result-status">
                     {item.data.match && <span className="history-match"><span className="print-equiv">≡</span> {item.data.match}</span>}
-                    {item.data.normal
-                      ? <><span className="eval-status normal-form">normal form</span>{item.data.steps > 0 && <span className="eval-status normal-form">in {item.data.steps} steps</span>}</>
-                      : item.data.size !== undefined
-                        ? <span className="eval-status did-not-terminate">exceeded {item.data.size} nodes after {item.data.steps} steps</span>
-                        : <span className="eval-status did-not-terminate">did not terminate in {item.data.steps} steps</span>}
+                    {item.data.runKind === "normalForm"
+                      ? <span className="eval-status normal-form">normal form</span>
+                      : item.data.runKind === "sizeLimit"
+                        ? <span className="eval-status did-not-terminate">exceeded size limit</span>
+                        : <span className="eval-status did-not-terminate">did not terminate</span>}
                   </span>
                   <CopyButton text={item.data.result} title="Copy result" />
                 </code>
@@ -529,10 +558,15 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
           ) : item.kind === "equiv" ? (
             <div key={i} className={"print-entry equiv-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")} onClick={() => onJumpTo(item.data.offset)} title="Go to source">
               <code className="print-src">
-                <span className="print-index">{item.data.line}:</span>
-                {" "}{item.data.src1}
-                <span className={`equiv-op ${item.data.notRun ? "" : item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
-                {item.data.src2}
+                <span className="print-src-text">
+                  <span className="print-index">{item.data.line}:</span>
+                  {" "}{item.data.src1}
+                  <span className={`equiv-op ${item.data.notRun ? "" : item.passed ? "equiv-pass" : "equiv-fail"}`}> {item.opSym} </span>
+                  {item.data.src2}
+                </span>
+                {item.data.stats1 && item.data.stats2 && (
+                  <StatsBadge stats={aggStats(item.data.stats1, item.data.stats2)} tip={equivTip(item.data.stats1, item.data.stats2)} />
+                )}
               </code>
               {item.data.notRun ? <span className="eval-status not-run">not run</span> : (
                 <code className="print-result">
@@ -565,16 +599,19 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                   <div key={ri} className="comp-row">
                     <span className="comp-bullet">•</span>
                     <div className="comp-row-content">
-                      <code className="comp-subst-expr">{row.substExpr}</code>
+                      <code className="comp-subst-expr">
+                        <span className="comp-subst-expr-text">{row.substExpr}</span>
+                        {row.stats && <StatsBadge stats={row.stats} />}
+                      </code>
                       <code className="print-result">
                         <span className="print-result-text"><Truncated text={row.result} /></span>
                         <span className="print-result-status">
                           {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
-                          {row.normal
-                            ? <><span className="eval-status normal-form">normal form</span>{row.steps > 0 && <span className="eval-status normal-form">in {row.steps} steps</span>}</>
-                            : row.size !== undefined
-                              ? <span className="eval-status did-not-terminate">exceeded {row.size} nodes after {row.steps} steps</span>
-                              : <span className="eval-status did-not-terminate">did not terminate in {row.steps} steps</span>}
+                          {row.runKind === "normalForm"
+                            ? <span className="eval-status normal-form">normal form</span>
+                            : row.runKind === "sizeLimit"
+                              ? <span className="eval-status did-not-terminate">exceeded size limit</span>
+                              : <span className="eval-status did-not-terminate">did not terminate</span>}
                         </span>
                         <CopyButton text={row.result} title="Copy result" />
                       </code>
@@ -602,9 +639,14 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
                       <span className="comp-bullet">•</span>
                       <div className="comp-row-content">
                         <code className="comp-subst-expr">
-                          {row.substExpr1}
-                          <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
-                          {row.substExpr2}
+                          <span className="comp-subst-expr-text">
+                            {row.substExpr1}
+                            <span className={rowClass}> {item.data.negated ? "≢" : "≡"} </span>
+                            {row.substExpr2}
+                          </span>
+                          {row.stats1 && row.stats2 && (
+                            <StatsBadge stats={aggStats(row.stats1, row.stats2)} tip={equivTip(row.stats1, row.stats2)} />
+                          )}
                         </code>
                         <code className="print-result">
                           <span className="print-result-text">

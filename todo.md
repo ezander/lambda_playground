@@ -2,6 +2,7 @@
 
 ## Done
 
+* [x] output panel runtime stats: muted right-aligned badge per row showing β-reductions, ms, peak term size; step counts removed from the result line; equiv stats aggregated, lhs/rhs in tooltip ← refactored RunResult around a RunStats struct
 * [x] fix aliased imports (e.g. `+ := plus` in `Numeric Symbols`) not identifying in the match list under `:set no-normalize-defs` / through `:mixin`: gate canon-setting on `isBetaNF(body)` rather than the normalize-defs flag
 * [x] dialect importer: toolbar `import` opens a modal that lexically converts files from other LC dialects (lambda token, comment style, definition operator, `->` body, chained `λxλy.` heads, currying split, unindent); paste or upload, preview, then save to a new buffer or insert at cursor
 * [x] rename zip export/import to backup/restore (UI labels, tooltips, modal heading, identifiers, CSS classes); frees the word "import" for a future dialect importer

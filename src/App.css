@@ -798,6 +798,23 @@ label {
   font-family: var(--mono);
   font-size: 0.85rem;
   color: var(--muted);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.print-stats {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.print-stats-label {
+  opacity: 0.75;
 }
 
 .print-result {
@@ -902,6 +919,15 @@ label {
   font-family: var(--mono);
   font-size: 0.8rem;
   color: var(--muted);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.print-src-text, .comp-subst-expr-text {
+  min-width: 0;
+  word-break: break-all;
 }
 
 /* ── History ── */

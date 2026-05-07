@@ -479,13 +479,13 @@ describe("parseProgram", () => {
     const r = parseProgram("I := λx. x\nI");
     expect(r.printInfos).toHaveLength(1);
     expect(r.printInfos[0].result).toBe("λx. x");
-    expect(r.printInfos[0].normal).toBe(true);
+    expect(r.printInfos[0].runKind).toBe("normalForm");
   });
 
   it("records normal=false when step limit is hit", () => {
     const r = parseProgram(":set max-steps = 5\n(λx. x x)(λx. x x)");
     expect(r.printInfos).toHaveLength(1);
-    expect(r.printInfos[0].normal).toBe(false);
+    expect(r.printInfos[0].runKind).not.toBe("normalForm");
   });
 
   it("≡ with identical normal forms sets equivalent=true", () => {
@@ -500,7 +500,7 @@ describe("parseProgram", () => {
     const r = parseProgram("(λβx. x x) ((λy. y) a)\n");
     expect(r.ok).toBe(true);
     expect(r.printInfos[0].result).toBe("a a");
-    expect(r.printInfos[0].normal).toBe(true);
+    expect(r.printInfos[0].runKind).toBe("normalForm");
   });
 
   it("eager and lazy abstractions are ≡-equivalent at NF", () => {
@@ -942,7 +942,7 @@ describe("include system", () => {
     const res = (path: string) => path === "std/Bools" ? bools : null;
     const r = parseProgram(":import \"std/Bools\"\nnot (not true)\n", {}, res);
     expect(r.ok).toBe(true);
-    expect(r.printInfos[0].normal).toBe(true);
+    expect(r.printInfos[0].runKind).toBe("normalForm");
   });
 
   it("_-prefixed defs are private and not exported across include boundary", () => {
@@ -1222,7 +1222,7 @@ describe("comprehension", () => {
     // and true true → true
     expect(info.rows[0].substExpr).toBe("(and a b)[a:=true][b:=true]");
     expect(info.rows[0].result).toBe("λx y. x");
-    expect(info.rows[0].normal).toBe(true);
+    expect(info.rows[0].runKind).toBe("normalForm");
   });
 
   it("comprehension with single binding", () => {
@@ -1460,7 +1460,7 @@ describe("runEval flag", () => {
     const r = parseProgram("(λx. x) y");
     expect(r.printInfos[0].notRun).toBeUndefined();
     expect(r.printInfos[0].result).toBe("y");
-    expect(r.printInfos[0].normal).toBe(true);
+    expect(r.printInfos[0].runKind).toBe("normalForm");
   });
 
   it("runEval=false marks comprehensions as notRun with empty rows", () => {

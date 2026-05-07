@@ -164,6 +164,13 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             Each reduction step is shown newest-first, up to the configured limit (default 200).
             When a term matches a definition's normal form, the name is shown on the right.
           </p>
+
+          <h3>output panel</h3>
+          <p>
+            Each print / ≡ / bare expression shows runtime stats on the right of the source line:
+            β-reductions, wall-clock ms, and peak term size reached during evaluation.
+            For ≡ assertions both sides are aggregated (sum of steps and ms, max of peak size); hover for the lhs/rhs breakdown.
+          </p>
         </>}
 
         {/* ── Grammar tab ── */}
