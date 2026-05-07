@@ -455,7 +455,7 @@ function EvalPanel({ open, onToggle, currentTerm, hasExpr, canStep, canEtaStep, 
           : <span className="placeholder">parse result will appear here</span>}
       </div>
       <div className="eval-controls">
-        <button className="load-btn" onClick={onRun}      disabled={!hasExpr}   title="Load and beta-reduce to normal form (F5)">run <kbd>F5</kbd></button>
+        <button className="load-btn" onClick={onRun}      disabled={!hasExpr}   title="Reduce to normal form (F5)">run <kbd>F5</kbd></button>
         <button className="load-btn" onClick={onReset}    disabled={!hasExpr}   title="Reset to step 0 (F6)">reset <kbd>F6</kbd></button>
         <button               onClick={onStep}     disabled={!canStep}   title="Perform one beta-reduction step (F10)">β-step <kbd>F10</kbd></button>
         <button               onClick={onEtaStep}  disabled={!canEtaStep} title="Perform one eta-reduction step: λx. f x → f (F11)">η-step <kbd>F11</kbd></button>
@@ -521,12 +521,12 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
   return (
     <Panel label="output" open={open} onToggle={onToggle}
       headerExtra={<>
-        <label className="panel-autorun-toggle" title="Auto-run: re-evaluate print/assert statements on every edit">
+        <label className="panel-autorun-toggle" title="Auto-run: re-evaluate print/assert statements on every edit (Ctrl-Shift-F5)">
           <input type="checkbox" checked={autoRun} onChange={onToggleAutoRun} /> auto-run
         </label>
-        <button className="panel-sort-btn" onClick={onRun}
+        <button className="outline-btn" onClick={onRun}
           style={autoRun ? { visibility: "hidden" } : undefined}
-          title="Run print/assert statements for current source">run</button>
+          title="Run print/assert statements for current source (Ctrl-F5)">run <kbd>Ctrl-F5</kbd></button>
         <button className="panel-sort-btn" onClick={onTogglePrintDesc} title="Toggle sort order">sort {printDesc ? "↑" : "↓"}</button>
       </>}>
       {hasContent ? (
@@ -1161,7 +1161,9 @@ export default function App() {
       }
       if (e.key === "r" && e.ctrlKey) e.preventDefault(); // prevent browser reload; CM handles rewrap when editor focused
       if (e.key === "s" && e.ctrlKey) { e.preventDefault(); handleSaveOverwrite(); }
-      if (e.key === "F5")  { e.preventDefault(); requestRun(); handleLoadRun(); }
+      if (e.key === "F5" && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); handleLoadRun(); }
+      if (e.key === "F5" &&  e.ctrlKey && !e.shiftKey) { e.preventDefault(); requestRun(); }
+      if (e.key === "F5" &&  e.ctrlKey &&  e.shiftKey) { e.preventDefault(); updateConfig({ autoRun: !config.autoRun }); }
       if (e.key === "F6")  { e.preventDefault(); handleLoad(); }
       if (e.key === "F9")  { e.preventDefault(); handleRun(); }
       if (e.key === "F10") { e.preventDefault(); handleStep(); }
@@ -1169,7 +1171,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen, requestRun]);
+  }, [handleLoad, handleStep, handleRun, handleLoadRun, handleSaveOverwrite, toggleFullscreen, requestRun, updateConfig, config.autoRun]);
 
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

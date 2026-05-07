@@ -96,7 +96,9 @@ Definitions are expanded eagerly. Redefinition with `::=` suppresses the warning
 
 | Button | Key | Action |
 |--------|-----|--------|
-| run | F5 | Load and beta-reduce to normal form |
+| run | F5 | Reduce current expression to normal form (eval panel) |
+| run | Ctrl-F5 | Run print / ≡ statements (output panel) |
+| auto-run toggle | Ctrl-Shift-F5 | Toggle auto-evaluation of print / ≡ on edit |
 | reset | F6 | Reset to step 0 |
 | β-step | F10 | One beta-reduction step |
 | η-step | F11 | One eta-reduction step (λx. f x → f) |

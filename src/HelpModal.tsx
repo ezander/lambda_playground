@@ -118,13 +118,13 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>controls</h3>
           <table className="help-table"><tbody>
-            <tr><td><strong>run</strong></td><td>load and immediately reduce to normal form; auto-reloads on edit</td></tr>
+            <tr><td><strong>run</strong> (eval panel)</td><td>reduce the current expression to normal form (the expression auto-loads from the editor)</td></tr>
             <tr><td><strong>reset</strong></td><td>reload the current expression at step 0</td></tr>
             <tr><td><strong>β-step</strong></td><td>one beta-reduction step</td></tr>
             <tr><td><strong>η-step</strong></td><td>one eta step (λx. f x → f when x ∉ fv(f))</td></tr>
             <tr><td><strong>continue</strong></td><td>reduce up to step limit from current position</td></tr>
             <tr><td><strong>show substitution</strong></td><td>show <code>e[x:=a]</code> as intermediate step before beta; auto-reloads</td></tr>
-            <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when off: print and ≡ statements are not evaluated on edit, only parsed; click <strong>run</strong> to evaluate once for current source</td></tr>
+            <tr><td><strong>auto-run</strong> / <strong>run</strong> (output panel)</td><td>when auto-run is off, print and ≡ statements are parsed but not evaluated on edit; click <strong>run</strong> (or press <code>Ctrl-F5</code>) to evaluate once for the current source. Toggle auto-run with <code>Ctrl-Shift-F5</code>.</td></tr>
             <tr><td><strong>cursor on print/≡/expr</strong></td><td>matching output cell is highlighted and scrolled into view (works across continuation lines and within <code>;</code>-separated statements)</td></tr>
             <tr><td><strong>⚙</strong></td><td>settings: max steps (print/run/ident), history, term size</td></tr>
             <tr><td><strong>clear</strong></td><td>clear the editor</td></tr>
@@ -133,7 +133,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
 
           <h3>keyboard shortcuts</h3>
           <table className="help-table"><tbody>
-            <tr><td><code>F5</code></td><td>run</td></tr>
+            <tr><td><code>F5</code></td><td>run (eval panel: reduce to normal form)</td></tr>
+            <tr><td><code>Ctrl-F5</code></td><td>run print / ≡ statements (output panel)</td></tr>
+            <tr><td><code>Ctrl-Shift-F5</code></td><td>toggle auto-run</td></tr>
             <tr><td><code>F6</code></td><td>reset</td></tr>
             <tr><td><code>F9</code></td><td>continue</td></tr>
             <tr><td><code>F10</code></td><td>β-step</td></tr>

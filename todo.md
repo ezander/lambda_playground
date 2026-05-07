@@ -2,6 +2,7 @@
 
 ## Done
 
+* [x] split F5: F5 reduces in eval panel only, Ctrl-F5 runs print/≡ in output panel, Ctrl-Shift-F5 toggles auto-run
 * [x] output panel runtime stats: muted right-aligned badge per row showing β-reductions, ms, peak term size; step counts removed from the result line; equiv stats aggregated, lhs/rhs in tooltip ← refactored RunResult around a RunStats struct
 * [x] fix aliased imports (e.g. `+ := plus` in `Numeric Symbols`) not identifying in the match list under `:set no-normalize-defs` / through `:mixin`: gate canon-setting on `isBetaNF(body)` rather than the normalize-defs flag
 * [x] dialect importer: toolbar `import` opens a modal that lexically converts files from other LC dialects (lambda token, comment style, definition operator, `->` body, chained `λxλy.` heads, currying split, unindent); paste or upload, preview, then save to a new buffer or insert at cursor

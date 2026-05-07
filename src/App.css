@@ -585,6 +585,12 @@ label {
 }
 .load-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .load-btn:not(:disabled):hover { opacity: 0.85; }
+.load-btn kbd {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  opacity: 0.55;
+  margin-left: 0.2rem;
+}
 
 /* ── Issues panel ── */
 .issues-header {
@@ -620,7 +626,7 @@ label {
   gap: 0.6rem;
 }
 
-.eval-controls button {
+.eval-controls button, .outline-btn {
   font-family: var(--mono);
   font-size: 0.8rem;
   background: transparent;
@@ -631,12 +637,12 @@ label {
   border-radius: 2px;
   transition: border-color 0.15s, color 0.15s;
 }
-.eval-controls button:not(:disabled):hover {
+.eval-controls button:not(:disabled):hover, .outline-btn:not(:disabled):hover {
   border-color: var(--accent);
   color: var(--accent);
 }
-.eval-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-.eval-controls kbd {
+.eval-controls button:disabled, .outline-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.eval-controls kbd, .outline-btn kbd {
   font-family: var(--mono);
   font-size: 0.65rem;
   opacity: 0.55;
@@ -695,9 +701,9 @@ label {
   color: var(--muted);
 }
 
-.panel-header-extra { margin-left: auto; margin-right: 0.75rem; }
-.panel-autorun-toggle + .panel-sort-btn { margin-left: 1.25rem; }
-.panel-header-extra > .panel-sort-btn:last-child { margin-left: 2.5rem; }
+.panel-header-extra { margin-left: auto; margin-right: 0.75rem; display: flex; align-items: center; gap: 0.6rem; }
+.panel-autorun-toggle + .outline-btn { margin-left: 0.6rem; }
+.panel-header-extra > .panel-sort-btn:last-child { margin-left: 1.5rem; }
 
 .panel-autorun-toggle {
   font-family: var(--mono);
