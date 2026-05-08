@@ -80,6 +80,8 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>expr</code></td><td>bare expression: evaluate to normal form, show in output panel; last one is also loaded into the eval panel</td></tr>
             <tr><td><code>:print expr</code></td><td>same as a bare expression — explicit form</td></tr>
             <tr><td><code>:print[a:=&#123;T,F&#125;] expr</code></td><td>comprehension: evaluate for each combination of substitutions</td></tr>
+            <tr><td><code>:print-list listExpr</code></td><td>unfold a list, printing <code>head l</code> per element until <code>tail l</code> reaches <code>nil</code> (or fixpoint, or max=100)</td></tr>
+            <tr><td><code>:print-list[head:=h, tail:=t, nil:=z, max:=N] listExpr</code></td><td>same with explicit selectors / cap; any subset can be overridden, the rest fall back to top-level defs of the same name</td></tr>
             <tr><td><code>:assert lhs ≡ rhs</code></td><td>assert alpha-beta equivalence; halts script on failure</td></tr>
             <tr><td><code>:assert lhs ≢ rhs</code></td><td>assert non-equivalence; halts script on failure</td></tr>
             <tr><td><code>:assert[a:=&#123;T,F&#125;] lhs ≡ rhs</code></td><td>assertion comprehension over substitution combinations</td></tr>
@@ -92,7 +94,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             <tr><td><code>:import[prefix="C"] "…"</code></td><td>prepend "C" to every imported public name (e.g. for namespacing two competing libraries)</td></tr>
             <tr><td><code>:mixin "…"</code></td><td>import definitions that can see existing defs (for extending); accepts the same <code>[quiet]</code> / <code>[prefix="…"]</code> options</td></tr>
             <tr><td><code>:eval expr</code></td><td>load expression into eval panel (last one wins; overrides bare expressions)</td></tr>
-            <tr><td><code>:infix name1 name2 …</code></td><td>mark definitions as infix operators; <code>a + b</code> is read as <code>+ a b</code></td></tr>
+            <tr><td><code>:infix name1 name2 …</code></td><td>mark definitions as infix operators; <code>a + b</code> is read as <code>+ a b</code>. Parenthesize to escape infix: <code>(+)</code>, <code>map (+)</code>, <code>f (+)</code></td></tr>
           </tbody></table>
           <h3>settings (<code>:set</code>)</h3>
           <table className="help-table"><tbody>

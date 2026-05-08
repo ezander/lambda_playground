@@ -4,6 +4,7 @@ import {
   LambdaLexer,
   Directive,
   CmdPrint,
+  CmdPrintList,
   CmdAssert,
   CmdEval,
   Lambda,
@@ -93,6 +94,7 @@ class LambdaParser extends CstParser {
   statement = this.RULE("statement", () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.printStmt) },
+      { ALT: () => this.SUBRULE(this.printListStmt) },
       { ALT: () => this.SUBRULE(this.assertStmt) },
       { ALT: () => this.SUBRULE(this.evalStmt) },
       // Gate via BACKTRACK: try parsing `definition` non-committed; if it
@@ -133,6 +135,31 @@ class LambdaParser extends CstParser {
 
   evalStmt = this.RULE("evalStmt", () => {
     this.CONSUME(CmdEval);
+    this.SUBRULE(this.term);
+  });
+
+  // :print-list[head:=expr, tail:=expr, nil:=expr, max:=N] listExpr
+  // Bracket options are optional and order-independent. Missing head/tail/nil
+  // resolve to top-level defs of the same name; max defaults to a fixed cap.
+  printListStmt = this.RULE("printListStmt", () => {
+    this.CONSUME(CmdPrintList);
+    this.OPTION(() => this.SUBRULE(this.printListOpts));
+    this.SUBRULE(this.term);
+  });
+
+  printListOpts = this.RULE("printListOpts", () => {
+    this.CONSUME(LBracket);
+    this.SUBRULE(this.printListOpt);
+    this.MANY(() => {
+      this.CONSUME(Comma);
+      this.SUBRULE2(this.printListOpt);
+    });
+    this.CONSUME(RBracket);
+  });
+
+  printListOpt = this.RULE("printListOpt", () => {
+    this.CONSUME(Identifier);
+    this.CONSUME(DefAssign);
     this.SUBRULE(this.term);
   });
 
@@ -237,10 +264,12 @@ export type RawEmpty   = { kind: "empty" };
 export type RawDirective = { kind: "directive"; text: string; offset: number; endOffset?: number };
 export type RawDef     = { kind: "def"; redef: boolean; name: string; nameTok: IToken; params: IToken[]; rawBody: Term; bodyTerm: Term; offset: number; endOffset?: number };
 export type RawPrint   = { kind: "print"; term: Term; bindings: RawBinding[] | null; offset: number; endOffset?: number };
+export type RawPrintListOption = { name: string; nameTok: IToken; value: Term };
+export type RawPrintList = { kind: "print-list"; term: Term; options: RawPrintListOption[]; offset: number; endOffset?: number };
 export type RawEquiv   = { kind: "equiv"; lhs: Term; rhs: Term; bindings: RawBinding[] | null; negated: boolean; offset: number; endOffset?: number };
 export type RawExpr    = { kind: "expr"; term: Term; offset: number; endOffset?: number };
 export type RawEval    = { kind: "eval"; term: Term; offset: number; endOffset?: number };
-export type RawStmt    = RawEmpty | RawDirective | RawDef | RawPrint | RawEquiv | RawExpr | RawEval;
+export type RawStmt    = RawEmpty | RawDirective | RawDef | RawPrint | RawPrintList | RawEquiv | RawExpr | RawEval;
 
 // ── 3. CST → AST visitor ─────────────────────────────────────────────────────
 
@@ -299,9 +328,10 @@ export class AstBuilder extends BaseCstVisitor {
   }
 
   statement(ctx: any): RawStmt {
-    if (ctx.printStmt)  return this.visit(ctx.printStmt[0])  as RawStmt;
-    if (ctx.assertStmt) return this.visit(ctx.assertStmt[0]) as RawStmt;
-    if (ctx.evalStmt)   return this.visit(ctx.evalStmt[0])   as RawStmt;
+    if (ctx.printStmt)     return this.visit(ctx.printStmt[0])     as RawStmt;
+    if (ctx.printListStmt) return this.visit(ctx.printListStmt[0]) as RawStmt;
+    if (ctx.assertStmt)    return this.visit(ctx.assertStmt[0])    as RawStmt;
+    if (ctx.evalStmt)      return this.visit(ctx.evalStmt[0])      as RawStmt;
     if (ctx.definition) return this.visit(ctx.definition[0]) as RawStmt;
     if (ctx.term) { const term = this.visit(ctx.term[0]) as Term; return { kind: "expr", term, offset: this.termStart(term) }; }
     return { kind: "empty" };
@@ -336,6 +366,24 @@ export class AstBuilder extends BaseCstVisitor {
     const tok = ctx.CmdEval[0] as IToken;
     const term = this.visit(ctx.term[0]) as Term;
     return { kind: "eval", term, offset: tok.startOffset };
+  }
+
+  printListStmt(ctx: any): RawPrintList | RawEmpty {
+    const kwTok = ctx.CmdPrintList?.[0] as IToken | undefined;
+    if (!kwTok || !ctx.term) return { kind: "empty" };
+    const term = this.visit(ctx.term[0]) as Term;
+    const options = ctx.printListOpts ? this.visit(ctx.printListOpts[0]) as RawPrintListOption[] : [];
+    return { kind: "print-list", term, options, offset: kwTok.startOffset };
+  }
+
+  printListOpts(ctx: any): RawPrintListOption[] {
+    return (ctx.printListOpt ?? []).map((n: CstNode) => this.visit(n) as RawPrintListOption);
+  }
+
+  printListOpt(ctx: any): RawPrintListOption {
+    const nameTok = (ctx.Identifier as IToken[])[0];
+    const value = this.visit(ctx.term[0]) as Term;
+    return { name: tokenName(nameTok), nameTok, value };
   }
 
   definition(ctx: any): RawDef | RawEmpty {
@@ -390,6 +438,10 @@ export class AstBuilder extends BaseCstVisitor {
       base = v;
     } else {
       base = this.visit(ctx.term[0]);
+      // Parenthesized form: a Var inside parens is "expression-context", not a
+      // bare def-ref, so swapInfix should not flip it. Mark it so e.g. `(+)`
+      // and `f (+)` keep + in arg/func position untouched.
+      if (base.kind === "Var") base.paren = true;
     }
     for (const s of (ctx.subst ?? [])) {
       const { param, paramTok, arg, eager } = this.visit(s) as { param: string; paramTok: IToken; arg: Term; eager: boolean };

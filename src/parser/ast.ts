@@ -11,6 +11,10 @@ export type Var = {
   kind: "Var";
   name: string;
   size: number;
+  // Set when the var came from a parenthesized atom — turns it into an
+  // expression for infix-swap purposes (so `(+)` and `f (+)` skip the flip).
+  // Cosmetic for everything else: alpha-equiv, eval, expand all ignore it.
+  paren?: boolean;
 };
 
 export type Abs = {

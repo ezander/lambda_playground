@@ -4,6 +4,14 @@ All notable changes to the λ playground are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-09
+
+### Added
+- `:print-list[head:=h, tail:=t, nil:=z, max:=N] listExpr` — unfold a list and print one row per element; selectors default to top-level defs of the same name, terminates on `tail≡nil`, fixpoint, or `max` (default 100).
+
+### Changed
+- Parens around an infix var (`(+)`, `f (+)`, `map (+)`) now suppress the infix swap — the var is treated as expression-context, so it stays in arg/func position untouched. Backticks still don't escape (they're only an alternate identifier syntax).
+
 ## [1.1.0] - 2026-05-07
 
 ### Added

@@ -19,6 +19,7 @@ const DIRECTIVE_OPTIONS = [
   { label: ":mixin", type: "keyword" as const },
   { label: ":set", type: "keyword" as const },
   { label: ":print", type: "keyword" as const },
+  { label: ":print-list", type: "keyword" as const },
   { label: ":assert", type: "keyword" as const },
   { label: ":eval", type: "keyword" as const },
   { label: ":infix", type: "keyword" as const },

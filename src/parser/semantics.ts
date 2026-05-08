@@ -12,6 +12,7 @@ import {
   PrintComprehensionRow, PrintComprehensionInfo,
   EquivComprehensionRow, EquivComprehensionInfo,
   EquivInfo,
+  PrintListInfo, PrintListRow, PrintListTermination,
   ProgramResult, ProgramRunConfig, IncludeResolver,
 } from "./types";
 import { normalize, alphaEq, canonicalForm, isBetaNF, findMatch as _findMatch, RunResult } from "../evaluator/eval";
@@ -49,7 +50,8 @@ function swapInfix(term: Term, infixNames: Set<string>): Term {
     case "App": {
       const func = swapInfix(term.func, infixNames);
       const arg  = swapInfix(term.arg,  infixNames);
-      if (arg.kind === "Var" && infixNames.has(arg.name) &&
+      // A parenthesized infix var (`(+)`) is expression-context — don't flip.
+      if (arg.kind === "Var" && !arg.paren && infixNames.has(arg.name) &&
           !(func.kind === "Var" && infixNames.has(func.name)))
         return App(arg, func);
       return App(func, arg);
@@ -153,6 +155,12 @@ function cachedParseMixin(
   mixinCache.set(key, result);
   return result;
 }
+
+// ── :print-list defaults ─────────────────────────────────────────────────────
+
+// Hard cap on iterations when no max= override is given. Protects against
+// runaway streams; finite lists in practice are far shorter.
+const PRINT_LIST_DEFAULT_MAX = 100;
 
 // ── Comprehension helpers ─────────────────────────────────────────────────────
 
@@ -389,6 +397,7 @@ export function parseProgram(
   const equivInfos: EquivInfo[] = [];
   const printComprehensionInfos: PrintComprehensionInfo[] = [];
   const equivComprehensionInfos: EquivComprehensionInfo[] = [];
+  const printListInfos: PrintListInfo[] = [];
   const options: OptionsConfig = {};
   const equivFailed = { value: false };
 
@@ -506,6 +515,10 @@ export function parseProgram(
       case "print":
         exprInfos.push({ term: stmt.term, positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
         for (const b of stmt.bindings ?? []) for (const v of b.termValues) exprInfos.push({ term: v, positions: globalPositions, offset: stmt.offset });
+        break;
+      case "print-list":
+        exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+        for (const opt of stmt.options) exprInfos.push({ term: opt.value, positions: globalPositions, offset: stmt.offset });
         break;
       case "equiv":
         exprInfos.push({ term: App(stmt.lhs, stmt.rhs), positions: globalPositions, ...compBindingHighlight(stmt.bindings), offset: stmt.offset });
@@ -673,6 +686,133 @@ export function parseProgram(
           });
           exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
         }
+        break;
+      }
+
+      case "print-list": {
+        const merged = { ...defaultConfig, ...options };
+        const cfg = { maxSteps: merged.maxStepsPrint, maxSize: merged.maxSize, allowEta: merged.allowEta };
+        const currentLine = input.slice(0, stmt.offset).split("\n").length;
+        const endOffset   = stmt.endOffset ?? stmt.offset;
+        const infx = getInfixNames(defEntries);
+        const runEval = merged.runEval ?? true;
+
+        // Collect option overrides; warn on duplicates and unknown keys.
+        const overrides: Partial<Record<"head" | "tail" | "nil" | "max", { value: Term; offset: number }>> = {};
+        for (const opt of stmt.options) {
+          if (opt.name !== "head" && opt.name !== "tail" && opt.name !== "nil" && opt.name !== "max") {
+            errors.push({ message: `Unknown :print-list option: "${opt.name}"`, offset: opt.nameTok.startOffset, kind: "warning" });
+            continue;
+          }
+          if (overrides[opt.name]) {
+            errors.push({ message: `Duplicate :print-list option: "${opt.name}"`, offset: opt.nameTok.startOffset, kind: "warning" });
+            continue;
+          }
+          overrides[opt.name] = { value: opt.value, offset: opt.nameTok.startOffset };
+        }
+
+        // max must be a non-negative integer literal (Var with all-digit name).
+        let maxIter = PRINT_LIST_DEFAULT_MAX;
+        if (overrides.max) {
+          const v = overrides.max.value;
+          if (v.kind === "Var" && /^\d+$/.test(v.name)) {
+            maxIter = parseInt(v.name, 10);
+          } else {
+            errors.push({ message: `:print-list option "max" requires a non-negative integer literal`, offset: overrides.max.offset, kind: "warning" });
+          }
+        }
+
+        const baseSrc = prettyPrint(stmt.term);
+        const headSrc = overrides.head ? prettyPrint(overrides.head.value) : "head";
+        const tailSrc = overrides.tail ? prettyPrint(overrides.tail.value) : "tail";
+        const nilSrc  = overrides.nil  ? prettyPrint(overrides.nil.value)  : "nil";
+        const optionSrcs = { head: headSrc, tail: tailSrc, nil: nilSrc, max: maxIter };
+
+        if (!runEval) {
+          printListInfos.push({ src: baseSrc, optionSrcs, rows: [], termination: "maxReached", offset: stmt.offset, line: currentLine, endOffset, notRun: true });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+          for (const opt of stmt.options) exprInfos.push({ term: opt.value, positions: globalPositions, offset: stmt.offset });
+          break;
+        }
+
+        // Resolve head/tail/nil — either user-supplied (already an AST term) or
+        // looked up by literal name in the current def scope. expandDefs is
+        // applied to user-supplied terms so refs to other defs are inlined.
+        const resolveFn = (key: "head" | "tail" | "nil"): Term | null => {
+          const ov = overrides[key];
+          if (ov) return expandDefs(swapInfix(ov.value, infx), defs);
+          const def = defs.get(key);
+          if (def) return def;
+          errors.push({ message: `:print-list needs ${key === "nil" ? "a 'nil' value" : `a '${key}' function`} — provide ${key}:= or define '${key}'`, offset: stmt.offset });
+          return null;
+        };
+
+        const headFn = resolveFn("head");
+        const tailFn = resolveFn("tail");
+        const nilVal = resolveFn("nil");
+        if (!headFn || !tailFn || !nilVal) {
+          // Push an empty row collection so the panel still shows the directive.
+          printListInfos.push({ src: baseSrc, optionSrcs, rows: [], termination: "maxReached", offset: stmt.offset, line: currentLine, endOffset });
+          exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+          for (const opt of stmt.options) exprInfos.push({ term: opt.value, positions: globalPositions, offset: stmt.offset });
+          break;
+        }
+
+        const visibleDefEntries = new Map([...defEntries].filter(([, e]) => !e.quiet));
+
+        // Normalize the nil value once so its canonical form is comparable.
+        const nilRun = timedNorm(`:print-list nil`, nilVal, cfg);
+        const nilCanon = nilRun.kind === "normalForm" ? canonicalForm(nilRun.term) : undefined;
+
+        // Lazy-tail loop: never call normalize on the tail explicitly. Each
+        // iteration tries to normalize `current` to compare its canon against
+        // `nil` and the previous element (for fixpoint detection); if that
+        // fails, those checks are skipped and we keep peeling off heads. The
+        // term grows by one App(tailFn, _) per iteration when current never
+        // reaches NF — bounded by `max`, so worst-case is just slow.
+        const listExpanded = expandDefs(swapInfix(stmt.term, infx), defs);
+        let current: Term = listExpanded;
+        let prevCanon: string | undefined;
+        const rows: PrintListRow[] = [];
+        let termination: PrintListTermination = "maxReached";
+
+        for (let i = 0; i < maxIter; i++) {
+          const curRun = timedNorm(`:print-list curr[${i}]`, current, cfg);
+          if (curRun.kind === "normalForm") {
+            const curCanon = canonicalForm(curRun.term);
+            if (nilCanon !== undefined && curCanon === nilCanon) {
+              termination = "nil";
+              break;
+            }
+            if (prevCanon !== undefined && curCanon === prevCanon) {
+              termination = "fixpoint";
+              break;
+            }
+            prevCanon = curCanon;
+            current = curRun.term;  // keep the smaller form for further peeling
+          } else {
+            // Couldn't normalize this round — skip canon checks and clear
+            // prevCanon so a stale snapshot doesn't trip a false fixpoint.
+            prevCanon = undefined;
+          }
+
+          // head curr — failures are non-fatal, the row is still recorded.
+          const headRun = timedNorm(`:print-list head[${i}]`, App(headFn, current), cfg);
+          rows.push({
+            result:  prettyPrint(headRun.term),
+            runKind: headRun.kind,
+            stats:   headRun.stats,
+            match:   headRun.kind === "normalForm" ? findMatch(headRun.term, visibleDefEntries) : undefined,
+          });
+
+          // Advance lazily — never normalize tail. If it diverges, the term
+          // grows but we keep going.
+          current = App(tailFn, current);
+        }
+
+        printListInfos.push({ src: baseSrc, optionSrcs, rows, termination, offset: stmt.offset, line: currentLine, endOffset });
+        exprInfos.push({ term: stmt.term, positions: globalPositions, offset: stmt.offset });
+        for (const opt of stmt.options) exprInfos.push({ term: opt.value, positions: globalPositions, offset: stmt.offset });
         break;
       }
 
@@ -868,6 +1008,7 @@ export function parseProgram(
     equivInfos,
     printComprehensionInfos,
     equivComprehensionInfos,
+    printListInfos,
     options,
     timing,
   };

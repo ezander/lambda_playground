@@ -32,11 +32,11 @@ function colonCmd(re: RegExp): (text: string, startOffset: number) => RegExpExec
 }
 
 // Directive — captures any `:<word> …` line at start-of-line, except the
-// statement commands :print / :assert / :eval (which lex as separate tokens).
-// Unknown directives are reported by the semantic layer (processDirective).
+// statement commands :print / :print-list / :assert / :eval (which lex as
+// separate tokens). Unknown directives are reported by the semantic layer.
 export const Directive = createToken({
   name: "Directive",
-  pattern: colonCmd(/:(?!print\b|assert\b|eval\b)[a-zA-Z][a-zA-Z0-9-]*\b[^\n]*/y),
+  pattern: colonCmd(/:(?!print-list\b|print\b|assert\b|eval\b)[a-zA-Z][a-zA-Z0-9-]*\b[^\n]*/y),
   line_breaks: false,
   start_chars_hint: [":"],
 });
@@ -57,6 +57,7 @@ export function findDirectiveCommentStart(text: string): number {
 
 // Command keywords — alternatives to π symbol. Assertions use `:assert <a> ≡ <b>`
 // (or ≢) — no separate :assert-not keyword.
+export const CmdPrintList = createToken({ name: "CmdPrintList", pattern: colonCmd(/:print-list\b/y), line_breaks: false, start_chars_hint: [":"] });
 export const CmdPrint     = createToken({ name: "CmdPrint",     pattern: colonCmd(/:print\b/y),  line_breaks: false, start_chars_hint: [":"] });
 export const CmdAssert    = createToken({ name: "CmdAssert",    pattern: colonCmd(/:assert\b/y), line_breaks: false, start_chars_hint: [":"] });
 export const CmdEval      = createToken({ name: "CmdEval",      pattern: colonCmd(/:eval\b/y),   line_breaks: false, start_chars_hint: [":"] });
@@ -175,6 +176,7 @@ export const allTokens = [
   UnterminatedBlockComment, // before LineComment (so unterminated #* wins over #)
   Directive,                // before RedefAssign/DefAssign (: at line start wins over :=)
   CmdAssert,                // before RedefAssign/DefAssign
+  CmdPrintList,             // before CmdPrint (longer pattern wins)
   CmdPrint,                 // before RedefAssign/DefAssign
   CmdEval,                  // before RedefAssign/DefAssign
   LineComment,              // after block comment

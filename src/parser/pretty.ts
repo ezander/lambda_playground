@@ -19,7 +19,10 @@ type Context = "top" | "appFunc" | "appArg";
 function pp(term: Term, ctx: Context): string {
   switch (term.kind) {
     case "Var":
-      return safeName(term.name);
+      // Preserve the paren flag in the surface syntax: `f (+)` round-trips
+      // through pretty + parse with the same swap-suppression behavior.
+      // Slight cosmetic cost for explicitly parenthesized non-infix vars.
+      return term.paren ? `(${safeName(term.name)})` : safeName(term.name);
 
     case "Abs": {
       // Collect consecutive params for pretty compression. Eager binders get a β prefix.

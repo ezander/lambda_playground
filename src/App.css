@@ -793,6 +793,16 @@ label {
   font-size: 0.75em;
 }
 
+.print-list-index {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75em;
+  flex-shrink: 0;
+  user-select: none;
+  min-width: 2em;
+  text-align: right;
+}
+
 .step-count {
   font-family: var(--mono);
   font-size: 0.78rem;

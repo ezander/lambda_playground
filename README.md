@@ -65,6 +65,8 @@ Lines starting with `:` are directives:
 :import[prefix="C"] "std/Church Numerals"  # prepend "C" to every imported name
 :mixin "std/Boolean Tests"      # import that can see existing defs
 :print expr                     # explicit print (same as a bare expression)
+:print-list listExpr            # unfold a list, printing head per element until tail≡nil (or fixpoint, or max=100)
+:print-list[head:=h, tail:=t, nil:=z, max:=N] listExpr  # selectors / cap; missing keys fall back to defs of the same name
 :assert lhs ≡ rhs               # equivalence assertion
 :assert lhs ≢ rhs               # non-equivalence assertion
 :set max-steps 500              # set both max-steps-print and max-steps-ident
@@ -76,6 +78,7 @@ Lines starting with `:` are directives:
 :set allow-eta                  # enable η-reduction during normalization
 :eval expr                      # load expression into eval panel (last wins)
 :infix + * ^^                   # mark defs as infix: a + b is read as + a b
+                                # parenthesize to escape: (+), map (+), f (+)
 ```
 
 ### Definitions

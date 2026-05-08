@@ -8,6 +8,7 @@ import {
   LambdaLexer,
   Directive,
   CmdPrint,
+  CmdPrintList,
   CmdAssert,
   CmdEval,
   LineComment,
@@ -68,7 +69,7 @@ function applyTokenRanges(
       out.push({ from, to, cls: "cml-lambda" });
     else if (tok.tokenType === Equiv || tok.tokenType === NEquiv)
       out.push({ from, to, cls: "cml-pi" });
-    else if (tok.tokenType === CmdPrint || tok.tokenType === CmdAssert || tok.tokenType === CmdEval)
+    else if (tok.tokenType === CmdPrint || tok.tokenType === CmdPrintList || tok.tokenType === CmdAssert || tok.tokenType === CmdEval)
       out.push({ from, to, cls: "cml-cmd" });
   }
 }

@@ -136,6 +136,29 @@ export type EquivComprehensionInfo = {
   notRun?:   boolean;
 };
 
+export type PrintListTermination =
+  | "nil"         // current list reduced to nil — finite list ended
+  | "fixpoint"    // current list equals previous — cyclic encoding
+  | "maxReached"; // hit the max cap before any structural exit
+
+export type PrintListRow = {
+  result:  string;   // pretty-printed normal form of (head l_i)
+  runKind: RunKind;
+  match?:  string;
+  stats?:  RunStats;
+};
+
+export type PrintListInfo = {
+  src:         string;                                          // base list expression
+  optionSrcs:  { head: string; tail: string; nil: string; max: number };
+  rows:        PrintListRow[];
+  termination: PrintListTermination;
+  offset:      number;
+  line:        number;
+  endOffset:   number;
+  notRun?:     boolean;
+};
+
 export type ProgramResult = {
   ok:          boolean;
   errors:      LambdaError[];
@@ -148,6 +171,7 @@ export type ProgramResult = {
   equivInfos:  EquivInfo[];
   printComprehensionInfos: PrintComprehensionInfo[];
   equivComprehensionInfos: EquivComprehensionInfo[];
+  printListInfos:          PrintListInfo[];
   options:      OptionsConfig;
   timing?: {
     parse:        number;  // ms — lex + parse + visit

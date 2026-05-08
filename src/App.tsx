@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { parseProgram, parseConfigSig, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
+import { parseProgram, parseConfigSig, OptionsConfig, EquivInfo, PrintComprehensionInfo, EquivComprehensionInfo, PrintListInfo, LambdaError, ProgramResult, DefEntry } from "./parser/parser";
 import { prettyPrint } from "./parser/pretty";
 import { HelpModal } from "./HelpModal";
 import { SettingsModal } from "./SettingsModal";
@@ -518,16 +518,19 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
     sectionRef.current?.querySelector(".print-entry-current")?.scrollIntoView({ block: "nearest" });
   }, [cursorOffset, kinoActive]);
   const hasContent = programResult.printInfos.length > 0 || programResult.equivInfos.length > 0
-    || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0;
+    || programResult.printComprehensionInfos.length > 0 || programResult.equivComprehensionInfos.length > 0
+    || programResult.printListInfos.length > 0;
   type PrintItem     = { kind: "print";      data: typeof programResult.printInfos[number] };
   type EquivItem     = { kind: "equiv";      data: EquivInfo; passed: boolean; opSym: string };
   type PrintCompItem = { kind: "print-comp"; data: PrintComprehensionInfo };
   type EquivCompItem = { kind: "equiv-comp"; data: EquivComprehensionInfo };
-  const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem)[] = !hasContent ? [] : [
+  type PrintListItem = { kind: "print-list"; data: PrintListInfo };
+  const items: (PrintItem | EquivItem | PrintCompItem | EquivCompItem | PrintListItem)[] = !hasContent ? [] : [
     ...programResult.printInfos.map(d => ({ kind: "print" as const, data: d })),
     ...programResult.equivInfos.map(d => ({ kind: "equiv" as const, data: d, passed: d.negated ? !d.equivalent : d.equivalent, opSym: d.negated ? "≢" : "≡" })).filter(d => showPassingEquiv || !d.passed),
     ...programResult.printComprehensionInfos.map(d => ({ kind: "print-comp" as const, data: d })),
     ...programResult.equivComprehensionInfos.filter(d => showPassingEquiv || !d.allPassed).map(d => ({ kind: "equiv-comp" as const, data: d })),
+    ...programResult.printListInfos.map(d => ({ kind: "print-list" as const, data: d })),
   ].sort((a, b) => printDesc ? b.data.offset - a.data.offset : a.data.offset - b.data.offset);
 
   return (
@@ -543,7 +546,49 @@ function PrintPanel({ open, onToggle, printDesc, onTogglePrintDesc, programResul
       </>}>
       {hasContent ? (
         <div className="print-section" ref={sectionRef}>
-          {items.map((item, i) => item.kind === "print" ? (
+          {items.map((item, i) => item.kind === "print-list" ? (
+            <div key={i} className={"print-entry print-list-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
+              <code className="print-src">
+                <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />
+                <span className="print-src-text">
+                  <span className="print-index">{item.data.line}:</span>
+                  {" "}:print-list
+                  <span className="comp-spec"> [head:={item.data.optionSrcs.head}, tail:={item.data.optionSrcs.tail}, nil:={item.data.optionSrcs.nil}, max:={item.data.optionSrcs.max}]</span>
+                  {" "}{item.data.src}
+                </span>
+                <span className="print-result-status">
+                  {item.data.termination === "nil"
+                    ? <span className="eval-status normal-form">end ({item.data.rows.length})</span>
+                    : item.data.termination === "fixpoint"
+                      ? <span className="eval-status normal-form">fixpoint ({item.data.rows.length})</span>
+                      : <span className="eval-status did-not-terminate">max={item.data.optionSrcs.max} reached</span>}
+                </span>
+              </code>
+              {item.data.notRun && <span className="eval-status not-run">not run</span>}
+              <div className="comp-rows">
+                {item.data.rows.map((row, ri) => (
+                  <div key={ri} className="comp-row">
+                    <span className="print-list-index">{ri}:</span>
+                    <div className="comp-row-content">
+                      <code className="print-result">
+                        <CopyBtn text={row.result} />
+                        <span className="print-result-text"><Truncated text={row.result} /></span>
+                        <span className="print-result-status">
+                          {row.match && <span className="history-match"><span className="print-equiv">≡</span> {row.match}</span>}
+                          {row.runKind === "normalForm"
+                            ? <span className="eval-status normal-form">normal form</span>
+                            : row.runKind === "sizeLimit"
+                              ? <span className="eval-status did-not-terminate">exceeded size limit</span>
+                              : <span className="eval-status did-not-terminate">did not terminate</span>}
+                          {row.stats && <StatsBadge stats={row.stats} />}
+                        </span>
+                      </code>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : item.kind === "print" ? (
             <div key={i} className={"print-entry" + (item.data.notRun ? " print-not-run" : "") + (cursorOffset !== null && item.data.offset <= cursorOffset && cursorOffset <= item.data.endOffset ? " print-entry-current" : "")}>
               <code className="print-src">
                 <GotoBtn onGoto={() => onJumpTo(item.data.offset)} />

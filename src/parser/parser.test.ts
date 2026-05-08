@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Var, Abs, App, Subst, Term } from "./ast";
 import { parse, parseProgram, expandDefs } from "./parser";
 import { prettyPrint } from "./pretty";
+import { canonicalForm } from "../evaluator/eval";
 
 // ── parse (single expression) ─────────────────────────────────────────────────
 
@@ -1469,5 +1470,183 @@ describe("runEval flag", () => {
     expect(r.printComprehensionInfos[0].notRun).toBe(true);
     expect(r.printComprehensionInfos[0].rows).toEqual([]);
     expect(r.printComprehensionInfos[0].bindings[0].values).toEqual(["a", "b"]);
+  });
+});
+
+// ── :print-list ────────────────────────────────────────────────────────────────
+
+describe(":print-list", () => {
+  // A minimal Church-list prelude — head, tail, nil, cons defined exactly as in
+  // the bundled std lib so default-by-name lookup applies.
+  const churchList = [
+    "nil := λc n. n",
+    "cons h t := λc n. c h (t c n)",
+    "head l := l (λh r. h) false",
+    "tail l := λc n. l (λh r g. g h (r c)) (λg. n) (λh t. t)",
+  ].join("\n");
+
+  it("default head/tail/nil lookup unfolds a finite Church list", () => {
+    const prog = `${churchList}\n:print-list cons a (cons b (cons c nil))`;
+    const r = parseProgram(prog);
+    expect(r.printListInfos).toHaveLength(1);
+    const info = r.printListInfos[0];
+    expect(info.termination).toBe("nil");
+    expect(info.rows.map(row => row.result)).toEqual(["a", "b", "c"]);
+    expect(info.optionSrcs.head).toBe("head");
+    expect(info.optionSrcs.tail).toBe("tail");
+    expect(info.optionSrcs.nil).toBe("nil");
+    expect(info.optionSrcs.max).toBe(100);
+  });
+
+  it("explicit head/tail/nil overrides take precedence over defs", () => {
+    const prog = `${churchList}\nmyHead := head\nmyTail := tail\nmyNil := nil\n:print-list[head:=myHead, tail:=myTail, nil:=myNil] cons x (cons y nil)`;
+    const r = parseProgram(prog);
+    expect(r.printListInfos).toHaveLength(1);
+    expect(r.printListInfos[0].rows.map(row => row.result)).toEqual(["x", "y"]);
+    expect(r.printListInfos[0].termination).toBe("nil");
+    expect(r.printListInfos[0].optionSrcs.head).toBe("myHead");
+  });
+
+  it("max= caps iteration when nil is never reached", () => {
+    // A custom encoding where tail returns a fresh list of arbitrary length.
+    // Use cons-chains directly without nil terminator simulating a stream-ish
+    // shape: the cons-of-cons keeps going up to our defined depth, then dies.
+    // We just want to verify max= caps; use max:=2 against a 5-elem list.
+    const prog = `${churchList}\n:print-list[max:=2] cons a (cons b (cons c (cons d (cons e nil))))`;
+    const r = parseProgram(prog);
+    expect(r.printListInfos).toHaveLength(1);
+    expect(r.printListInfos[0].termination).toBe("maxReached");
+    expect(r.printListInfos[0].rows.map(row => row.result)).toEqual(["a", "b"]);
+    expect(r.printListInfos[0].optionSrcs.max).toBe(2);
+  });
+
+  it("max:=0 produces zero rows with maxReached", () => {
+    const prog = `${churchList}\n:print-list[max:=0] cons a (cons b nil)`;
+    const r = parseProgram(prog);
+    expect(r.printListInfos[0].rows).toEqual([]);
+    expect(r.printListInfos[0].termination).toBe("maxReached");
+  });
+
+  it("input list of nil terminates immediately with no rows", () => {
+    const prog = `${churchList}\n:print-list nil`;
+    const r = parseProgram(prog);
+    expect(r.printListInfos[0].rows).toEqual([]);
+    expect(r.printListInfos[0].termination).toBe("nil");
+  });
+
+  it("missing 'head' definition without override raises an error", () => {
+    const prog = `nil := λc n. n\ntail := λl. l\n:print-list nil`;
+    const r = parseProgram(prog);
+    expect(r.errors.some(e => /'head' function/.test(e.message))).toBe(true);
+  });
+
+  it("missing 'nil' definition without override raises an error", () => {
+    // head and tail defined but no nil — and no override
+    const prog = `head := λl. l\ntail := λl. l\n:print-list (λl. l)`;
+    const r = parseProgram(prog);
+    expect(r.errors.some(e => /'nil' value/.test(e.message))).toBe(true);
+  });
+
+  it("unknown option key produces a warning and is ignored", () => {
+    const prog = `${churchList}\n:print-list[bogus:=foo] cons a nil`;
+    const r = parseProgram(prog);
+    expect(r.errors.some(e => /Unknown :print-list option.*"bogus"/.test(e.message))).toBe(true);
+  });
+
+  it("duplicate option key produces a warning", () => {
+    const prog = `${churchList}\n:print-list[max:=3, max:=5] cons a nil`;
+    const r = parseProgram(prog);
+    expect(r.errors.some(e => /Duplicate :print-list option.*"max"/.test(e.message))).toBe(true);
+  });
+
+  it("non-integer max= produces a warning", () => {
+    const prog = `${churchList}\n:print-list[max:=foo] cons a nil`;
+    const r = parseProgram(prog);
+    expect(r.errors.some(e => /max.*non-negative integer/.test(e.message))).toBe(true);
+  });
+
+  it("runEval=false records :print-list with notRun and zero rows", () => {
+    const prog = `${churchList}\n:print-list cons a (cons b nil)`;
+    const r = parseProgram(prog, { runEval: false });
+    expect(r.printListInfos).toHaveLength(1);
+    expect(r.printListInfos[0].notRun).toBe(true);
+    expect(r.printListInfos[0].rows).toEqual([]);
+  });
+
+  it("match label is set when an element equals a public definition", () => {
+    // x is defined; printing a list containing x should label that row "x".
+    const prog = `${churchList}\nx := λa. a\n:print-list cons x nil`;
+    const r = parseProgram(prog);
+    const row = r.printListInfos[0].rows[0];
+    // row.match is a comma-joined name list; "x" should appear
+    expect(row.match).toBeDefined();
+    expect(row.match!.split(", ")).toContain("x");
+  });
+});
+
+// ── parenthesized infix vars ───────────────────────────────────────────────────
+// Parens promote a Var into expression-context, suppressing the infix-swap so
+// `(+)` and `f (+)` keep + in func/arg position untouched.
+
+describe("paren-escapes infix swap", () => {
+  const plus = "add a b := a\n+ := add\n:infix +\n";
+
+  it("(+) 2 3 — parens put + in func position; no swap", () => {
+    // Without paren-escape, `+ 2 3` works prefix-style anyway because + is in
+    // func position. This case checks parens don't break the prefix path.
+    const r = parseProgram(`${plus}(+) 2 3`);
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].src).toBe("(+) 2 3");
+  });
+
+  it("(+) is parsed as a parenthesized Var (paren flag set)", () => {
+    const r = parse("(+)");
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.term.kind).toBe("Var");
+      if (r.term.kind === "Var") {
+        expect(r.term.name).toBe("+");
+        expect(r.term.paren).toBe(true);
+      }
+    }
+  });
+
+  it("(x) round-trips through pretty as (x), preserving paren flag", () => {
+    const r1 = parse("(x)");
+    expect(r1.ok).toBe(true);
+    if (r1.ok) {
+      const s = prettyPrint(r1.term);
+      expect(s).toBe("(x)");
+      const r2 = parse(s);
+      expect(r2.ok).toBe(true);
+      if (r2.ok) expect(r2.term).toEqual(r1.term);
+    }
+  });
+
+  it("f (+) — parens suppress the swap; (+) stays as the arg", () => {
+    // Without escape, swapInfix would flip id (+) into + id.
+    // With escape: id (+) → (+) → reduce + → λa b. a (the body of add).
+    const prog = `${plus}id x := x\nid (+)`;
+    const r = parseProgram(prog);
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("λa b. a");
+    expect(r.printInfos[0].match).toContain("add");
+  });
+
+  it("f + (without parens) still gets flipped — escape requires parens", () => {
+    // swapInfix turns App(id, +) into App(+, id) → (λa b. a) id → λb. id → λb x. x
+    const prog = `${plus}id x := x\nid +`;
+    const r = parseProgram(prog);
+    expect(r.ok).toBe(true);
+    expect(r.printInfos[0].result).toBe("λb x. x");
+  });
+
+  it("paren flag does not affect alpha-equivalence", () => {
+    // (+) ≡ + should hold — flag is cosmetic for canonical form.
+    const r1 = parse("(+)");
+    const r2 = parse("+");
+    if (r1.ok && r2.ok) {
+      expect(canonicalForm(r1.term)).toBe(canonicalForm(r2.term));
+    }
   });
 });
