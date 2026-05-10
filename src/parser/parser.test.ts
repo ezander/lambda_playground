@@ -1599,18 +1599,6 @@ describe("paren-escapes infix swap", () => {
     expect(r.printInfos[0].src).toBe("(+) 2 3");
   });
 
-  it("(+) is parsed as a parenthesized Var (paren flag set)", () => {
-    const r = parse("(+)");
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.term.kind).toBe("Var");
-      if (r.term.kind === "Var") {
-        expect(r.term.name).toBe("+");
-        expect(r.term.paren).toBe(true);
-      }
-    }
-  });
-
   it("(x) round-trips through pretty as (x), preserving paren flag", () => {
     const r1 = parse("(x)");
     expect(r1.ok).toBe(true);

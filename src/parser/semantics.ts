@@ -50,7 +50,13 @@ function swapInfix(term: Term, infixNames: Set<string>): Term {
     case "App": {
       const func = swapInfix(term.func, infixNames);
       const arg  = swapInfix(term.arg,  infixNames);
-      // A parenthesized infix var (`(+)`) is expression-context — don't flip.
+      // `!arg.paren`: `(expr)` is the *value* of expr, not the syntactic
+      // construct, so the surrounding context shouldn't reinterpret what's
+      // inside. Once `+` is wrapped into `(+)`, it's a Var-valued expression,
+      // not a bare def-ref to flip. Concretely: `map (+)` keeps + in arg
+      // position; without this, swapInfix would silently flip to `+ map` and
+      // break any higher-order use of an infix operator. (This subsumes the
+      // Haskell `(+)` idiom.)
       if (arg.kind === "Var" && !arg.paren && infixNames.has(arg.name) &&
           !(func.kind === "Var" && infixNames.has(func.name)))
         return App(arg, func);
@@ -777,24 +783,22 @@ export function parseProgram(
         let termination: PrintListTermination = "maxReached";
 
         for (let i = 0; i < maxIter; i++) {
+          // canonicalForm works on any term (alpha-rename, not reduction), so
+          // we can compare regardless of whether timedNorm reached NF. Worst
+          // case is a false-negative on cycles between un-NF terms; never a
+          // false-positive.
           const curRun = timedNorm(`:print-list curr[${i}]`, current, cfg);
-          if (curRun.kind === "normalForm") {
-            const curCanon = canonicalForm(curRun.term);
-            if (nilCanon !== undefined && curCanon === nilCanon) {
-              termination = "nil";
-              break;
-            }
-            if (prevCanon !== undefined && curCanon === prevCanon) {
-              termination = "fixpoint";
-              break;
-            }
-            prevCanon = curCanon;
-            current = curRun.term;  // keep the smaller form for further peeling
-          } else {
-            // Couldn't normalize this round — skip canon checks and clear
-            // prevCanon so a stale snapshot doesn't trip a false fixpoint.
-            prevCanon = undefined;
+          current = curRun.term;
+          const curCanon = canonicalForm(current);
+          if (nilCanon !== undefined && curCanon === nilCanon) {
+            termination = "nil";
+            break;
           }
+          if (prevCanon !== undefined && curCanon === prevCanon) {
+            termination = "fixpoint";
+            break;
+          }
+          prevCanon = curCanon;
 
           // head curr — failures are non-fatal, the row is still recorded.
           const headRun = timedNorm(`:print-list head[${i}]`, App(headFn, current), cfg);

@@ -146,14 +146,17 @@ describe("dialect.convert — currying split", () => {
   it("single param untouched", () => {
     expect(run("λx. x", { splitCurrying: true })).toBe("λx. x");
   });
-  it("splits any ASCII letter run — destructive for multi-char idents (caveat emptor)", () => {
+  it("splits any ASCII letter run in body too — destructive for multi-char idents (caveat emptor)", () => {
     // Currying-split assumes the source dialect uses single-letter conventions
-    // throughout. If the head genuinely holds a multi-char identifier, this
-    // option will mangle it — the user must turn it off in that case.
-    expect(run("λfoo. foo", { splitCurrying: true })).toBe("λf o o. foo");
+    // throughout. Both head AND body occurrences split now, so a multi-char
+    // identifier like `foo` is mangled symmetrically.
+    expect(run("λfoo. foo", { splitCurrying: true })).toBe("λf o o. f o o");
   });
   it("greek params untouched (ASCII only)", () => {
     expect(run("λαβ. α", { splitCurrying: true })).toBe("λαβ. α");
+  });
+  it("lhs of `:=` preserved; head and body both split", () => {
+    expect(run("id := λabc. abc", { splitCurrying: true })).toBe("id := λa b c. a b c");
   });
 });
 
